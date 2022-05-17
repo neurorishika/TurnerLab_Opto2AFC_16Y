@@ -1,0 +1,24 @@
+## create conda environment
+conda create -n sixteenY python=3.8
+
+## activate environment
+conda activate sixteenY
+
+## install packages
+conda install pyserial numpy matplotlib cupy scikit-image scikit-video
+
+## install cucim on Windows
+# clone the cucim repo from https://github.com/rapidsai/cucim
+# cd to python/cucim directory
+# run:
+pip install . -v
+
+## install same CUDA Toolkit as the version for cupy from https://developer.nvidia.com/cuda-toolkit-archive
+# Ensure CUDA_PATH is defined
+
+## From https://flir.app.boxcn.net/v/SpinnakerSDK, install latest Spinnaker Full SDK and unzip latest Python Spinnaker SDK
+cd <download_directory>
+pip install spinnaker_python_*.whl
+
+## Get FFMPEG from https://www.gyan.dev/ffmpeg/builds/ and add to Path
+

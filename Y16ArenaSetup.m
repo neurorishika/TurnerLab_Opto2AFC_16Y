@@ -26,7 +26,7 @@ clc; imaqreset; clear;
 % Y4ArenaDefaultSettings; % Use only if you want to use the default settings
 
 % Load the settings from the file
-load('Z:\Rishika\4Y-Maze\Y4ArenaSettings.mat');
+load('Z:\Rishika\4Y-Maze\Y16ArenaSettings.mat');
 
 try
     newojs = instrfind; fclose(instrfind); % Use only if last session didn't close properly
@@ -36,17 +36,22 @@ end
 
 narenas = 16;
 narms = 3*narenas;
+IRIntensity = [100 100 100 100]; % in percent (for IR Backlight) A D C B
 
 % Setting up port for LED control
-serial_port_for_LED_Controller = 'COM3'; % COM1 ON 4Y COM3 ON 1Y
-hLEDController = serial(serial_port_for_LED_Controller, 'BaudRate', 115200, 'Terminator', 'CR');
-fopen(hLEDController);
-hComm.hLEDController = hLEDController;
+serial_ports_for_LED_Controller = ["COM3" "COM4" "COM5" "COM6"]; % COM1 ON 4Y COM3 ON 1Y
+controllers = [];
+for i=1:4
+    
+    hLEDController = serial(serial_ports_for_LED_Controller(i), 'BaudRate', 115200, 'Terminator', 'CR');
+    fopen(hLEDController);
+    hComm.hLEDController = hLEDController;
+    controllers = [controllers hLEDController];
 
-% Initialize the Arena IR Backlight
-olfactoryArena_LED_control(hLEDController, 'IR', IRIntensity);
-newojs = instrfind;
-
+    % Initialize the Arena IR Backlight
+    olfactoryArena_LED_control(controllers(i), 'IR', IRIntensity(i));
+    newojs = instrfind;
+end
 %% Capture the Background Image
 
 imaqreset;
@@ -104,7 +109,7 @@ arenaOdorsPub = ros2publisher(yArenaNode, '/arena_odors', 'y_arena_interfaces/Ar
 arenaOdorsMsg = ros2message('y_arena_interfaces/ArenaOdors');
 
 % Arena 1
-arenaOdorsMsg.arena = uint8(3);
+arenaOdorsMsg.arena = uint8(0);
 arenaOdorsMsg.odors = uint8([0 0 0]);
 send(arenaOdorsPub, arenaOdorsMsg);
 

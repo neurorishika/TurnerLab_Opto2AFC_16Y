@@ -4,7 +4,7 @@ rigName = 'Y16-Arena1';
 activeArenas = [true true true true true true true true true true true true true true true true];
 
 % LED Parameters
-IRIntensity = 25; % in percent (for IR Backlight)
+IRIntensity = [15 15 10 10]; % in percent (for IR Backlight)
 
 RedIntensity1 = 30;                              % Intensity of red LED (in percent)
 GreenIntensity1 = 0;                             % Intensity of green LED (in percent)
@@ -66,5 +66,5 @@ fly16genotype = 'WT';
 exptime = datestr(now,'mm_dd_yyyy-HH_MM');
 earlystop = false;
 
-save("Z:\Rishika\16Y-Maze\Y16ArenaState.mat","earlystop")
-save("Z:\Rishika\16Y-Maze\Y16ArenaSettings.mat", "rigName", "activeArenas", "IRIntensity", "RedIntensity1", "GreenIntensity1", "BlueIntensity1", "PulseWidth1", "PulsePeriod1", "PulseNumber1", "Wait1", "Off1", "Iterations1", "OptoColor1", "RedIntensity2", "GreenIntensity2", "BlueIntensity2", "PulseWidth2", "PulsePeriod2", "PulseNumber2", "Wait2", "Off2", "Iterations2", "OptoColor2", "redrawmasks", "savemasks", "allMaskDirectory", "Odor1ID", "Odor2ID", "NumTrialsPerBlock", "Odor1_RewardProbability", "Odor2_RewardProbability", "baited", "verbose", "showflies", "savedir", "addlcomments", "expname", "fly1genotype", "fly2genotype", "fly3genotype", "fly4genotype", "fly5genotype", "fly6genotype", "fly7genotype", "fly8genotype", "fly9genotype", "fly10genotype", "fly11genotype", "fly12genotype", "fly13genotype", "fly14genotype", "fly15genotype", "fly16genotype", "exptime")
+save("Z:\Rishika\4Y-Maze\Y16ArenaState.mat","earlystop")
+save("Z:\Rishika\4Y-Maze\Y16ArenaSettings.mat", "rigName", "activeArenas", "IRIntensity", "RedIntensity1", "GreenIntensity1", "BlueIntensity1", "PulseWidth1", "PulsePeriod1", "PulseNumber1", "Wait1", "Off1", "Iterations1", "OptoColor1", "RedIntensity2", "GreenIntensity2", "BlueIntensity2", "PulseWidth2", "PulsePeriod2", "PulseNumber2", "Wait2", "Off2", "Iterations2", "OptoColor2", "redrawmasks", "savemasks", "allMaskDirectory", "Odor1ID", "Odor2ID", "NumTrialsPerBlock", "Odor1_RewardProbability", "Odor2_RewardProbability", "baited", "verbose", "showflies", "savedir", "addlcomments", "expname", "fly1genotype", "fly2genotype", "fly3genotype", "fly4genotype", "fly5genotype", "fly6genotype", "fly7genotype", "fly8genotype", "fly9genotype", "fly10genotype", "fly11genotype", "fly12genotype", "fly13genotype", "fly14genotype", "fly15genotype", "fly16genotype", "exptime")

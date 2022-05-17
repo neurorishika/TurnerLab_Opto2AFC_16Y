@@ -25,15 +25,16 @@ for n = 1:length(NumTrialsPerBlock)
 end
 
 % Test status for all LED controls
-olfactoryArena_LED_control(hLEDController, 'RESET');                    % Reset all LEDs
-olfactoryArena_LED_control(hLEDController, 'IR', IRIntensity);          % Set IR LED intensity
-olfactoryArena_LED_control(hLEDController, 'RED', RedIntensity1);        % Set Red LED intensity (Odor 1)
-olfactoryArena_LED_control(hLEDController, 'GREEN', GreenIntensity1);    % Set Green LED intensity (Odor 1)
-olfactoryArena_LED_control(hLEDController, 'BLUE', BlueIntensity1);      % Set Blue LED intensity (Odor 1)
-olfactoryArena_LED_control(hLEDController, 'RED', RedIntensity2);        % Set Red LED intensity (Odor 2)
-olfactoryArena_LED_control(hLEDController, 'GREEN', GreenIntensity2);    % Set Green LED intensity (Odor 2)
-olfactoryArena_LED_control(hLEDController, 'BLUE', BlueIntensity2);      % Set Blue LED intensity (Odor 2)
-
+for i=1:4
+    olfactoryArena_LED_control(controllers(i), 'RESET');                    % Reset all LEDs
+    olfactoryArena_LED_control(controllers(i), 'IR', IRIntensity);          % Set IR LED intensity
+    olfactoryArena_LED_control(controllers(i), 'RED', RedIntensity1);        % Set Red LED intensity (Odor 1)
+    olfactoryArena_LED_control(controllers(i), 'GREEN', GreenIntensity1);    % Set Green LED intensity (Odor 1)
+    olfactoryArena_LED_control(controllers(i), 'BLUE', BlueIntensity1);      % Set Blue LED intensity (Odor 1)
+    olfactoryArena_LED_control(controllers(i), 'RED', RedIntensity2);        % Set Red LED intensity (Odor 2)
+    olfactoryArena_LED_control(controllers(i), 'GREEN', GreenIntensity2);    % Set Green LED intensity (Odor 2)
+    olfactoryArena_LED_control(controllers(i), 'BLUE', BlueIntensity2);      % Set Blue LED intensity (Odor 2)
+end
 % Define pulse train for Optogenetic Stimulation
 
 param1.pulse_width = PulseWidth1;                 % Width of pulse (in ms)
@@ -83,7 +84,7 @@ RewardStateTallyOdor2 = NaN(TotalTrials, 4);      % Accumulated Reward State for
 %% ArenaIdx to Arena and Quadrant mapping
 PanelA2A = [0,1,2,3];
 PanelA2Q = ["0001" "0010" "1000" "0100"];
-Odor2Name = ["AIR",Odor1ID, Odor2ID];
+Odor2Name = ["AIR", Odor1ID, Odor2ID];
 
 %% Begin the video acquisition
 
