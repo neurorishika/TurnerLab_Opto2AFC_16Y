@@ -3,6 +3,7 @@ import skvideo
 skvideo.setFFmpegPath('C:\\ffmpeg\\bin\\')
 import skvideo.io
 import pickle, threading, queue
+import matplotlib.pyplot as plt
 import numpy as np
 import cupy as cp
 
@@ -24,6 +25,9 @@ def list_cameras():
     return _SYSTEM.GetCameras()
 
 def video_writer(save_queue, writer):
+    """
+    Write images to disk.
+    """
     while True:
         image = save_queue.get()
         if image is None:
@@ -31,6 +35,19 @@ def video_writer(save_queue, writer):
         else:
             writer.writeFrame(image)
             save_queue.task_done()
+
+def video_player(play_queue, player):
+    """
+    Plot imaged from queue.
+    """
+    while True:
+        image = play_queue.get()
+        if image is None:
+            break
+        else:
+            player.imshow(image)
+            player.show()
+            play_queue.task_done()
 
 class SpinnakerCamera:
     """
@@ -48,18 +65,38 @@ class SpinnakerCamera:
         start : Start recording images.
         stop : Stop recording images.
         get_raw_image : Get an raw image from the camera.
-        get_array : Get an image from the camera, and convert it to a numpy array.
-        get_info : Get the camera information.
-        get_docstring : Get the camera documentation.
+        get_array : Get an image from the camera, and convert it to a numpy/cupy array.
     """
 
-    def __init__(self, index=0, lock=True, gpu_enabled=True, EXPOSURE_TIME=12000, GAIN=10, GAMMA=1, record_video=False, video_output_path=None, video_output_name=None):
+    def __init__(
+                self, 
+                index=0, 
+                lock=True, 
+                gpu_enabled=True, 
+                EXPOSURE_TIME=12000, 
+                GAIN=10, 
+                GAMMA=1, 
+                record_video=False, 
+                video_output_path=None, 
+                video_output_name=None, 
+                show_video=False, 
+                show_every_n=None
+                ):
         """
         Initialize the camera object.
 
         Variables:
             index : camera index (int)
             lock : If True, setting new attributes after initialization results in an error to prevent misspelled attributes. (bool)
+            gpu_enabled : If True, use GPU acceleration. (bool)
+            EXPOSURE_TIME : Exposure time in microseconds. (int)
+            GAIN : Gain in dB. (int)
+            GAMMA : Gamma value. (int)
+            record_video : If True, record a video. (bool)
+            video_output_path : Path to save the video. (str)
+            video_output_name : Name of the video. (str)
+            show_video : If True, show the video. (bool)
+            show_every_n : If not None, show every nth frame. (int)
         """
         self.lock = lock
         self.initialized = False
@@ -71,6 +108,11 @@ class SpinnakerCamera:
             assert video_output_name is not None, "video_output_name must be specified if record_video is True"
             self.video_output_path = video_output_path
             self.video_output_name = video_output_name
+        
+        self.show_video = show_video
+        if self.show_video:
+            assert show_every_n is not None, "show_every_n must be specified if show_video is True"
+            self.show_every_n = show_every_n
         
         self.EXPOSURE_TIME = EXPOSURE_TIME
         self.GAIN = GAIN
@@ -85,27 +127,27 @@ class SpinnakerCamera:
             self.cam = cam_list.GetBySerial(index)
         cam_list.Clear()
 
-        self._rw_modes = {
-            PySpin.RO: "read only",
-            PySpin.RW: "read/write",
-            PySpin.WO: "write only",
-            PySpin.NA: "not available"
-        }
-        self._attr_types = {
-            PySpin.intfIFloat: PySpin.CFloatPtr,
-            PySpin.intfIBoolean: PySpin.CBooleanPtr,
-            PySpin.intfIInteger: PySpin.CIntegerPtr,
-            PySpin.intfIEnumeration: PySpin.CEnumerationPtr,
-            PySpin.intfIString: PySpin.CStringPtr,
-        }
-        self._attr_type_names = {
-            PySpin.intfIFloat: 'float',
-            PySpin.intfIBoolean: 'bool',
-            PySpin.intfIInteger: 'int',
-            PySpin.intfIEnumeration: 'enum',
-            PySpin.intfIString: 'string',
-            PySpin.intfICommand: 'command',
-        }
+        # self._rw_modes = {
+        #     PySpin.RO: "read only",
+        #     PySpin.RW: "read/write",
+        #     PySpin.WO: "write only",
+        #     PySpin.NA: "not available"
+        # }
+        # self._attr_types = {
+        #     PySpin.intfIFloat: PySpin.CFloatPtr,
+        #     PySpin.intfIBoolean: PySpin.CBooleanPtr,
+        #     PySpin.intfIInteger: PySpin.CIntegerPtr,
+        #     PySpin.intfIEnumeration: PySpin.CEnumerationPtr,
+        #     PySpin.intfIString: PySpin.CStringPtr,
+        # }
+        # self._attr_type_names = {
+        #     PySpin.intfIFloat: 'float',
+        #     PySpin.intfIBoolean: 'bool',
+        #     PySpin.intfIInteger: 'int',
+        #     PySpin.intfIEnumeration: 'enum',
+        #     PySpin.intfIString: 'string',
+        #     PySpin.intfICommand: 'command',
+        # }
 
         self.running = False
 
@@ -146,6 +188,12 @@ class SpinnakerCamera:
             self.save_queue = queue.Queue()
             self.save_thread = threading.Thread(target=video_writer, args=(self.save_queue, self.writer))
         
+        if self.show_video:
+            self.play_queue = queue.Queue()
+            self.player = plt.figure()
+            self.frame_count = 0
+            self.play_thread = threading.Thread(target=video_player, args=(self.play_queue, self.player))
+        
         self.initialized = True
 
     def __enter__(self):
@@ -178,6 +226,9 @@ class SpinnakerCamera:
             self.cam.BeginAcquisition()
             if self.record_video:
                 self.save_thread.start()
+            if self.show_video:
+                self.play_thread.start()
+                self.player.show()
             self.running = True
 
     def stop(self):
@@ -191,6 +242,10 @@ class SpinnakerCamera:
                 self.writer.close()
                 with open(self.video_output_path + self.video_output_name + '_timestamps.pkl', 'wb') as f:
                     pickle.dump(self.timestamps, f)
+            if self.show_video:
+                self.play_queue.join()
+                self.frame_count = 0
+                plt.close(self.player)
         self.running = False
 
     def get_raw_image(self, wait=True):
@@ -223,6 +278,11 @@ class SpinnakerCamera:
         if self.record_video:
             self.timestamps.append(img.GetTimeStamp())
             self.save_queue.put(arr)
+        
+        if self.show_video:
+            if self.frame_count % self.show_every_n_frames == 0:
+                self.play_queue.put(arr)
+            self.frame_count += 1
 
         if self.gpu_enabled:
             arr = cp.array(arr, dtype=cp.uint8)
