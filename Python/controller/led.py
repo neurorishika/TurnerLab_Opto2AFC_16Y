@@ -1,5 +1,11 @@
 import serial
 
+def hex_to_rgb_intensity(hex_value):
+    hex_value = hex_value.decode().lstrip('#')
+    rgb = tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
+    rgb_intensity = tuple(int(i/255*100) for i in rgb)
+    return rgb_intensity
+
 class LEDController(object):
     """
     A Class for the 16 Y LED controllers
@@ -174,7 +180,7 @@ class LEDController(object):
         
         Variables:
             arena: arena to set the pulse pattern for (int)
-            color: color of the pulse pattern (str)
+            color: color of the pulse pattern (byte str 'R' or 'G' or 'B' or '#<hex color>' / tuple of ints (0-100,0-100,0-100))
             pulse_width: width of the pulse pattern (int)
             pulse_period: period of the pulse pattern (int)
             pulse_count: number of pulses in the pulse pattern (int)
@@ -183,15 +189,24 @@ class LEDController(object):
             pulse_repeat: number of times to repeat the pulse pattern (int)
         """
         assert pulse_width >= 0 and pulse_period >= 0 and pulse_count >= 0 and pulse_deadtime >= 0 and pulse_delay >= 0 and pulse_repeat >= 0, 'Invalid pulse parameters'
-        assert color == b'R' or color == b'G' or color == b'B', 'Invalid color'
+        assert color == b'R' or color == b'G' or color == b'B' or (color[0] == 35 and len(color) ==7) or (type(color) == tuple and len(color) == 3), 'Invalid color'
         conn = self.conns[self.arena_specs[arena]['conn']]
-        conn.write(b'PULSE ' + bytes(str(pulse_width),'utf-8')
-                    + b' ' + bytes(str(pulse_period),'utf-8')
-                    + b' ' + bytes(str(pulse_count),'utf-8')
-                    + b' ' + bytes(str(pulse_deadtime),'utf-8')
-                    + b' ' + bytes(str(pulse_delay),'utf-8')
-                    + b' ' + bytes(str(pulse_repeat),'utf-8')
-                    + b' ' + color + b'\r')
+        if color == b'R' or color == b'G' or color == b'B':
+            conn.write(b'PULSE ' + bytes(str(pulse_width),'utf-8')
+                        + b' ' + bytes(str(pulse_period),'utf-8')
+                        + b' ' + bytes(str(pulse_count),'utf-8')
+                        + b' ' + bytes(str(pulse_deadtime),'utf-8')
+                        + b' ' + bytes(str(pulse_delay),'utf-8')
+                        + b' ' + bytes(str(pulse_repeat),'utf-8')
+                        + b' ' + color + b'\r')
+        else:
+            conn.write(b'PULSE ' + bytes(str(pulse_width),'utf-8')
+                        + b' ' + bytes(str(pulse_period),'utf-8')
+                        + b' ' + bytes(str(pulse_count),'utf-8')
+                        + b' ' + bytes(str(pulse_deadtime),'utf-8')
+                        + b' ' + bytes(str(pulse_delay),'utf-8')
+                        + b' ' + bytes(str(pulse_repeat),'utf-8')
+                        + b'\r')
 
     def set_led_stimulus_intensity(self,arena,color,intensity):
         """
@@ -199,11 +214,11 @@ class LEDController(object):
 
         Variables:
             arena: arena to set the intensity for (int)
-            color: color of the LED stimulus (byte str)
-            intensity: intensity of the LED stimulus (int)
+            color: color of the LED stimulus (byte str 'R' or 'G' or 'B' or '#<hex color>' / tuple of ints (0-100,0-100,0-100))
+            intensity: intensity of the LED stimulus (int 0-100)
         """
         assert intensity >= 0 and intensity <= 100, 'Invalid intensity'
-        assert color == b'R' or color == b'G' or color == b'B', 'Invalid color'
+        assert color == b'R' or color == b'G' or color == b'B' or (color[0] == 35 and len(color) ==7) or (type(color) == tuple and len(color) == 3), 'Invalid color'
         conn = self.conns[self.arena_specs[arena]['conn']]
         quadrant = self.arena_specs[arena]['quadrant']
         if color == b'R':
@@ -212,6 +227,15 @@ class LEDController(object):
             conn.write(b'GRN ' + str(intensity).encode() + b' 0 ' + quadrant + b'\r')
         elif color == b'B':
             conn.write(b'BLU ' + str(intensity).encode() + b' 0 ' + quadrant + b'\r')
+        else:
+            if color[0] == 35:
+                rgb_intensity = hex_to_rgb_intensity(color)
+            else:
+                rgb_intensity = color
+            
+            conn.write(b'RED ' + str(rgb_intensity[0]).encode() + b' 0 ' + quadrant + b'\r')
+            conn.write(b'GRN ' + str(rgb_intensity[1]).encode() + b' 0 ' + quadrant + b'\r')
+            conn.write(b'BLU ' + str(rgb_intensity[2]).encode() + b' 0 ' + quadrant + b'\r')
 
     def run_led_stimulus(self,arena,color=b''):
         """
@@ -219,12 +243,15 @@ class LEDController(object):
         
         Variables:
             arena: arena to run the LED stimulus for (int)
-            color: color of the LED stimulus (byte str)
+            color: color of the LED stimulus (byte str 'R' or 'G' or 'B' or '#<hex color>' / tuple of ints (0-100,0-100,0-100))
         """
-        assert color == b'R' or color == b'G' or color == b'B' or color == b'', 'Invalid color'
+        assert color == b'R' or color == b'G' or color == b'B' or (color[0] == 35 and len(color) ==7) or (type(color) == tuple and len(color) == 3), 'Invalid color'
 
         conn = self.conns[self.arena_specs[arena]['conn']]
-        conn.write(b'RUN ' + color + b'\r')
+        if color == b'R' or color == b'G' or color == b'B':
+            conn.write(b'RUN ' + color + b'\r')
+        else:
+            conn.write(b'RUN\r')
     
     def stop_led_stimulus(self,arena,color=b''):
         """
@@ -232,12 +259,15 @@ class LEDController(object):
         
         Variables:
             arena: arena to stop the LED stimulus for (int)
-            color: color of the LED stimulus (byte str)
+            color: color of the LED stimulus (byte str 'R' or 'G' or 'B' or '#<hex color>' / tuple of ints (0-100,0-100,0-100))
         """
-        assert color == b'R' or color == b'G' or color == b'B' or color == b'', 'Invalid color'
+        assert color == b'R' or color == b'G' or color == b'B' or (color[0] == 35 and len(color) ==7) or (type(color) == tuple and len(color) == 3), 'Invalid color'
 
         conn = self.conns[self.arena_specs[arena]['conn']]
-        conn.write(b'STOP ' + color + b'\r')
+        if color == b'R' or color == b'G' or color == b'B':
+            conn.write(b'STOP ' + color + b'\r')
+        else:
+            conn.write(b'STOP\r')
     
     def pause_led_stimulus(self,arena):
         """
@@ -278,7 +308,7 @@ class LEDController(object):
 
         Variables:
             arena: arena to run the LED stimulus for (int)
-            color: color of the LED stimulus (byte str)
+            color: color of the LED stimulus (byte str: 'R' or 'G' or 'B' or '#<hex color>' / tuple of ints (0-100,0-100,0-100))
             intensity: intensity of the LED stimulus (int)
             pulse_width: width of the pulse pattern (int)
             pulse_period: period of the pulse pattern (int)
@@ -288,7 +318,7 @@ class LEDController(object):
             pulse_repeat: number of times to repeat the pulse pattern (int)
         """
         assert intensity >= 0 and intensity <= 100, 'Invalid intensity'
-        assert color == b'R' or color == b'G' or color == b'B', 'Invalid color'
+        assert color == b'R' or color == b'G' or color == b'B' or (color[0] == 35 and len(color) ==7) or (type(color) == tuple and len(color) == 3), 'Invalid color'
         assert pulse_width >= 0 and pulse_period >= 0 and pulse_count >= 0 and pulse_deadtime >= 0 and pulse_delay >= 0 and pulse_repeat >= 0, 'Invalid pulse parameters'
         
         if debug:
@@ -299,3 +329,17 @@ class LEDController(object):
         self.reset_module_led_stimuli(arena)
         self.set_led_stimulus_intensity(arena,color,intensity)
         self.run_led_stimulus(arena)
+
+    def run_json(self,arena,json_dict,debug=False):
+        """
+        Run the LED stimulus from a JSON dictionary
+
+        Variables:
+            arena: arena to run the LED stimulus for (int)
+            json_dict: JSON data to run the LED stimulus for (dict)
+        """
+        assert type(json_dict) == dict, 'Invalid JSON data'
+        
+        self.led_stimulation(arena, json_dict['color'].encode(), json_dict['intensity'], json_dict['pulse_width'], json_dict['pulse_period'], json_dict['pulse_count'], json_dict['pulse_deadtime'], json_dict['pulse_delay'], json_dict['pulse_repeat'], debug)
+
+    ### IMPLEMENT MULTIPLEXED LED STIMULUS ###
