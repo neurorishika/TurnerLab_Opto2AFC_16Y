@@ -189,7 +189,7 @@ class LEDController(object):
             pulse_repeat: number of times to repeat the pulse pattern (int)
         """
         assert pulse_width >= 0 and pulse_period >= 0 and pulse_count >= 0 and pulse_deadtime >= 0 and pulse_delay >= 0 and pulse_repeat >= 0, 'Invalid pulse parameters'
-        assert color == b'R' or color == b'G' or color == b'B' or (color[0] == 35 and len(color) ==7) or (type(color) == tuple and len(color) == 3), 'Invalid color'
+        assert color == b'R' or color == b'G' or color == b'B' or (len(color) ==7 and color[0] == 35) or (type(color) == tuple and len(color) == 3), 'Invalid color'
         conn = self.conns[self.arena_specs[arena]['conn']]
         if color == b'R' or color == b'G' or color == b'B':
             conn.write(b'PULSE ' + bytes(str(pulse_width),'utf-8')
@@ -218,7 +218,7 @@ class LEDController(object):
             intensity: intensity of the LED stimulus (int 0-100)
         """
         assert intensity >= 0 and intensity <= 100, 'Invalid intensity'
-        assert color == b'R' or color == b'G' or color == b'B' or (color[0] == 35 and len(color) ==7) or (type(color) == tuple and len(color) == 3), 'Invalid color'
+        assert color == b'R' or color == b'G' or color == b'B' or (len(color) ==7 and color[0] == 35) or (type(color) == tuple and len(color) == 3), 'Invalid color'
         conn = self.conns[self.arena_specs[arena]['conn']]
         quadrant = self.arena_specs[arena]['quadrant']
         if color == b'R':
@@ -237,7 +237,7 @@ class LEDController(object):
             conn.write(b'GRN ' + str(rgb_intensity[1]).encode() + b' 0 ' + quadrant + b'\r')
             conn.write(b'BLU ' + str(rgb_intensity[2]).encode() + b' 0 ' + quadrant + b'\r')
 
-    def run_led_stimulus(self,arena,color=b''):
+    def run_led_stimulus(self,arena,color=b'#000000'):
         """
         Run the LED stimulus
         
@@ -245,7 +245,7 @@ class LEDController(object):
             arena: arena to run the LED stimulus for (int)
             color: color of the LED stimulus (byte str 'R' or 'G' or 'B' or '#<hex color>' / tuple of ints (0-100,0-100,0-100))
         """
-        assert color == b'R' or color == b'G' or color == b'B' or (color[0] == 35 and len(color) ==7) or (type(color) == tuple and len(color) == 3), 'Invalid color'
+        assert color == b'R' or color == b'G' or color == b'B' or (len(color) ==7 and color[0] == 35) or (type(color) == tuple and len(color) == 3), 'Invalid color'
 
         conn = self.conns[self.arena_specs[arena]['conn']]
         if color == b'R' or color == b'G' or color == b'B':
@@ -253,7 +253,7 @@ class LEDController(object):
         else:
             conn.write(b'RUN\r')
     
-    def stop_led_stimulus(self,arena,color=b''):
+    def stop_led_stimulus(self,arena,color=b'#000000'):
         """
         Stop the LED stimulus
         
@@ -261,7 +261,7 @@ class LEDController(object):
             arena: arena to stop the LED stimulus for (int)
             color: color of the LED stimulus (byte str 'R' or 'G' or 'B' or '#<hex color>' / tuple of ints (0-100,0-100,0-100))
         """
-        assert color == b'R' or color == b'G' or color == b'B' or (color[0] == 35 and len(color) ==7) or (type(color) == tuple and len(color) == 3), 'Invalid color'
+        assert color == b'R' or color == b'G' or color == b'B' or (len(color) ==7 and color[0] == 35) or (type(color) == tuple and len(color) == 3), 'Invalid color'
 
         conn = self.conns[self.arena_specs[arena]['conn']]
         if color == b'R' or color == b'G' or color == b'B':
@@ -318,7 +318,7 @@ class LEDController(object):
             pulse_repeat: number of times to repeat the pulse pattern (int)
         """
         assert intensity >= 0 and intensity <= 100, 'Invalid intensity'
-        assert color == b'R' or color == b'G' or color == b'B' or (color[0] == 35 and len(color) ==7) or (type(color) == tuple and len(color) == 3), 'Invalid color'
+        assert color == b'R' or color == b'G' or color == b'B' or (len(color) ==7 and color[0] == 35) or (type(color) == tuple and len(color) == 3), 'Invalid color'
         assert pulse_width >= 0 and pulse_period >= 0 and pulse_count >= 0 and pulse_deadtime >= 0 and pulse_delay >= 0 and pulse_repeat >= 0, 'Invalid pulse parameters'
         
         if debug:

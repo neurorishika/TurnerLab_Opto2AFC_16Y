@@ -46,7 +46,7 @@ class LEDController(object):
             run the LED stimulation
     """
 
-    def __init__(self,ports=['COM3', 'COM5', 'COM6', 'COM4'],baudrate=115200): 
+    def __init__(self,ports=['COM1', 'COM3', 'COM4', 'COM5'],baudrate=115200): 
         """
         Initialize the LED controller class
         
