@@ -20,6 +20,9 @@ class MplCanvas(FigureCanvas):
         self.axes: matplotlib axes object
     """
     def __init__(self, parent=None, width=5, height=4, dpi=100):
+        """
+        Initialize the figure and axes.
+        """
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
 

@@ -1,13 +1,65 @@
 import PySpin
+
 import skvideo
 skvideo.setFFmpegPath('C:\\ffmpeg\\bin\\')
 import skvideo.io
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+
 import pickle, threading, queue
 import matplotlib.pyplot as plt
 import numpy as np
 import cupy as cp
+import time
 
 _SYSTEM = None
+
+class MplCanvas(FigureCanvas):
+    """
+    Class for plotting the the 1
+    
+    variables:
+        self.fig: matplotlib figure object
+        self.axes: matplotlib axes object
+    """
+    def __init__(self, parent=None, width=5, height=4, dpi=256):
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = self.fig.add_subplot(111)
+
+        FigureCanvas.__init__(self, self.fig)
+        self.setParent(parent)
+
+        FigureCanvas.setSizePolicy(self,
+                QtWidgets.QSizePolicy.Expanding,
+                QtWidgets.QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+
+class CameraViewer(QtWidgets.QMainWindow):
+    """
+    A class to show the camera image in a matplotlib window
+    """
+    def __init__(self, *args, **kwargs):
+        super(CameraViewer, self).__init__(*args, **kwargs)
+
+        # set the window title
+        self.setWindowTitle('Camera Viewer')
+
+        # create a the main layout
+        layout = QtWidgets.QGridLayout()
+
+        # add the matplotlib canvas to the main layout
+        self.canvas = MplCanvas(self, width=5, height=4, dpi=256)
+        layout.addWidget(self.canvas, 0, 0)
+
+    def update_image(self, image):
+        """
+        Update the image in the matplotlib window
+        """
+        self.canvas.axes.imshow(image)
+        self.canvas.draw()
 
 class CameraError(Exception):
     """
@@ -36,7 +88,7 @@ def video_writer(save_queue, writer):
             writer.writeFrame(image)
             save_queue.task_done()
 
-def video_player(play_queue, player):
+def video_player(play_queue, camera_viewer):
     """
     Plot imaged from queue.
     """
@@ -45,8 +97,7 @@ def video_player(play_queue, player):
         if image is None:
             break
         else:
-            player.imshow(image)
-            player.show()
+            camera_viewer.update_image(image)
             play_queue.task_done()
 
 class SpinnakerCamera:
@@ -70,10 +121,12 @@ class SpinnakerCamera:
     def __init__(
                 self, 
                 index=0, 
-                gpu_enabled=True, 
+                gpu_enabled=True,
+                CAMERA_FORMAT='Mono8',
                 EXPOSURE_TIME=12000, 
                 GAIN=10, 
                 GAMMA=1, 
+                MAX_FRAME_RATE=100,
                 record_video=False, 
                 video_output_path=None, 
                 video_output_name=None, 
@@ -86,9 +139,11 @@ class SpinnakerCamera:
         Variables:
             index : camera index (int)
             gpu_enabled : If True, use GPU acceleration. (bool)
+            CAMERA_FORMAT : Format of the camera image. (str)
             EXPOSURE_TIME : Exposure time in microseconds. (int)
             GAIN : Gain in dB. (int)
             GAMMA : Gamma value. (int)
+            MAX_FRAME_RATE : Maximum frame rate. (int)
             record_video : If True, record a video. (bool)
             video_output_path : Path to save the video. (str)
             video_output_name : Name of the video. (str)
@@ -110,9 +165,13 @@ class SpinnakerCamera:
             assert show_every_n is not None, "show_every_n must be specified if show_video is True"
             self.show_every_n = show_every_n
         
+        self.CAMERA_FORMAT = CAMERA_FORMAT
         self.EXPOSURE_TIME = EXPOSURE_TIME
         self.GAIN = GAIN
         self.GAMMA = GAMMA
+        self.MAX_FRAME_RATE = MAX_FRAME_RATE
+
+        self.time_of_last_frame = None
 
         cam_list = list_cameras()
         if not cam_list.GetSize():
@@ -122,28 +181,6 @@ class SpinnakerCamera:
         elif isinstance(index, str):
             self.cam = cam_list.GetBySerial(index)
         cam_list.Clear()
-
-        # self._rw_modes = {
-        #     PySpin.RO: "read only",
-        #     PySpin.RW: "read/write",
-        #     PySpin.WO: "write only",
-        #     PySpin.NA: "not available"
-        # }
-        # self._attr_types = {
-        #     PySpin.intfIFloat: PySpin.CFloatPtr,
-        #     PySpin.intfIBoolean: PySpin.CBooleanPtr,
-        #     PySpin.intfIInteger: PySpin.CIntegerPtr,
-        #     PySpin.intfIEnumeration: PySpin.CEnumerationPtr,
-        #     PySpin.intfIString: PySpin.CStringPtr,
-        # }
-        # self._attr_type_names = {
-        #     PySpin.intfIFloat: 'float',
-        #     PySpin.intfIBoolean: 'bool',
-        #     PySpin.intfIInteger: 'int',
-        #     PySpin.intfIEnumeration: 'enum',
-        #     PySpin.intfIString: 'string',
-        #     PySpin.intfICommand: 'command',
-        # }
 
         self.running = False
 
@@ -172,8 +209,11 @@ class SpinnakerCamera:
         self.cam.GammaEnable.SetValue(True)
         self.cam.Gamma.SetValue(self.GAMMA)
 
-        # set pixel format to 8 bit
-        self.cam.PixelFormat.SetValue(PySpin.PixelFormat_Mono8)
+        # set pixel format
+        if self.CAMERA_FORMAT == 'Mono8':
+            self.cam.PixelFormat.SetValue(PySpin.PixelFormat_Mono8)
+        elif self.CAMERA_FORMAT == 'Mono16':
+            self.cam.PixelFormat.SetValue(PySpin.PixelFormat_Mono16)
 
         if self.record_video:
             self.timestamps = []
@@ -186,7 +226,8 @@ class SpinnakerCamera:
         
         if self.show_video:
             self.play_queue = queue.Queue()
-            self.player = plt.figure()
+            self.play_app = QtWidgets.QApplication([])
+            self.player = CameraViewer()
             self.frame_count = 0
             self.play_thread = threading.Thread(target=video_player, args=(self.play_queue, self.player))
         
@@ -225,7 +266,9 @@ class SpinnakerCamera:
             if self.show_video:
                 self.play_thread.start()
                 self.player.show()
+                self.play_app.exec_()
             self.running = True
+            self.time_of_last_frame = time.time()
 
     def stop(self):
         """
@@ -241,7 +284,6 @@ class SpinnakerCamera:
             if self.show_video:
                 self.play_queue.join()
                 self.frame_count = 0
-                plt.close(self.player)
         self.running = False
 
     def get_raw_image(self, wait=True):
@@ -268,8 +310,16 @@ class SpinnakerCamera:
             image : Image from the camera (numpy.ndarray/cupy.ndarray)
             chunk : PySpin chunk data (PySpin)
         """
+        time_since_last_frame = time.time() - self.time_of_last_frame
+        if time_since_last_frame < 1.0 / self.MAX_FRAME_RATE:
+            time.sleep(max(1.0 / self.MAX_FRAME_RATE - time_since_last_frame, 0))
+        
         img = self.get_raw_image(wait)
-        arr = np.array(img.GetData(), dtype=np.uint8).reshape(img.GetHeight(), img.GetWidth())
+        
+        self.time_of_last_frame = time.time()
+
+        dtype = np.uint8 if self.CAMERA_FORMAT == 'Mono8' else np.uint16
+        arr = np.array(img.GetData(), dtype=dtype).reshape(img.GetHeight(), img.GetWidth())
         
         if self.record_video:
             self.timestamps.append(img.GetTimeStamp())
@@ -281,7 +331,8 @@ class SpinnakerCamera:
             self.frame_count += 1
 
         if self.gpu_enabled:
-            arr = cp.array(arr, dtype=cp.uint8)
+            dtype = cp.uint8 if self.CAMERA_FORMAT == 'Mono8' else cp.uint16
+            arr = cp.array(arr, dtype=dtype)
         
         if get_chunk:
             return arr, img.GetChunkData()

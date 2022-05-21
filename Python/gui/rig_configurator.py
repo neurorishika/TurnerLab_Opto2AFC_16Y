@@ -119,30 +119,102 @@ class MainWindow(QtWidgets.QMainWindow):
         self.max_frame_rate.setValidator(QtGui.QIntValidator(1,200))
         layout.addWidget(self.max_frame_rate, 8, 3)
 
+        # add a textbox to set the camera gain in dB
+        layout.addWidget(QtWidgets.QLabel('Gain (dB)'), 9, 0)
+        self.gain = QtWidgets.QLineEdit()
+        self.gain.setText('0')
+        self.gain.setValidator(QtGui.QIntValidator(0,20))
+        layout.addWidget(self.gain, 9, 1)
 
+        # add a textbox to set the camera exposure time in us
+        layout.addWidget(QtWidgets.QLabel('Exposure Time (us)'), 9, 2)
+        max_exposure_time = int(1/int(self.max_frame_rate.text())*1e6)
+        self.exposure_time = QtWidgets.QLineEdit()
+        self.exposure_time.setText('{}'.format(max_exposure_time))
+        self.exposure_time.setValidator(QtGui.QIntValidator(1,max_exposure_time))
+        layout.addWidget(self.exposure_time, 9, 3)
 
-        # # add a text box to get camera index
-        # layout.addWidget(QtWidgets.QLabel('Camera Index'), 7, 0)
-        # self.camera_index = QtWidgets.QLineEdit()
-        # self.camera_index.setText('0')
-        # self.camera_index.setValidator(QtGui.QIntValidator(0, 100))
-        # layout.addWidget(self.camera_index, 7, 1, 1, 2)
+        # add a textbox to set the camera index
+        layout.addWidget(QtWidgets.QLabel('Camera Index'), 10, 0)
+        self.camera_index = QtWidgets.QLineEdit()
+        self.camera_index.setText('0')
+        self.camera_index.setValidator(QtGui.QIntValidator(0,100))
+        layout.addWidget(self.camera_index, 10, 1)
 
-        # # add a text box to get camera exposure time in ms
-        # layout.addWidget(QtWidgets.QLabel('Camera Exposure Time (ms)'), 8, 0)
-        # self.camera_exposure_time = QtWidgets.QLineEdit()
-        # self.camera_exposure_time.setText('6000')
-        # self.camera_exposure_time.setValidator(QtGui.QIntValidator(0, 100000))
-        # layout.addWidget(self.camera_exposure_time, 8, 1, 1, 2)
+        # add a text box to set time for background calculation
+        layout.addWidget(QtWidgets.QLabel('Background Calculation Time (s)'), 10, 2)
+        self.background_calculation_time = QtWidgets.QLineEdit()
+        self.background_calculation_time.setText('30')
+        self.background_calculation_time.setValidator(QtGui.QIntValidator(1,120))
+        layout.addWidget(self.background_calculation_time, 10, 3)
 
-        # # add a text box to get camera gain in dB
-        # layout.addWidget(QtWidgets.QLabel('Camera Gain (dB)'), 9, 0)
-        # self.camera_gain = QtWidgets.QLineEdit()
-        # self.camera_gain.setText('0')
-        # self.camera_gain.setValidator(QtGui.QIntValidator(0, 100))
-        # layout.addWidget(self.camera_gain, 9, 1, 1, 2)
+        # add a text box to set the opening radius
+        layout.addWidget(QtWidgets.QLabel('Opening Radius (pixels)'), 11, 0)
+        self.opening_radius = QtWidgets.QLineEdit()
+        self.opening_radius.setText('2')
+        self.opening_radius.setValidator(QtGui.QIntValidator(1,15))
+        layout.addWidget(self.opening_radius, 11, 1)
 
+        # add a text box to set the binarisation threshold
+        layout.addWidget(QtWidgets.QLabel('Binarisation Threshold'), 11, 2)
+        self.binarisation_threshold = QtWidgets.QLineEdit()
+        self.binarisation_threshold.setText('15')
+        self.binarisation_threshold.setValidator(QtGui.QIntValidator(1,255))
+        layout.addWidget(self.binarisation_threshold, 11, 3)
 
+        # add a checkbox to record video and a text box to set the video folder and a browse button
+        self.record_video_checkbox = QtWidgets.QCheckBox('Record Video')
+        layout.addWidget(self.record_video_checkbox, 12, 0)
+        self.video_folder = QtWidgets.QLineEdit()
+        self.video_folder.setText(self.experiment_directory.text()+'\\video\\')
+        self.video_folder.setReadOnly(True)
+        self.video_folder.setEnabled(False)
+        self.browse_video_folder_button = QtWidgets.QPushButton('Browse')
+        self.browse_video_folder_button.setEnabled(False)
+        layout.addWidget(self.video_folder, 12, 1, 1, 2)
+        layout.addWidget(self.browse_video_folder_button, 12, 3)
+
+        # add a checkbox to live stream video and a button to test the video stream
+        self.live_stream_checkbox = QtWidgets.QCheckBox('Live Stream')
+        layout.addWidget(self.live_stream_checkbox, 13, 0)
+        self.test_video_stream_button = QtWidgets.QPushButton('Test Video Stream')
+        layout.addWidget(self.test_video_stream_button, 13, 1, 1, 3)
+        
+        # Add a centre-aligned label at the top of the next row
+        layout.addWidget(QtWidgets.QLabel('MFC Configuration:'), 14, 0, 1, 4, QtCore.Qt.AlignCenter)
+
+        # add a sub-layout to hold the MFC configuration
+        self.mfc_configuration_layout = QtWidgets.QGridLayout()
+
+        # add a label to set the MFC Device ID
+        self.mfc_device_id_label = QtWidgets.QLabel('Device IDs:')
+        self.mfc_configuration_layout.addWidget(self.mfc_device_id_label, 0, 0)
+
+        # add a series of dropboxes to set the MFC Device IDs
+        self.mfc_device_id_droboxes = []
+        for i in range(16):
+            self.mfc_device_id_droboxes.append(QtWidgets.QComboBox())
+            self.mfc_device_id_droboxes[i].addItems([chr(i) for i in range(ord('A'), ord('Z')+1)])
+            self.mfc_device_id_droboxes[i].setCurrentIndex(i)
+            self.mfc_device_id_droboxes[i].setFixedWidth(50)
+            self.mfc_configuration_layout.addWidget(self.mfc_device_id_droboxes[i], 0, i+1)
+        
+        # add the MFC configuration layout to the main layout
+        layout.addLayout(self.mfc_configuration_layout, 15, 0, 1, 4)
+
+        # add a text box to set the MFC flow rate
+        layout.addWidget(QtWidgets.QLabel('Flow Rate (ml/min)'), 16, 0)
+        self.mfc_flow_rate = QtWidgets.QLineEdit()
+        self.mfc_flow_rate.setText('300')
+        self.mfc_flow_rate.setValidator(QtGui.QIntValidator(1,1000))
+        layout.addWidget(self.mfc_flow_rate, 16, 1)
+
+        # add a button to test the MFC
+        self.test_mfc_button = QtWidgets.QPushButton('Test MFC')
+        layout.addWidget(self.test_mfc_button, 16, 2, 1, 2)
+
+        # add a centre-aligned label at the top of the next row
+        layout.addWidget(QtWidgets.QLabel('Valve Control Configuration:'), 17, 0, 1, 4, QtCore.Qt.AlignCenter)
 
         # create the main widget
         self.main_widget = QtWidgets.QWidget()

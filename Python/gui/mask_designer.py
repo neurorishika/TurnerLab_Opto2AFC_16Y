@@ -37,6 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
+        # set up the main layout
         layout = QtWidgets.QGridLayout()
         
         # Add button to get background image
@@ -129,6 +130,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def get_pointer_position(self, event):
         """
         Get pixel coordinates of the mouse pointer.
+
+        Variables:
+            event: The mouse event. (QMouseEvent)
         """
         # get the position of the click
         x = event.x()
@@ -181,6 +185,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def eventFilter(self, source, event):
         """
         Event filter for the image label.
+
+        Variables:
+            source: The source of the event. (QObject)
+            event: The event. (QEvent)
         """
         
         # check if the object is the image label with a pixmap and if the event is a left mouse click and if the labelling has started
@@ -195,8 +203,9 @@ class MainWindow(QtWidgets.QMainWindow):
             if len(self.labelled_points) == int(self.numYArenas.text())*6:
                 self.instructionsLabel.setText('Processing and Saving...')
                 self.create_mask_from_points()
-                self.plot_masks()
-                self.save_mask()
+                self.plot_masks_and_verify()
+                if self.mask_correct:
+                    self.save_mask()
                 self.instructionsLabel.setText('Done!')
                 self.started_labelling = False
                 self.getBackgroundImageButton.setEnabled(True)
@@ -226,6 +235,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def create_mask_from_polygon(self, polygon):
         """
         Create a mask from a polygon using numpy and matplotlib.
+
+        Variables:
+            polygon: The polygon to create the mask from. (list)
         """
         # get the size of the image
         width = self.image.width()
@@ -253,19 +265,27 @@ class MainWindow(QtWidgets.QMainWindow):
     def create_mask_from_keypoints(self, keypoints):
         """
         Create mask from the keypoints of each Y-Arena.
+
+        Variables:
+            keypoints: The keypoints of each Y-Arena. (list)
         """
+        # convert the keypoints to a array
         keypoints = np.array(keypoints)
         
+        # find the arena center
         arena_center = np.mean(keypoints[:3], axis=0)
 
+        # find the arena arm widths
         arm1_width = np.linalg.norm(keypoints[2] - keypoints[0])
         arm2_width = np.linalg.norm(keypoints[0] - keypoints[1])
         arm3_width = np.linalg.norm(keypoints[1] - keypoints[2])
 
+        # find the arena arm angles    
         arm1_slope = np.arctan2(keypoints[2][1] - keypoints[0][1], keypoints[2][0] - keypoints[0][0])
         arm2_slope = np.arctan2(keypoints[0][1] - keypoints[1][1], keypoints[0][0] - keypoints[1][0])
         arm3_slope = np.arctan2(keypoints[1][1] - keypoints[2][1], keypoints[1][0] - keypoints[2][0])
 
+        # find the positions of the arena arms
         arm1_end_1 = keypoints[3] - np.array([arm1_width/2 * np.cos(arm1_slope), arm1_width/2 * np.sin(arm1_slope)])
         arm1_end_2 = keypoints[3] + np.array([arm1_width/2 * np.cos(arm1_slope), arm1_width/2 * np.sin(arm1_slope)])
         arm2_end_1 = keypoints[4] - np.array([arm2_width/2 * np.cos(arm2_slope), arm2_width/2 * np.sin(arm2_slope)])
@@ -273,6 +293,7 @@ class MainWindow(QtWidgets.QMainWindow):
         arm3_end_1 = keypoints[5] - np.array([arm3_width/2 * np.cos(arm3_slope), arm3_width/2 * np.sin(arm3_slope)])
         arm3_end_2 = keypoints[5] + np.array([arm3_width/2 * np.cos(arm3_slope), arm3_width/2 * np.sin(arm3_slope)])
 
+        # find the edges of the reward zones
         reward_distance = float(self.choiceBoundaryDistance.text())
         arm1_reward_edge_1 = (1 - reward_distance) * keypoints[2] + reward_distance * arm1_end_2
         arm1_reward_edge_2 = (1 - reward_distance) * keypoints[0] + reward_distance * arm1_end_1
@@ -281,14 +302,17 @@ class MainWindow(QtWidgets.QMainWindow):
         arm3_reward_edge_1 = (1 - reward_distance) * keypoints[1] + reward_distance * arm3_end_2
         arm3_reward_edge_2 = (1 - reward_distance) * keypoints[2] + reward_distance * arm3_end_1
 
+        # define the boundaries of the arms of the arena
         arm1_points = np.array([keypoints[2],arena_center,keypoints[0],arm1_end_1,arm1_end_2])
         arm2_points = np.array([keypoints[0],arena_center,keypoints[1],arm2_end_1,arm2_end_2])
         arm3_points = np.array([keypoints[1],arena_center,keypoints[2],arm3_end_1,arm3_end_2])
 
+        # define the boundaries of the reward zones of the arena
         arm1_reward_points = np.array([arm1_reward_edge_1,arm1_reward_edge_2,arm1_end_1,arm1_end_2])
         arm2_reward_points = np.array([arm2_reward_edge_1,arm2_reward_edge_2,arm2_end_1,arm2_end_2])
         arm3_reward_points = np.array([arm3_reward_edge_1,arm3_reward_edge_2,arm3_end_1,arm3_end_2])
 
+        # create the masks for the arms of the arena
         arm_polygons = [arm1_points, arm2_points, arm3_points]
         arm_reward_polygons = [arm1_reward_points, arm2_reward_points, arm3_reward_points]
         arm_masks = [self.create_mask_from_polygon(poly) for poly in arm_polygons]
@@ -302,11 +326,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.arm_masks = []
         self.arm_reward_masks = []
         for i in range(len(self.labelled_points)//6):
+            # get the points of the Y-Arena and create the mask
             arm, reward = self.create_mask_from_keypoints(self.labelled_points[i*6:(i+1)*6])
             self.arm_masks+=arm
             self.arm_reward_masks+=reward
 
-    def plot_masks(self):
+    def plot_masks_and_verify(self):
         """
         Plot the masks.
         """
@@ -321,6 +346,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # plot the image
         plt.imshow(image, cmap='gray')
         plt.show()
+
+        # send an dialog to ask if the mask is correct
+        reply = QtWidgets.QMessageBox.question(self, 'Verify Mask', "Is the mask correct?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.mask_correct = True
+        else:
+            self.mask_correct = False
 
     def save_mask(self):
         """
