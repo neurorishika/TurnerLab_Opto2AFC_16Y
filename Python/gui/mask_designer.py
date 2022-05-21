@@ -1,9 +1,39 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
 import numpy as np
+
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
 
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 class MainWindow(QtWidgets.QMainWindow):
+    """
+    A class for the main window of the Mask Designer Application.
+
+    Variables:
+        image: The image to be labelled. (QPixmap)
+        imageLabel: The label for the image. (QLabel)
+        loaded_image: Whether or not an image has been loaded. (bool)
+        started_labelling: Whether or not labelling has started. (bool)
+        labelled_points: The points that have been labelled. (list)
+        instructionsLabel: The label for the instructions. (QLabel)
+        getBackgroundImageButton: The button to get the background image. (QPushButton)
+        numYArenas: Edit Text for the number of Y-Arenas in the image. (QLineEdit)
+        choiceBoundaryDistance: Edit Text for the distance between the choice boundary and the Y-Arena centre. (QLineEdit)
+        startButton: The button to start labelling. (QPushButton)
+
+    Methods:
+        get_image: Get the image from the user and display it.
+        start_labelling: Start labelling the Y-Arenas in the image.
+        eventFilter: Mouse Click Event filter for the image label.
+        get_pointer_position: Get the position of the mouse pointer in the image.
+        draw_and_update_points: Draw the labelled points and update the image.
+        create_mask_from_polygon: Create a mask from any polygon path.
+        create_mask_from_keypoints: Create a mask from the keypoints for a single Y-Arena.
+        create_mask_from_points: Create a mask from all the labelled points.
+        plot_mask: Plot the mask.
+        save_mask: Save the mask.
+        show_tips: Show the tips for labelling.
+    """
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
@@ -48,10 +78,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.instructionsLabel = QtWidgets.QLabel('Load an image and click "Start Labelling" to begin labelling.')
         layout.addWidget(self.instructionsLabel, 2, 0, 1, 4)
 
+        # Add a button to show the tutorial for labelling
+        self.showTutorialButton = QtWidgets.QPushButton('Show Tutorial')
+        self.showTutorialButton.clicked.connect(self.show_tutorial)
+        layout.addWidget(self.showTutorialButton, 2, 4, 1, 2)
+
+        # Create the main widget
         w = QtWidgets.QWidget()
         w.setLayout(layout)
+
+        # Set the central widget
         self.setCentralWidget(w)
 
+        # Set the window title
         self.setWindowTitle('Y-Arena Mask Designer')
         self.show()
     
@@ -296,7 +335,29 @@ class MainWindow(QtWidgets.QMainWindow):
             # show error message
             QtWidgets.QMessageBox.warning(self, 'Error', 'Please select a file to save the mask.')
             self.save_mask()
+    
+    def show_tutorial(self):
+        """
+        Show the tutorial in a new dialog.
+        """
+        # create a new dialog
+        dialog = QtWidgets.QDialog()
+        dialog.setWindowTitle('Tutorial')
 
+        # draw an image in the dialog
+        tutorial_image = QtGui.QPixmap('tutorial.png')
+        image_label = QtWidgets.QLabel()
+        image_label.setPixmap(tutorial_image)
+        image_label.setAlignment(QtCore.Qt.AlignCenter)
+
+        # add the image to the dialog
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(image_label)
+        dialog.setLayout(layout)
+
+        # show the dialog
+        dialog.show()
+        pass
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication([])

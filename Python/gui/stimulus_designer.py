@@ -48,10 +48,12 @@ class MainWindow(QtWidgets.QMainWindow):
     """
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-
+        
+        # Create the grapher
         self.graph = MplCanvas(self, width=5, height=2, dpi=100)
         self.graph.fig.tight_layout()
 
+        # Create the main layout
         layout = QtWidgets.QGridLayout()
         
         # add the matplotlib canvas to the layout
@@ -157,7 +159,6 @@ class MainWindow(QtWidgets.QMainWindow):
         pulse_repeat = int(self.pulse_repeat.text())
         pulse_deadtime = int(self.pulse_deadtime.text())
         intensity = int(self.intensity.text())
-
         wave_unit = np.concatenate((intensity*np.ones(pulse_width), np.zeros(pulse_period - pulse_width)))
         wave_cycle = np.concatenate((np.tile(wave_unit, pulse_count), np.zeros(pulse_deadtime)))
         wave_repeat = np.tile(wave_cycle, pulse_repeat)
@@ -173,13 +174,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graph.axes.clear()
         if color == 'RED':
             self.graph.axes.plot(wave_train, 'r')
-            self.stim_color = '#ff0000'
+            self.stim_color = 'R'
         elif color == 'GREEN':
             self.graph.axes.plot(wave_train, 'g')
-            self.stim_color = '#00ff00'
+            self.stim_color = 'G'
         elif color == 'BLUE':
             self.graph.axes.plot(wave_train, 'b')
-            self.stim_color = '#0000ff'
+            self.stim_color = 'B'
         elif color == 'CUSTOM':
             self.graph.axes.plot(wave_train, self.custom_color.text())
             self.stim_color = self.custom_color.text()
@@ -203,11 +204,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pulse_delay.setText(str(data['pulse_delay']))
             self.pulse_repeat.setText(str(data['pulse_repeat']))
             self.pulse_deadtime.setText(str(data['pulse_deadtime']))
-            if data['color'] == '#ff0000':
+            if data['color'] == 'R':
                 self.color.setCurrentIndex(0)
-            elif data['color'] == '#00ff00':
+            elif data['color'] == 'G':
                 self.color.setCurrentIndex(1)
-            elif data['color'] == '#0000ff':
+            elif data['color'] == 'B':
                 self.color.setCurrentIndex(2)
             else:
                 self.color.setCurrentIndex(3)

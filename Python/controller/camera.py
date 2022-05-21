@@ -56,7 +56,6 @@ class SpinnakerCamera:
     Variables:
         cam : Camera object (PySpin.Camera)
         running : True if acquiring images (bool)
-        lock : If True, setting new attributes after initialization results in an error to prevent misspelled attributes. (bool)
         initialized : True if the camera has been initialized (bool)
     
     Methods:
@@ -71,7 +70,6 @@ class SpinnakerCamera:
     def __init__(
                 self, 
                 index=0, 
-                lock=True, 
                 gpu_enabled=True, 
                 EXPOSURE_TIME=12000, 
                 GAIN=10, 
@@ -87,7 +85,6 @@ class SpinnakerCamera:
 
         Variables:
             index : camera index (int)
-            lock : If True, setting new attributes after initialization results in an error to prevent misspelled attributes. (bool)
             gpu_enabled : If True, use GPU acceleration. (bool)
             EXPOSURE_TIME : Exposure time in microseconds. (int)
             GAIN : Gain in dB. (int)
@@ -98,7 +95,6 @@ class SpinnakerCamera:
             show_video : If True, show the video. (bool)
             show_every_n : If not None, show every nth frame. (int)
         """
-        self.lock = lock
         self.initialized = False
         self.gpu_enabled = gpu_enabled
 
