@@ -25,9 +25,10 @@ class MplCanvas(FigureCanvas):
         self.fig: matplotlib figure object
         self.axes: matplotlib axes object
     """
-    def __init__(self, parent=None, width=5, height=4, dpi=256):
+    def __init__(self, parent=None, width=5, height=4, dpi=256,interval=1000):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
+        self.parent = parent
 
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
@@ -36,6 +37,19 @@ class MplCanvas(FigureCanvas):
                 QtWidgets.QSizePolicy.Expanding,
                 QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
+
+        # add a timer to update the plot
+        self.timer = self.new_timer(interval,[(self.update_image,(),{})])
+        self.timer.start()
+    
+    def update_image(self):
+        """
+        Update the plot with new data
+        """
+        # get image data from queue in parent
+        image = self.parent.image
+        self.axes.imshow(image, cmap='gray',interpolation='none')
+        self.draw()
 
 class CameraViewer(QtWidgets.QMainWindow):
     """
@@ -54,12 +68,22 @@ class CameraViewer(QtWidgets.QMainWindow):
         self.canvas = MplCanvas(self, width=5, height=4, dpi=256)
         layout.addWidget(self.canvas, 0, 0)
 
+        self.image = np.zeros((1280,1024))
+
+        # create the main widget
+        self.main_widget = QtWidgets.QWidget()
+        self.main_widget.setLayout(layout)
+        self.setCentralWidget(self.main_widget)
+
+        # show the window
+        self.show()
+
     def update_image(self, image):
         """
         Update the image in the matplotlib window
         """
-        self.canvas.axes.imshow(image)
-        self.canvas.draw()
+        self.image = image
+        print('update_image')
 
 class CameraError(Exception):
     """
@@ -99,6 +123,14 @@ def video_player(play_queue, camera_viewer):
         else:
             camera_viewer.update_image(image)
             play_queue.task_done()
+
+def video_viewer(player):
+    """
+    Show a video viewer.
+    """
+    play_app = QtWidgets.QApplication([])
+    player.show()
+    play_app.exec_()
 
 class SpinnakerCamera:
     """
@@ -226,9 +258,12 @@ class SpinnakerCamera:
         
         if self.show_video:
             self.play_queue = queue.Queue()
-            self.play_app = QtWidgets.QApplication([])
-            self.player = CameraViewer()
             self.frame_count = 0
+            self.player = CameraViewer()
+            self.player.show()
+            self.viewer_thread = threading.Thread(target=self.video_viewer, args=(self.player,))
+            self.viewer_thread.start()
+
             self.play_thread = threading.Thread(target=video_player, args=(self.play_queue, self.player))
         
         self.initialized = True
@@ -265,8 +300,6 @@ class SpinnakerCamera:
                 self.save_thread.start()
             if self.show_video:
                 self.play_thread.start()
-                self.player.show()
-                self.play_app.exec_()
             self.running = True
             self.time_of_last_frame = time.time()
 
@@ -326,7 +359,7 @@ class SpinnakerCamera:
             self.save_queue.put(arr)
         
         if self.show_video:
-            if self.frame_count % self.show_every_n_frames == 0:
+            if self.frame_count % self.show_every_n == 0:
                 self.play_queue.put(arr)
             self.frame_count += 1
 
@@ -338,3 +371,5 @@ class SpinnakerCamera:
             return arr, img.GetChunkData()
         else:
             return arr
+
+

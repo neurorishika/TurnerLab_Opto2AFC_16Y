@@ -1,32 +1,43 @@
-import rclpy
-from rclpy.node import Node
+from controller.odor import OdorValveController
 import time
 
-from y_arena_interfaces.msg import ArenaOdors
+with OdorValveController(minimum_delay=0.01) as odor:
+    for i in range(16):
+        odor.publish(i, [0, 0, 0])
 
-rclpy.init()
-node = rclpy.create_node('arena_odors_publisher')
-publisher = node.create_publisher(ArenaOdors, 'arena_odors', 10)
 
-msg = ArenaOdors()
-msg.arena = 0
-msg.odors = [0,1,2]
-last_time = time.time()
+# import rclpy
+# from rclpy.node import Node
+# import time
 
-while True:
-    try:
-        current_time=time.time()
-        publisher.publish(msg)
-        rclpy.spin_once(node)
-        msg.arena = msg.arena + 1
-        msg.odors = [msg.odors[1],msg.odors[2],msg.odors[0]]
-        if msg.arena > 16:
-            msg.arena = 0
-        print(msg.arena,msg.odors,current_time-last_time)
-        last_time = current_time
-    except KeyboardInterrupt:
-        break
+# from y_arena_interfaces.msg import ArenaOdors
 
-node.destroy_node()
-rclpy.shutdown()
+# rclpy.init()
+# node = rclpy.create_node('arena_odors_publisher')
+# publisher = node.create_publisher(ArenaOdors, 'arena_odors', 10)
+
+# odors = [0,1,2]
+# arena = 0
+
+# msg = ArenaOdors()
+# last_time = time.time()
+
+# while True:
+#     try:
+#         current_time=time.time()
+#         publisher.publish(msg)
+#         msg.arena = arena
+#         msg.odors = odors
+#         arena = arena + 1
+#         odors = [odors[2],odors[0],odors[1]]
+#         if arena > 15:
+#             arena = 0
+#         print(msg.arena,msg.odors,current_time-last_time)
+#         time.sleep(1)
+#         last_time = current_time
+#     except KeyboardInterrupt:
+#         break
+
+# node.destroy_node()
+# rclpy.shutdown()
 

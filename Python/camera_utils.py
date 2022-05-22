@@ -2,7 +2,7 @@ import numpy as np
 import skimage.morphology as skm
 import cupy as cp
 import cucim.skimage.morphology as cskm
-from camera_controller import SpinnakerCamera
+from controller.camera import SpinnakerCamera
 import time
 
 def record_background(time_to_record, camera_id=0, gpu_enabled=False):
