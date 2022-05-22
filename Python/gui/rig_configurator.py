@@ -216,6 +216,26 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a centre-aligned label at the top of the next row
         layout.addWidget(QtWidgets.QLabel('Valve Control Configuration:'), 17, 0, 1, 4, QtCore.Qt.AlignCenter)
 
+        # add a text box to get ROS environment variable and a browse button
+        layout.addWidget(QtWidgets.QLabel('ROS Environment Batch File'), 18, 0)
+        self.ros_environment_batch_file = QtWidgets.QLineEdit()
+        self.ros_environment_batch_file.setText('C:\\yarena_ws\\install\\setup.bat')
+        self.ros_environment_batch_file.setReadOnly(True)
+        self.browse_ros_environment_batch_file_button = QtWidgets.QPushButton('Browse')
+        layout.addWidget(self.ros_environment_batch_file, 18, 1, 1, 2)
+        layout.addWidget(self.browse_ros_environment_batch_file_button, 18, 3)
+
+        # add a button to set minimum message delay
+        layout.addWidget(QtWidgets.QLabel('Minimum Message Delay (ms)'), 19, 0)
+        self.minimum_message_delay = QtWidgets.QLineEdit()
+        self.minimum_message_delay.setText('1')
+        self.minimum_message_delay.setValidator(QtGui.QIntValidator(1,10000))
+        layout.addWidget(self.minimum_message_delay, 19, 1)
+
+        # add a button to test the odor valves
+        self.test_valves_button = QtWidgets.QPushButton('Test Odor Valves')
+        layout.addWidget(self.test_valves_button, 19, 2, 1, 2)
+
         # create the main widget
         self.main_widget = QtWidgets.QWidget()
         self.main_widget.setLayout(layout)
