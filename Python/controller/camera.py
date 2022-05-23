@@ -17,73 +17,73 @@ import time
 
 _SYSTEM = None
 
-class MplCanvas(FigureCanvas):
-    """
-    Class for plotting the the 1
+# class MplCanvas(FigureCanvas):
+#     """
+#     Class for plotting the the 1
     
-    variables:
-        self.fig: matplotlib figure object
-        self.axes: matplotlib axes object
-    """
-    def __init__(self, parent=None, width=5, height=4, dpi=256,interval=1000):
-        self.fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = self.fig.add_subplot(111)
-        self.parent = parent
+#     variables:
+#         self.fig: matplotlib figure object
+#         self.axes: matplotlib axes object
+#     """
+#     def __init__(self, parent=None, width=5, height=4, dpi=256,interval=1000):
+#         self.fig = Figure(figsize=(width, height), dpi=dpi)
+#         self.axes = self.fig.add_subplot(111)
+#         self.parent = parent
 
-        FigureCanvas.__init__(self, self.fig)
-        self.setParent(parent)
+#         FigureCanvas.__init__(self, self.fig)
+#         self.setParent(parent)
 
-        FigureCanvas.setSizePolicy(self,
-                QtWidgets.QSizePolicy.Expanding,
-                QtWidgets.QSizePolicy.Expanding)
-        FigureCanvas.updateGeometry(self)
+#         FigureCanvas.setSizePolicy(self,
+#                 QtWidgets.QSizePolicy.Expanding,
+#                 QtWidgets.QSizePolicy.Expanding)
+#         FigureCanvas.updateGeometry(self)
 
-        # add a timer to update the plot
-        self.timer = self.new_timer(interval,[(self.update_image,(),{})])
-        self.timer.start()
+#         # add a timer to update the plot
+#         self.timer = self.new_timer(interval,[(self.update_image,(),{})])
+#         self.timer.start()
     
-    def update_image(self):
-        """
-        Update the plot with new data
-        """
-        # get image data from queue in parent
-        image = self.parent.image
-        self.axes.imshow(image, cmap='gray',interpolation='none')
-        self.draw()
+#     def update_image(self):
+#         """
+#         Update the plot with new data
+#         """
+#         # get image data from queue in parent
+#         image = self.parent.image
+#         self.axes.imshow(image, cmap='gray',interpolation='none')
+#         self.draw()
 
-class CameraViewer(QtWidgets.QMainWindow):
-    """
-    A class to show the camera image in a matplotlib window
-    """
-    def __init__(self, *args, **kwargs):
-        super(CameraViewer, self).__init__(*args, **kwargs)
+# class CameraViewer(QtWidgets.QMainWindow):
+#     """
+#     A class to show the camera image in a matplotlib window
+#     """
+#     def __init__(self, *args, **kwargs):
+#         super(CameraViewer, self).__init__(*args, **kwargs)
 
-        # set the window title
-        self.setWindowTitle('Camera Viewer')
+#         # set the window title
+#         self.setWindowTitle('Camera Viewer')
 
-        # create a the main layout
-        layout = QtWidgets.QGridLayout()
+#         # create a the main layout
+#         layout = QtWidgets.QGridLayout()
 
-        # add the matplotlib canvas to the main layout
-        self.canvas = MplCanvas(self, width=5, height=4, dpi=256)
-        layout.addWidget(self.canvas, 0, 0)
+#         # add the matplotlib canvas to the main layout
+#         self.canvas = MplCanvas(self, width=5, height=4, dpi=256)
+#         layout.addWidget(self.canvas, 0, 0)
 
-        self.image = np.zeros((1280,1024))
+#         self.image = np.zeros((1280,1024))
 
-        # create the main widget
-        self.main_widget = QtWidgets.QWidget()
-        self.main_widget.setLayout(layout)
-        self.setCentralWidget(self.main_widget)
+#         # create the main widget
+#         self.main_widget = QtWidgets.QWidget()
+#         self.main_widget.setLayout(layout)
+#         self.setCentralWidget(self.main_widget)
 
-        # show the window
-        self.show()
+#         # show the window
+#         self.show()
 
-    def update_image(self, image):
-        """
-        Update the image in the matplotlib window
-        """
-        self.image = image
-        print('update_image')
+#     def update_image(self, image):
+#         """
+#         Update the image in the matplotlib window
+#         """
+#         self.image = image
+#         print('update_image')
 
 class CameraError(Exception):
     """
@@ -112,7 +112,7 @@ def video_writer(save_queue, writer):
             writer.writeFrame(image)
             save_queue.task_done()
 
-def video_player(play_queue, camera_viewer):
+def video_player(play_queue, temp_folder):
     """
     Plot imaged from queue.
     """
@@ -121,16 +121,9 @@ def video_player(play_queue, camera_viewer):
         if image is None:
             break
         else:
-            camera_viewer.update_image(image)
+            # save image to disk
+            np.save(temp_folder + 'image.npy', image)
             play_queue.task_done()
-
-def video_viewer(player):
-    """
-    Show a video viewer.
-    """
-    play_app = QtWidgets.QApplication([])
-    player.show()
-    play_app.exec_()
 
 class SpinnakerCamera:
     """
@@ -155,7 +148,7 @@ class SpinnakerCamera:
                 index=0, 
                 gpu_enabled=True,
                 CAMERA_FORMAT='Mono8',
-                EXPOSURE_TIME=12000, 
+                EXPOSURE_TIME=15000, 
                 GAIN=10, 
                 GAMMA=1, 
                 MAX_FRAME_RATE=100,
@@ -259,12 +252,7 @@ class SpinnakerCamera:
         if self.show_video:
             self.play_queue = queue.Queue()
             self.frame_count = 0
-            self.player = CameraViewer()
-            self.player.show()
-            self.viewer_thread = threading.Thread(target=self.video_viewer, args=(self.player,))
-            self.viewer_thread.start()
-
-            self.play_thread = threading.Thread(target=video_player, args=(self.play_queue, self.player))
+            self.play_thread = threading.Thread(target=video_player, args=(self.play_queue, 'temp/'))
         
         self.initialized = True
 
