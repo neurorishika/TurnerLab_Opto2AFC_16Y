@@ -32,8 +32,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a text box for entering the fly genotype
         layout.addWidget(QtWidgets.QLabel('Fly Genotype'), 2, 0)
         self.fly_genotype = QtWidgets.QLineEdit()
-        self.fly_genotype.setText('Wild Type')
-        layout.addWidget(self.fly_genotype, 2, 1, 1, 2)
+        self.fly_genotype.setText('+/+')
+        layout.addWidget(self.fly_genotype, 2, 1)
+
+        # add a button to copy the fly genotype to all the arenas
+        self.copy_genotype_button = QtWidgets.QPushButton('Copy to all Arenas')
+        layout.addWidget(self.copy_genotype_button, 2, 2)
+        self.copy_genotype_button.clicked.connect(self.copy_genotype)
 
         # add a centre-aligned label at the top of the grid
         layout.addWidget(QtWidgets.QLabel('Assign Experiment for each Y-Arena below:'), 3, 0, 1, 3, QtCore.Qt.AlignCenter)
@@ -52,9 +57,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # define toggle state for all arenas
         self.toggle_state = False   
 
-        # add a checkbox and a dropbox side by side in each cell of the grid
+        # add a checkbox and a dropbox side by side in each cell of the grid and a genotype box
         self.checkboxes = []
         self.dropboxes = []
+        self.textboxes = []
         for i in range(4):
             for j in range(4):
                 # add a label for the fly identifier
@@ -64,15 +70,25 @@ class MainWindow(QtWidgets.QMainWindow):
                 checkbox = QtWidgets.QCheckBox()
                 checkbox.stateChanged.connect(lambda state, index=i*4+j: self.toggle_checkbox(index))
                 
+                # add a dropbox with a list of experiments
                 dropbox = QtWidgets.QComboBox()
                 dropbox.addItems(self.experiments)
                 dropbox.setCurrentIndex(0)
                 dropbox.setEnabled(False)
+                
+                # add a textbox for the genotype
+                textbox = QtWidgets.QLineEdit()
+                textbox.setText('+/+')
+                textbox.setEnabled(False)
+                
                 self.checkboxes.append(checkbox)
                 self.dropboxes.append(dropbox)
-                dropbox_layout.addWidget(label, i, 3*j)
-                dropbox_layout.addWidget(checkbox, i, 3*j+1)
-                dropbox_layout.addWidget(dropbox, i, 3*j+2)
+                self.textboxes.append(textbox)
+
+                dropbox_layout.addWidget(label, 2*i, 3*j)
+                dropbox_layout.addWidget(checkbox, 2*i, 3*j+1)
+                dropbox_layout.addWidget(dropbox, 2*i, 3*j+2)
+                dropbox_layout.addWidget(textbox, 2*i+1, 3*j, 1, 3)
 
         # add the dropbox layout to the grid
         layout.addLayout(dropbox_layout, 4, 0, 1, 3)
@@ -133,8 +149,10 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if self.checkboxes[index].isChecked():
             self.dropboxes[index].setEnabled(True)
+            self.textboxes[index].setEnabled(True)
         else:
             self.dropboxes[index].setEnabled(False)
+            self.textboxes[index].setEnabled(False)
     
     def toggle_all_arenas(self):
         """
@@ -144,10 +162,19 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.toggle_state:
                 self.checkboxes[i].setChecked(False)
                 self.dropboxes[i].setEnabled(False)
+                self.textboxes[i].setEnabled(False)
             else:
                 self.checkboxes[i].setChecked(True)
                 self.dropboxes[i].setEnabled(True)
+                self.textboxes[i].setEnabled(True)
         self.toggle_state = not self.toggle_state
+
+    def copy_genotype(self):
+        """
+        A method to copy the genotype to all the arenas.
+        """
+        for i in range(16):
+            self.textboxes[i].setText(self.fly_genotype.text())
 
     def verify_start_experiment(self):
         """

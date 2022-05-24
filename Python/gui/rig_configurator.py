@@ -1,6 +1,8 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-import os
+import json
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 
 class MainWindow(QtWidgets.QMainWindow):
     """
@@ -24,11 +26,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.experiment_directory.setText('')
         self.experiment_directory.setReadOnly(True)
         self.browse_button = QtWidgets.QPushButton('Browse')
-        self.show_directory_button = QtWidgets.QPushButton('Show Directory in Explorer')
         layout.addWidget(self.experiment_directory, 0, 1)
-        layout.addWidget(self.browse_button, 0, 2)
-        layout.addWidget(self.show_directory_button, 0, 3)
+        layout.addWidget(self.browse_button, 0, 2, 1, 2)
 
+        self.browse_button.clicked.connect(self.browse_experiment_directory)
 
         # add a text box for getting the mask file with a browse button and a show button
         layout.addWidget(QtWidgets.QLabel('Mask File'), 1, 0)
@@ -40,6 +41,9 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.mask_file, 1, 1)
         layout.addWidget(self.browse_mask_button, 1, 2)
         layout.addWidget(self.show_mask_button, 1, 3)
+
+        self.browse_mask_button.clicked.connect(self.browse_mask_file)
+        self.show_mask_button.clicked.connect(self.show_mask_file)
 
         # add a centre-aligned label at the top of the next row
         layout.addWidget(QtWidgets.QLabel('LED Array Configuration:'), 2, 0, 1, 4, QtCore.Qt.AlignCenter)
@@ -104,6 +108,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.browse_ffmpeg_button = QtWidgets.QPushButton('Browse')
         layout.addWidget(self.ffmpeg_path, 7, 1)
         layout.addWidget(self.browse_ffmpeg_button, 7, 2, 1, 2)
+
+        self.browse_ffmpeg_button.clicked.connect(self.browse_ffmpeg_path)
 
         # add a dropbox to set the camera pixel format
         layout.addWidget(QtWidgets.QLabel('Pixel Format'), 8, 0)
@@ -174,6 +180,8 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.video_folder, 12, 1, 1, 2)
         layout.addWidget(self.browse_video_folder_button, 12, 3)
 
+        self.browse_video_folder_button.clicked.connect(self.browse_video_folder)
+
         # add a checkbox to live stream video and a button to test the video stream
         self.live_stream_checkbox = QtWidgets.QCheckBox('Live Stream')
         layout.addWidget(self.live_stream_checkbox, 13, 0)
@@ -225,6 +233,8 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.ros_environment_batch_file, 18, 1, 1, 2)
         layout.addWidget(self.browse_ros_environment_batch_file_button, 18, 3)
 
+        self.browse_ros_environment_batch_file_button.clicked.connect(self.browse_ros_environment_batch_file)
+
         # add a button to set minimum message delay
         layout.addWidget(QtWidgets.QLabel('Minimum Message Delay (ms)'), 19, 0)
         self.minimum_message_delay = QtWidgets.QLineEdit()
@@ -236,6 +246,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.test_valves_button = QtWidgets.QPushButton('Test Odor Valves')
         layout.addWidget(self.test_valves_button, 19, 2, 1, 2)
 
+        # Add a button to enable the GPU processing
+        self.enable_gpu_processing_checkbox = QtWidgets.QCheckBox('Enable GPU Processing')
+        layout.addWidget(self.enable_gpu_processing_checkbox, 20, 0)
+
+        # Add a button to load and save the configuration
+        self.load_configuration_button = QtWidgets.QPushButton('Load Configuration')
+        layout.addWidget(self.load_configuration_button, 20, 1)
+        self.load_configuration_button.clicked.connect(self.load_configuration)
+
+        self.save_configuration_button = QtWidgets.QPushButton('Save Configuration')
+        layout.addWidget(self.save_configuration_button, 20, 2, 1, 2)
+        self.save_configuration_button.clicked.connect(self.save_configuration)
+
         # create the main widget
         self.main_widget = QtWidgets.QWidget()
         self.main_widget.setLayout(layout)
@@ -243,6 +266,203 @@ class MainWindow(QtWidgets.QMainWindow):
         
         # show the window
         self.show()
+
+    def load_configuration(self):
+        """
+        A function to load the configuration from a file
+        """
+        # get the file name
+        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Configuration File', '', '*.yarena')[0]
+        
+        if file_name == '':
+            return
+
+        # load the configuration as a json object
+        with open(file_name, 'r') as f:
+            configuration = json.load(f)
+        
+        # set the values of the widgets
+        # general
+        self.experiment_directory.setText(configuration['experiment_directory'])
+        self.mask_file.setText(configuration['mask_file'])
+        
+        # led
+        for i in range(4):
+            self.com_ports_dropboxes[i].setCurrentIndex(self.com_ports_dropboxes[i].findText(configuration['com_ports'][i]))
+            self.quadrant_ids_dropboxes[i].setCurrentIndex(self.quadrant_ids_dropboxes[i].findText(configuration['quadrant_ids'][i]))
+        self.ir_intensity.setText(str(configuration['ir_intensity']))
+        self.baud_rates_dropbox.setCurrentIndex(self.baud_rates_dropbox.findText(configuration['baud_rate']))
+
+        # camera
+        self.ffmpeg_path.setText(configuration['ffmpeg_path'])
+        self.pixel_formats_dropbox.setCurrentIndex(self.pixel_formats_dropbox.findText(configuration['pixel_format']))
+        self.max_frame_rate.setText(str(configuration['max_frame_rate']))
+        self.gain.setText(str(configuration['gain']))
+        self.exposure_time.setText(str(configuration['exposure_time']))
+        self.camera_index.setText(str(configuration['camera_index']))
+        self.background_calculation_time.setText(str(configuration['background_calculation_time']))
+        self.opening_radius.setText(str(configuration['opening_radius']))
+        self.binarisation_threshold.setText(str(configuration['binarisation_threshold']))
+        self.record_video_checkbox.setChecked(configuration['record_video'])
+        self.video_folder.setText(configuration['video_folder'])
+        self.live_stream_checkbox.setChecked(configuration['live_stream'])
+
+        # mfc
+        for i in range(16):
+            self.mfc_device_id_droboxes[i].setCurrentIndex(self.mfc_device_id_droboxes[i].findText(configuration['mfc_device_ids'][i]))    
+        self.mfc_flow_rate.setText(str(configuration['mfc_flow_rate']))
+
+        # valve control
+        self.ros_environment_batch_file.setText(configuration['ros_environment_batch_file'])
+        self.minimum_message_delay.setText(str(configuration['minimum_message_delay']))
+
+        # gpu processing
+        self.enable_gpu_processing_checkbox.setChecked(configuration['enable_gpu_processing'])
+    
+    def save_configuration(self):
+        """
+        A function to save the configuration to a file
+        """
+        # get the file name
+        file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Configuration File', '', '*.yarena')[0]
+
+        if file_name == '':
+            return
+        
+        # create the json object
+        configuration = {}
+        # general
+        configuration['experiment_directory'] = self.experiment_directory.text()
+        configuration['mask_file'] = self.mask_file.text()
+        # led
+        configuration['com_ports'] = []
+        configuration['quadrant_ids'] = []
+        for i in range(4):
+            configuration['com_ports'].append(self.com_ports_dropboxes[i].currentText())
+            configuration['quadrant_ids'].append(self.quadrant_ids_dropboxes[i].currentText())
+        configuration['ir_intensity'] = int(self.ir_intensity.text())
+        configuration['baud_rate'] = self.baud_rates_dropbox.currentText()
+        # camera
+        configuration['ffmpeg_path'] = self.ffmpeg_path.text()
+        configuration['pixel_format'] = self.pixel_formats_dropbox.currentText()
+        configuration['max_frame_rate'] = int(self.max_frame_rate.text())
+        configuration['gain'] = int(self.gain.text())
+        configuration['exposure_time'] = int(self.exposure_time.text())
+        configuration['camera_index'] = int(self.camera_index.text())
+        configuration['background_calculation_time'] = int(self.background_calculation_time.text())
+        configuration['opening_radius'] = int(self.opening_radius.text())
+        configuration['binarisation_threshold'] = int(self.binarisation_threshold.text())
+        configuration['record_video'] = self.record_video_checkbox.isChecked()
+        configuration['video_folder'] = self.video_folder.text()
+        configuration['live_stream'] = self.live_stream_checkbox.isChecked()
+        # mfc
+        configuration['mfc_device_ids'] = []
+        for i in range(16):
+            configuration['mfc_device_ids'].append(self.mfc_device_id_droboxes[i].currentText())
+        configuration['mfc_flow_rate'] = int(self.mfc_flow_rate.text())
+        # valve control
+        configuration['ros_environment_batch_file'] = self.ros_environment_batch_file.text()
+        configuration['minimum_message_delay'] = int(self.minimum_message_delay.text())
+        # gpu processing
+        configuration['enable_gpu_processing'] = self.enable_gpu_processing_checkbox.isChecked()
+
+        # save the configuration as a json object
+        with open(file_name, 'w') as f:
+            json.dump(configuration, f)
+        
+    def browse_experiment_directory(self):
+        """
+        A function to browse for the experiment directory
+        """
+        # get the directory
+        directory = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Experiment Directory')
+
+        if directory == '':
+            # show a warning
+            QtWidgets.QMessageBox.warning(self, 'Warning', 'No directory selected')
+            return
+
+        # set the directory
+        self.experiment_directory.setText(directory)
+
+    def browse_mask_file(self):
+        """
+        A function to browse for the mask file
+        """
+        # get the file name
+        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Mask File', '', '*.npy')[0]
+
+        if file_name == '':
+            # show an warning
+            QtWidgets.QMessageBox.warning(self, 'Warning', 'No file selected')
+            return
+
+        # set the file name
+        self.mask_file.setText(file_name)
+    
+    def show_mask_file(self):
+        """
+        A function to show the mask file
+        """
+        # get the file name
+        file_name = self.mask_file.text()
+
+        if file_name == '':
+            # show a warning
+            QtWidgets.QMessageBox.warning(self, 'Warning', 'No mask file selected')
+            return
+
+        # load the mask file
+        arm_mask,reward_mask,_ = np.load(file_name, allow_pickle=True)
+
+        # show the mask
+        plt.imshow(arm_mask.sum(axis=0)+reward_mask.sum(axis=0), cmap='gray')
+        plt.show()
+    
+    def browse_ffmpeg_path(self):
+        """
+        A function to browse for the ffmpeg path
+        """
+        # get the file name
+        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select FFMPEG Path', '', '*.exe')[0]
+
+        if file_name == '':
+            # show an warning
+            QtWidgets.QMessageBox.warning(self, 'Warning', 'No file selected')
+            return
+
+        # set the file name
+        self.ffmpeg_path.setText(file_name)
+    
+    def browse_video_folder(self):
+        """
+        A function to browse for the video folder
+        """
+        # get the directory
+        directory = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Video Folder')
+
+        if directory == '':
+            # show a warning
+            QtWidgets.QMessageBox.warning(self, 'Warning', 'No directory selected')
+            return
+
+        # set the directory
+        self.video_folder.setText(directory)
+    
+    def browse_ros_environment_batch_file(self):
+        """
+        A function to browse for the ROS environment batch file
+        """
+        # get the file name
+        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select ROS Environment Batch File', '', '*.bat')[0]
+
+        if file_name == '':
+            # show an warning
+            QtWidgets.QMessageBox.warning(self, 'Warning', 'No file selected')
+            return
+
+        # set the file name
+        self.ros_environment_batch_file.setText(file_name)
 
         
 if __name__ == '__main__':

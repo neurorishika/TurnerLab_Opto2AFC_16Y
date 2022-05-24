@@ -362,7 +362,7 @@ class MainWindow(QtWidgets.QMainWindow):
         file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Masks', '.', '*.npy')
         if file_name:
             # save the mask as a numpy array
-            np.save(file_name, [np.array(self.arm_masks, dtype=np.int), np.array(self.arm_reward_masks, dtype=np.int), np.array(self.labelled_points, dtype=np.int)])
+            np.save(file_name, np.array([np.array(self.arm_masks, dtype=np.int32), np.array(self.arm_reward_masks, dtype=np.int32), np.array(self.labelled_points, dtype=np.int32)],dtype=object), allow_pickle=True)
         else:
             # show error message
             QtWidgets.QMessageBox.warning(self, 'Error', 'Please select a file to save the mask.')

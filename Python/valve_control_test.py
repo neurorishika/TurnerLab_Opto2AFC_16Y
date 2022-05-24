@@ -1,7 +1,7 @@
 from controller.odor import OdorValveController
 import time
 
-with OdorValveController(minimum_delay=0.01) as odor:
+with OdorValveController(minimum_delay=0.001) as odor:
     for i in range(16):
         odor.publish(i, [0, 0, 0])
 
