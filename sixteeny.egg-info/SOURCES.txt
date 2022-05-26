@@ -1,0 +1,7 @@
+LICENSE
+README.md
+setup.py
+sixteeny.egg-info/PKG-INFO
+sixteeny.egg-info/SOURCES.txt
+sixteeny.egg-info/dependency_links.txt
+sixteeny.egg-info/top_level.txt
