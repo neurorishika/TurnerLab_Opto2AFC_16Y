@@ -53,7 +53,7 @@ class LEDController(object):
             run the LED stimulation
     """
 
-    def __init__(self,ports=['COM3', 'COM5', 'COM6', 'COM4'],baudrate=115200): 
+    def __init__(self,ports=['COM3', 'COM5', 'COM6', 'COM4'],baudrate=115200,arena_panel_ids=['0001','0010','1000','0100']): 
         """
         Initialize the LED controller class
         
@@ -65,22 +65,22 @@ class LEDController(object):
         self.ports = ports
         self.baudrate = baudrate
         self.arena_specs = {
-            0: {'conn': 0, 'quadrant': b'0001'},
-            1: {'conn': 0, 'quadrant': b'0010'},
-            2: {'conn': 0, 'quadrant': b'1000'},
-            3: {'conn': 0, 'quadrant': b'0100'},
-            4: {'conn': 1, 'quadrant': b'0001'},
-            5: {'conn': 1, 'quadrant': b'0010'},
-            6: {'conn': 1, 'quadrant': b'1000'},
-            7: {'conn': 1, 'quadrant': b'0100'},
-            8: {'conn': 2, 'quadrant': b'0001'},
-            9: {'conn': 2, 'quadrant': b'0010'},
-            10: {'conn': 2, 'quadrant': b'1000'},
-            11: {'conn': 2, 'quadrant': b'0100'},
-            12: {'conn': 3, 'quadrant': b'0001'},
-            13: {'conn': 3, 'quadrant': b'0010'},
-            14: {'conn': 3, 'quadrant': b'1000'},
-            15: {'conn': 3, 'quadrant': b'0100'}
+            0: {'conn': 0, 'quadrant': arena_panel_ids[0].encode()},
+            1: {'conn': 0, 'quadrant': arena_panel_ids[1].encode()},
+            2: {'conn': 0, 'quadrant': arena_panel_ids[2].encode()},
+            3: {'conn': 0, 'quadrant': arena_panel_ids[3].encode()},
+            4: {'conn': 1, 'quadrant': arena_panel_ids[0].encode()},
+            5: {'conn': 1, 'quadrant': arena_panel_ids[1].encode()},
+            6: {'conn': 1, 'quadrant': arena_panel_ids[2].encode()},
+            7: {'conn': 1, 'quadrant': arena_panel_ids[3].encode()},
+            8: {'conn': 2, 'quadrant': arena_panel_ids[0].encode()},
+            9: {'conn': 2, 'quadrant': arena_panel_ids[1].encode()},
+            10: {'conn': 2, 'quadrant': arena_panel_ids[2].encode()},
+            11: {'conn': 2, 'quadrant': arena_panel_ids[3].encode()},
+            12: {'conn': 3, 'quadrant': arena_panel_ids[0].encode()},
+            13: {'conn': 3, 'quadrant': arena_panel_ids[1].encode()},
+            14: {'conn': 3, 'quadrant': arena_panel_ids[2].encode()},
+            15: {'conn': 3, 'quadrant': arena_panel_ids[3].encode()}
         }
     
     def setup_connections(self):

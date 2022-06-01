@@ -36,6 +36,9 @@ class MFCController(object):
         Close the MFCs
         """
         for i in range(len(self.mfcs)):
+            # set flow rate to 0
+            self.set_flow_rate(i, 0)
+            # close the connection
             self.mfcs[i].close()
         
     def __exit__(self, type, value, traceback):
@@ -58,7 +61,7 @@ class MFCController(object):
         """
         Set the flow rate of the MFC
         """
-        self.mfcs[index].set(flow_rate)
+        self.mfcs[index].set_flow_rate(flow_rate)
     
     def get_flow_rate(self, index):
         """
@@ -83,3 +86,4 @@ class MFCController(object):
         Get all the properties of the MFC
         """
         return self.mfcs[index].get()
+        

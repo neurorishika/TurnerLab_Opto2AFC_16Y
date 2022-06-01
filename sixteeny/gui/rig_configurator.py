@@ -55,7 +55,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(4):
             led_array_layout.addWidget(QtWidgets.QLabel('Module {}'.format(i+1)), 0, 2*i+1, QtCore.Qt.AlignRight)
             self.com_ports_dropboxes.append(QtWidgets.QComboBox())
-            self.com_ports_dropboxes[i].addItems(['COM{}'.format(i+1) for i in range(10)])
+            self.com_ports_dropboxes[i].addItems(['COM{}'.format(i+1) for i in range(15)])
             self.com_ports_dropboxes[i].setCurrentIndex(default_indices[i])
             led_array_layout.addWidget(self.com_ports_dropboxes[i], 0, 2*i+2)
         
@@ -188,6 +188,18 @@ class MainWindow(QtWidgets.QMainWindow):
         # Add a centre-aligned label at the top of the next row
         layout.addWidget(QtWidgets.QLabel('MFC Configuration:'), 14, 0, 1, 4, QtCore.Qt.AlignCenter)
 
+        # add a drop box to set the MFC COM port
+        layout.addWidget(QtWidgets.QLabel('COM Port'), 15, 0)
+        self.mfc_com_port = QtWidgets.QComboBox()
+        self.mfc_com_port.addItems(['COM{}'.format(i+1) for i in range(10)])
+        layout.addWidget(self.mfc_com_port, 15, 1)
+
+        # add a drop box to set the MFC gas type
+        layout.addWidget(QtWidgets.QLabel('Gas Type'), 15, 2)
+        self.mfc_gas_type = QtWidgets.QComboBox()
+        self.mfc_gas_type.addItems(['Air'])
+        layout.addWidget(self.mfc_gas_type, 15, 3)
+
         # add a sub-layout to hold the MFC configuration
         self.mfc_configuration_layout = QtWidgets.QGridLayout()
 
@@ -205,70 +217,70 @@ class MainWindow(QtWidgets.QMainWindow):
             self.mfc_configuration_layout.addWidget(self.mfc_device_id_droboxes[i], 0, i+1)
         
         # add the MFC configuration layout to the main layout
-        layout.addLayout(self.mfc_configuration_layout, 15, 0, 1, 4)
+        layout.addLayout(self.mfc_configuration_layout, 16, 0, 1, 4)
 
         # add a text box to set the MFC flow rate
-        layout.addWidget(QtWidgets.QLabel('Flow Rate (ml/min)'), 16, 0)
+        layout.addWidget(QtWidgets.QLabel('Flow Rate (ml/min)'), 17, 0)
         self.mfc_flow_rate = QtWidgets.QLineEdit()
         self.mfc_flow_rate.setText('300')
         self.mfc_flow_rate.setValidator(QtGui.QIntValidator(1,1000))
-        layout.addWidget(self.mfc_flow_rate, 16, 1)
+        layout.addWidget(self.mfc_flow_rate, 17, 1)
 
         # add a button to test the MFC
         self.test_mfc_button = QtWidgets.QPushButton('Test MFC')
-        layout.addWidget(self.test_mfc_button, 16, 2, 1, 2)
+        layout.addWidget(self.test_mfc_button, 17, 2, 1, 2)
 
         # add a centre-aligned label at the top of the next row
-        layout.addWidget(QtWidgets.QLabel('Valve Control Configuration:'), 17, 0, 1, 4, QtCore.Qt.AlignCenter)
+        layout.addWidget(QtWidgets.QLabel('Valve Control Configuration:'), 18, 0, 1, 4, QtCore.Qt.AlignCenter)
 
         # add a text box to get ROS environment variable and a browse button
-        layout.addWidget(QtWidgets.QLabel('ROS Environment Batch File'), 18, 0)
+        layout.addWidget(QtWidgets.QLabel('ROS Environment Batch File'), 19, 0)
         self.ros_environment_batch_file = QtWidgets.QLineEdit()
         self.ros_environment_batch_file.setText('C:\\yarena_ws\\install\\setup.bat')
         self.ros_environment_batch_file.setReadOnly(True)
         self.browse_ros_environment_batch_file_button = QtWidgets.QPushButton('Browse')
-        layout.addWidget(self.ros_environment_batch_file, 18, 1, 1, 2)
-        layout.addWidget(self.browse_ros_environment_batch_file_button, 18, 3)
+        layout.addWidget(self.ros_environment_batch_file, 19, 1, 1, 2)
+        layout.addWidget(self.browse_ros_environment_batch_file_button, 19, 3)
 
         self.browse_ros_environment_batch_file_button.clicked.connect(self.browse_ros_environment_batch_file)
 
         # add a button to set minimum message delay
-        layout.addWidget(QtWidgets.QLabel('Minimum Message Delay (ms)'), 19, 0)
+        layout.addWidget(QtWidgets.QLabel('Minimum Message Delay (ms)'), 20, 0)
         self.minimum_message_delay = QtWidgets.QLineEdit()
         self.minimum_message_delay.setText('1')
         self.minimum_message_delay.setValidator(QtGui.QIntValidator(1,10000))
-        layout.addWidget(self.minimum_message_delay, 19, 1)
+        layout.addWidget(self.minimum_message_delay, 20, 1)
 
         # add a button to test the odor valves
         self.test_valves_button = QtWidgets.QPushButton('Test Odor Valves')
-        layout.addWidget(self.test_valves_button, 19, 2, 1, 2)
+        layout.addWidget(self.test_valves_button, 20, 2, 1, 2)
 
         # add a centre-aligned label at the top of the next row
-        layout.addWidget(QtWidgets.QLabel('Odor Configuration:'), 20, 0, 1, 4, QtCore.Qt.AlignCenter)
+        layout.addWidget(QtWidgets.QLabel('Odor Configuration:'), 21, 0, 1, 4, QtCore.Qt.AlignCenter)
 
         # add a text box to set the odor 1 name
-        layout.addWidget(QtWidgets.QLabel('Odor 1'), 21, 0)
+        layout.addWidget(QtWidgets.QLabel('Odor 1'), 22, 0)
         self.odor_1_name = QtWidgets.QLineEdit()
         self.odor_1_name.setText('PA')
-        layout.addWidget(self.odor_1_name, 21, 1)
+        layout.addWidget(self.odor_1_name, 22, 1)
 
         # add a text box to set the odor 2 name
-        layout.addWidget(QtWidgets.QLabel('Odor 2'), 21, 2)
+        layout.addWidget(QtWidgets.QLabel('Odor 2'), 22, 2)
         self.odor_2_name = QtWidgets.QLineEdit()
         self.odor_2_name.setText('EL')
-        layout.addWidget(self.odor_2_name, 21, 3)
+        layout.addWidget(self.odor_2_name, 22, 3)
 
         # Add a button to enable the GPU processing
         self.enable_gpu_processing_checkbox = QtWidgets.QCheckBox('Enable GPU Processing')
-        layout.addWidget(self.enable_gpu_processing_checkbox, 22, 0)
+        layout.addWidget(self.enable_gpu_processing_checkbox, 23, 0)
 
         # Add a button to load and save the configuration
         self.load_configuration_button = QtWidgets.QPushButton('Load Configuration')
-        layout.addWidget(self.load_configuration_button, 22, 1)
+        layout.addWidget(self.load_configuration_button, 23, 1)
         self.load_configuration_button.clicked.connect(self.load_configuration)
 
         self.save_configuration_button = QtWidgets.QPushButton('Save Configuration')
-        layout.addWidget(self.save_configuration_button, 22, 2, 1, 2)
+        layout.addWidget(self.save_configuration_button, 23, 2, 1, 2)
         self.save_configuration_button.clicked.connect(self.save_configuration)
 
         # create the main widget
@@ -320,6 +332,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.live_stream_checkbox.setChecked(configuration['live_stream'])
 
         # mfc
+        self.mfc_com_port.setText(configuration['mfc_com_port'])
+        self.mfc_gas_type.setCurrentIndex(self.mfc_gas_type_dropbox.findText(configuration['mfc_gas_type']))
         for i in range(16):
             self.mfc_device_id_droboxes[i].setCurrentIndex(self.mfc_device_id_droboxes[i].findText(configuration['mfc_device_ids'][i]))    
         self.mfc_flow_rate.setText(str(configuration['mfc_flow_rate']))
@@ -369,6 +383,8 @@ class MainWindow(QtWidgets.QMainWindow):
         configuration['video_folder'] = self.video_folder.text()
         configuration['live_stream'] = self.live_stream_checkbox.isChecked()
         # mfc
+        configuration['mfc_com_port'] = self.mfc_com_port.text()
+        configuration['mfc_gas_type'] = self.mfc_gas_type.currentText()
         configuration['mfc_device_ids'] = []
         for i in range(16):
             configuration['mfc_device_ids'].append(self.mfc_device_id_droboxes[i].currentText())

@@ -239,11 +239,11 @@ class MainWindow(QtWidgets.QMainWindow):
             os.mkdir(os.path.join(self.project_directory.text(), experiment_name))
 
         
-        # check if there is a file with yarena extension in the experiment name directory
+        # check if there is a config.yarena file in the experiment name directory
         config_present = False
         while not config_present:
             files = os.listdir(os.path.join(self.project_directory.text(), experiment_name))
-            if len([file for file in files if file.endswith('.yarena')]) == 0:
+            if 'config.yarena' not in files:
                 # show a warning message and ask the user if they want to create a rig configuration file
                 reply = QtWidgets.QMessageBox.question(self, 'Create Rig Configuration File', 'The project directory does not have a rig configuration file. Do you want to create one?', QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
                 if reply == QtWidgets.QMessageBox.No:
@@ -251,10 +251,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     # run the rig configurator script
                     os.system('python sixteeny/gui/rig_configurator.py '+os.path.join(self.project_directory.text(), experiment_name))
-            elif len([file for file in files if file.endswith('.yarena')]) > 1:
-                # show a warning that there are multiple rig configuration files
-                QtWidgets.QMessageBox.warning(self, 'Multiple Rig Configuration Files', 'There are multiple rig configuration files in the project directory.')
-                return False
             else:
                 # show a message that the rig configuration file is present
                 QtWidgets.QMessageBox.information(self, 'Rig Configuration File Present', 'The rig configuration file is present.')

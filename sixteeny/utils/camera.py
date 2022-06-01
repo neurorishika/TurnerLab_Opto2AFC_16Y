@@ -5,35 +5,34 @@ import cucim.skimage.morphology as cskm
 from controller.camera import SpinnakerCamera
 import time
 
-def record_background(time_to_record, camera_id=0, gpu_enabled=False):
+def record_background(time_to_record, camera, gpu_enabled=False):
     """
     Record a background image averaged over a given time.
 
     Variables:
         time_to_record (float): time to record in seconds
-        camera_id (int): camera id
-        gpu_enabled (bool): whether to use gpu
+        camera (SpinnakerCamera): camera object
+        gpus_enabled (bool): whether or not to use GPU
     
     Returns:
         background (numpy.ndarray/cupy.ndarray): background image
         eff_fps (int): effective frames per second
         eff_duration (float): effective duration
     """
-    with SpinnakerCamera(index=camera_id, gpu_enabled=gpu_enabled, record_video=False) as camera:
-        camera.start()
-        images = []
-        timestamps = [time.time()]
-        while timestamps[-1]-timestamps[0] < time_to_record:
-            images.append(camera.get_array())
-            timestamps.append(time.time())
-        camera.stop()
-        if gpu_enabled:
-            background = cp.mean(cp.array(images), axis=0)
-        else:
-            background = np.mean(images, axis=0)
-        eff_fps = 1 / np.mean(np.diff(timestamps))
-        eff_duration = timestamps[-1] - timestamps[0]
-        return background, eff_fps, eff_duration
+    camera.start()
+    images = []
+    timestamps = [time.time()]
+    while timestamps[-1]-timestamps[0] < time_to_record:
+        images.append(camera.get_array())
+        timestamps.append(time.time())
+    camera.stop()
+    if gpu_enabled:
+        background = cp.mean(cp.array(images), axis=0)
+    else:
+        background = np.mean(images, axis=0)
+    eff_fps = 1 / np.mean(np.diff(timestamps))
+    eff_duration = timestamps[-1] - timestamps[0]
+    return background, eff_fps, eff_duration, timestamps
 
 def background_subtraction(image, background, gpu_enabled=False):
     """

@@ -1,9 +1,5 @@
 import PySpin
 
-import skvideo
-skvideo.setFFmpegPath('C:\\ffmpeg\\bin\\')
-import skvideo.io
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -16,74 +12,6 @@ import cupy as cp
 import time
 
 _SYSTEM = None
-
-# class MplCanvas(FigureCanvas):
-#     """
-#     Class for plotting the the 1
-    
-#     variables:
-#         self.fig: matplotlib figure object
-#         self.axes: matplotlib axes object
-#     """
-#     def __init__(self, parent=None, width=5, height=4, dpi=256,interval=1000):
-#         self.fig = Figure(figsize=(width, height), dpi=dpi)
-#         self.axes = self.fig.add_subplot(111)
-#         self.parent = parent
-
-#         FigureCanvas.__init__(self, self.fig)
-#         self.setParent(parent)
-
-#         FigureCanvas.setSizePolicy(self,
-#                 QtWidgets.QSizePolicy.Expanding,
-#                 QtWidgets.QSizePolicy.Expanding)
-#         FigureCanvas.updateGeometry(self)
-
-#         # add a timer to update the plot
-#         self.timer = self.new_timer(interval,[(self.update_image,(),{})])
-#         self.timer.start()
-    
-#     def update_image(self):
-#         """
-#         Update the plot with new data
-#         """
-#         # get image data from queue in parent
-#         image = self.parent.image
-#         self.axes.imshow(image, cmap='gray',interpolation='none')
-#         self.draw()
-
-# class CameraViewer(QtWidgets.QMainWindow):
-#     """
-#     A class to show the camera image in a matplotlib window
-#     """
-#     def __init__(self, *args, **kwargs):
-#         super(CameraViewer, self).__init__(*args, **kwargs)
-
-#         # set the window title
-#         self.setWindowTitle('Camera Viewer')
-
-#         # create a the main layout
-#         layout = QtWidgets.QGridLayout()
-
-#         # add the matplotlib canvas to the main layout
-#         self.canvas = MplCanvas(self, width=5, height=4, dpi=256)
-#         layout.addWidget(self.canvas, 0, 0)
-
-#         self.image = np.zeros((1280,1024))
-
-#         # create the main widget
-#         self.main_widget = QtWidgets.QWidget()
-#         self.main_widget.setLayout(layout)
-#         self.setCentralWidget(self.main_widget)
-
-#         # show the window
-#         self.show()
-
-#     def update_image(self, image):
-#         """
-#         Update the image in the matplotlib window
-#         """
-#         self.image = image
-#         print('update_image')
 
 class CameraError(Exception):
     """
@@ -156,7 +84,8 @@ class SpinnakerCamera:
                 video_output_path=None, 
                 video_output_name=None, 
                 show_video=False, 
-                show_every_n=None
+                show_every_n=None,
+                ffmpeg_path='C:\\ffmpeg\\bin\\',
                 ):
         """
         Initialize the camera object.
@@ -174,7 +103,12 @@ class SpinnakerCamera:
             video_output_name : Name of the video. (str)
             show_video : If True, show the video. (bool)
             show_every_n : If not None, show every nth frame. (int)
+            ffmpeg_path : Path to ffmpeg. (str)
         """
+        import skvideo
+        skvideo.setFFmpegPath(ffmpeg_path)
+        import skvideo.io
+
         self.initialized = False
         self.gpu_enabled = gpu_enabled
 
