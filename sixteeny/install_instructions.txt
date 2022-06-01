@@ -2,6 +2,7 @@
 conda create -n sixteenY python=3.8
 
 ## activate environment
+call C:\yarena_ws\install\setup.bat
 conda activate sixteenY
 
 ## install packages
