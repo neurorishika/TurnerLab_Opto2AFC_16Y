@@ -5,7 +5,7 @@ conda create -n sixteenY python=3.8
 conda activate sixteenY
 
 ## install packages
-conda install pyserial numpy matplotlib cupy scikit-image scikit-video PyQt5
+conda install pyserial numpy matplotlib cupy scikit-image scikit-video PyQt5 alicat
 
 ## install cucim on Windows
 # clone the cucim repo from https://github.com/rapidsai/cucim
