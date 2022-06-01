@@ -17,7 +17,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.MFCController = MFCController
         self.save_directory = save_directory
-        self.setGeometry(300, 300, 800, 400)
+        self.setGeometry(600, 600, 1600, 800)
         self.setWindowTitle("MFC flow rate viewer")
         self.frm = QtWidgets.QFrame(self)
         self.frm.setStyleSheet("QWidget { background-color: #eeeeec; }")
@@ -25,7 +25,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.frm.setLayout(self.lyt)
         self.setCentralWidget(self.frm)
 
-        self.graph = FlowCanvas(x_len=200, y_range=[0, 100], interval=100, controller=self.MFCController, save_directory=self.save_directory)
+        self.graph = FlowCanvas(x_len=200, y_range=[0, 1000], interval=1000, controller=self.MFCController, save_directory=self.save_directory)
         self.lyt.addWidget(self.graph)
 
         self.show()
@@ -101,7 +101,7 @@ class FlowCanvas(FigureCanvas):
         # if self.i > 499:
         #     self.i = 0
         # return self.d[self.i]
-        next_datapoint = np.array([self.controller.get_flow_rate(i) for i in range(len(self.n_controllers))])
+        next_datapoint = np.array([self.controller.get_flow_rate(i) for i in range(self.n_controllers)])
         timepoint = datetime.datetime.now()
 
         if self.save_directory != '':
@@ -118,11 +118,18 @@ class FlowCanvas(FigureCanvas):
         
         return next_datapoint
 
-def start_gui(MFCController=None):
+def start_gui(MFCController=None,save_directory=''):
     '''
     Start the GUI.
 
     '''
     app = QtWidgets.QApplication(sys.argv)
-    main_window = MainWindow(MFCController)
+    main_window = MainWindow(MFCController, save_directory)
     sys.exit(app.exec_())
+
+with MFCController(
+        com_port='COM8', 
+        device_ids=[chr(i) for i in range(ord('A'), ord('A') + 16)], 
+        default_flow_rate=300
+    ) as mfc:
+    start_gui(mfc, save_directory='Z:/Rishika/4Y-Maze/TurnerLab_Opto2AFC_16Y/sixteeny')
