@@ -25,7 +25,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.frm.setLayout(self.lyt)
         self.setCentralWidget(self.frm)
 
-        self.graph = FlowCanvas(x_len=200, y_range=[0, 1000], interval=1000, controller=self.MFCController, save_directory=self.save_directory)
+        self.graph = FlowCanvas(x_len=200, y_range=[0, 5000], interval=1000, controller=self.MFCController, save_directory=self.save_directory)
         self.lyt.addWidget(self.graph)
 
         self.show()

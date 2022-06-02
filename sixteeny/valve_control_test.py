@@ -1,26 +1,26 @@
 from sixteeny.controller.odor import OdorValveController
 import time
 
+with OdorValveController(minimum_delay=0.001) as odor:
+    for i in range(16):
+        odor.publish(i, [0, 1, 2])
+
+# Diagnostic code
 # with OdorValveController(minimum_delay=0.001) as odor:
 #     for i in range(16):
 #         odor.publish(i, [0, 0, 0])
-
-# Diagnostic code
-with OdorValveController(minimum_delay=0.001) as odor:
-    for i in range(16):
-        odor.publish(i, [0, 0, 0])
-        time.sleep(5)
-        odor.publish(i, [1, 0, 0])
-        time.sleep(10)
-        odor.publish(i, [0, 0, 0])
-        time.sleep(5)
-        odor.publish(i, [0, 1, 0])
-        time.sleep(10)
-        odor.publish(i, [0, 0, 0])
-        time.sleep(5)
-        odor.publish(i, [0, 0, 1])
-        time.sleep(10)
-    odor.publish(i, [0, 0, 0])
+#         time.sleep(5)
+#         odor.publish(i, [1, 0, 0])
+#         time.sleep(10)
+#         odor.publish(i, [0, 0, 0])
+#         time.sleep(5)
+#         odor.publish(i, [0, 1, 0])
+#         time.sleep(10)
+#         odor.publish(i, [0, 0, 0])
+#         time.sleep(5)
+#         odor.publish(i, [0, 0, 1])
+#         time.sleep(10)
+#     odor.publish(i, [0, 0, 0])
 
 
 # import rclpy
