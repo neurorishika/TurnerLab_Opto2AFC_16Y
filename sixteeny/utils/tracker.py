@@ -33,6 +33,7 @@ class ArenaTracker(object):
         self.n_trials = 100
         self.max_frames = 100*60*120
         self.fly_positions = np.zeros((self.max_frames, 2))*np.nan
+        self.frame_times = np.zeros(self.max_frames)*np.nan
 
         self.time_spent_in_reward_zone = np.zeros(self.n_trials)
         
@@ -99,6 +100,7 @@ class ArenaTracker(object):
 
         # update tracker matrices
         self.fly_positions[self.frame_count,:] = current_position
+        self.frame_times[self.frame_count] = time.time()
 
         self.fly_position = current_position
         self.current_arm = current_arm
@@ -189,3 +191,22 @@ class ArenaTracker(object):
         self.time_needed_in_reward_zone = next_trial['time_needed_in_reward_zone'] # indexed wrt odors
         self.reward_stimulus = next_trial['reward_stimulus'] # indexed wrt odors
         self.reward_probability = next_trial['reward_probability'] # indexed wrt odors
+
+    def save_data(self, directory):
+        """
+        Saves data to a .ydata file.
+        """
+        # save data as .ydata file in json format
+        data = {
+            'fly_positions': self.fly_positions,
+            'frame_times': self.frame_times,
+            'chosen_arms': self.chosen_arms,
+            'chosen_odor': self.chosen_odor,
+            'reward_delivered': self.reward_delivered,
+            'time_spent_in_reward_zone': self.time_spent_in_reward_zone,
+            'lengths_of_trials': self.lengths_of_trials,
+            'n_trials': self.n_trials,
+            'max_frame_count': self.frame_count
+        }
+        with open(directory+'fly_{}.ydata'.format(self.fly_id), 'w') as f:
+            json.dump(data, f)

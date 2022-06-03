@@ -158,12 +158,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.opening_radius.setValidator(QtGui.QIntValidator(1,15))
         layout.addWidget(self.opening_radius, 11, 1)
 
-        # add a text box to set the binarisation threshold
-        layout.addWidget(QtWidgets.QLabel('Binarisation Threshold'), 11, 2)
-        self.binarisation_threshold = QtWidgets.QLineEdit()
-        self.binarisation_threshold.setText('15')
-        self.binarisation_threshold.setValidator(QtGui.QIntValidator(1,255))
-        layout.addWidget(self.binarisation_threshold, 11, 3)
+        # add a text box to set the binarization threshold
+        layout.addWidget(QtWidgets.QLabel('binarization Threshold'), 11, 2)
+        self.binarization_threshold = QtWidgets.QLineEdit()
+        self.binarization_threshold.setText('15')
+        self.binarization_threshold.setValidator(QtGui.QIntValidator(1,255))
+        layout.addWidget(self.binarization_threshold, 11, 3)
 
         # add a checkbox to record video and a text box to set the video folder and a browse button
         self.record_video_checkbox = QtWidgets.QCheckBox('Record Video')
@@ -326,7 +326,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera_index.setText(str(configuration['camera_index']))
         self.background_calculation_time.setText(str(configuration['background_calculation_time']))
         self.opening_radius.setText(str(configuration['opening_radius']))
-        self.binarisation_threshold.setText(str(configuration['binarisation_threshold']))
+        self.binarization_threshold.setText(str(configuration['binarization_threshold']))
         self.record_video_checkbox.setChecked(configuration['record_video'])
         self.video_folder.setText(configuration['video_folder'])
         self.live_stream_checkbox.setChecked(configuration['live_stream'])
@@ -378,7 +378,7 @@ class MainWindow(QtWidgets.QMainWindow):
         configuration['camera_index'] = int(self.camera_index.text())
         configuration['background_calculation_time'] = int(self.background_calculation_time.text())
         configuration['opening_radius'] = int(self.opening_radius.text())
-        configuration['binarisation_threshold'] = int(self.binarisation_threshold.text())
+        configuration['binarization_threshold'] = int(self.binarization_threshold.text())
         configuration['record_video'] = self.record_video_checkbox.isChecked()
         configuration['video_folder'] = self.video_folder.text()
         configuration['live_stream'] = self.live_stream_checkbox.isChecked()
