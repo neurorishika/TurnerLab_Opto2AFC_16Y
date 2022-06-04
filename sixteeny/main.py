@@ -1,7 +1,13 @@
-from binascii import Incomplete
-import numpy as np
+import subprocess
+import sys
 
-# import cupy as cp
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+install("pandas")
+
+import numpy as np
+import cupy as cp
 import matplotlib.pyplot as plt
 
 from sixteeny.utils.tracker import ArenaTracker
@@ -13,7 +19,6 @@ from sixteeny.controller.odor import OdorValveController
 from sixteeny.controller.led import LEDController
 from sixteeny.controller.mfc import MFCController
 
-import sys
 import os
 import json
 import time
