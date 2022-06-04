@@ -151,39 +151,38 @@ class MainWindow(QtWidgets.QMainWindow):
         self.background_calculation_time.setValidator(QtGui.QIntValidator(1,120))
         layout.addWidget(self.background_calculation_time, 10, 3)
 
-        # add a text box to set the opening radius
-        layout.addWidget(QtWidgets.QLabel('Opening Radius (pixels)'), 11, 0)
-        self.opening_radius = QtWidgets.QLineEdit()
-        self.opening_radius.setText('2')
-        self.opening_radius.setValidator(QtGui.QIntValidator(1,15))
-        layout.addWidget(self.opening_radius, 11, 1)
+        # add a text box to set the dilation radius
+        layout.addWidget(QtWidgets.QLabel('Dilation Radius (pixels)'), 11, 0)
+        self.dilation_radius = QtWidgets.QLineEdit()
+        self.dilation_radius.setText('5')
+        self.dilation_radius.setValidator(QtGui.QIntValidator(1,20))
+        layout.addWidget(self.dilation_radius, 11, 1)
+
+        # add a text box to set the erosion radius
+        layout.addWidget(QtWidgets.QLabel('Erosion Radius (pixels)'), 11, 2)
+        self.erosion_radius = QtWidgets.QLineEdit()
+        self.erosion_radius.setText('5')
+        self.erosion_radius.setValidator(QtGui.QIntValidator(1,20))
+        layout.addWidget(self.erosion_radius, 11, 3)
+
+        # add a checkbox to record video
+        self.record_video_checkbox = QtWidgets.QCheckBox('Record Video')
+        layout.addWidget(self.record_video_checkbox, 12, 0)
+
+        # add a checkbox to live stream video
+        self.live_stream_checkbox = QtWidgets.QCheckBox('Live Stream (Reduces FPS)')
+        layout.addWidget(self.live_stream_checkbox, 12, 1)
 
         # add a text box to set the binarization threshold
-        layout.addWidget(QtWidgets.QLabel('binarization Threshold'), 11, 2)
+        layout.addWidget(QtWidgets.QLabel('Binarization Threshold'), 12, 2)
         self.binarization_threshold = QtWidgets.QLineEdit()
         self.binarization_threshold.setText('15')
         self.binarization_threshold.setValidator(QtGui.QIntValidator(1,255))
-        layout.addWidget(self.binarization_threshold, 11, 3)
+        layout.addWidget(self.binarization_threshold, 12, 3)
 
-        # add a checkbox to record video and a text box to set the video folder and a browse button
-        self.record_video_checkbox = QtWidgets.QCheckBox('Record Video')
-        layout.addWidget(self.record_video_checkbox, 12, 0)
-        self.video_folder = QtWidgets.QLineEdit()
-        self.video_folder.setText(self.experiment_directory.text()+'\\video\\')
-        self.video_folder.setReadOnly(True)
-        self.video_folder.setEnabled(False)
-        self.browse_video_folder_button = QtWidgets.QPushButton('Browse')
-        self.browse_video_folder_button.setEnabled(False)
-        layout.addWidget(self.video_folder, 12, 1, 1, 2)
-        layout.addWidget(self.browse_video_folder_button, 12, 3)
-
-        self.browse_video_folder_button.clicked.connect(self.browse_video_folder)
-
-        # add a checkbox to live stream video and a button to test the video stream
-        self.live_stream_checkbox = QtWidgets.QCheckBox('Live Stream')
-        layout.addWidget(self.live_stream_checkbox, 13, 0)
+        # add a button to test the video stream
         self.test_video_stream_button = QtWidgets.QPushButton('Test Video Stream')
-        layout.addWidget(self.test_video_stream_button, 13, 1, 1, 3)
+        layout.addWidget(self.test_video_stream_button, 13, 0, 1, 4)
         
         # Add a centre-aligned label at the top of the next row
         layout.addWidget(QtWidgets.QLabel('MFC Configuration:'), 14, 0, 1, 4, QtCore.Qt.AlignCenter)
@@ -325,10 +324,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.exposure_time.setText(str(configuration['exposure_time']))
         self.camera_index.setText(str(configuration['camera_index']))
         self.background_calculation_time.setText(str(configuration['background_calculation_time']))
-        self.opening_radius.setText(str(configuration['opening_radius']))
+        self.dilation_radius.setText(str(configuration['dilation_radius']))
+        self.erosion_radius.setText(str(configuration['erosion_radius']))
         self.binarization_threshold.setText(str(configuration['binarization_threshold']))
         self.record_video_checkbox.setChecked(configuration['record_video'])
-        self.video_folder.setText(configuration['video_folder'])
         self.live_stream_checkbox.setChecked(configuration['live_stream'])
 
         # mfc
@@ -377,10 +376,10 @@ class MainWindow(QtWidgets.QMainWindow):
         configuration['exposure_time'] = int(self.exposure_time.text())
         configuration['camera_index'] = int(self.camera_index.text())
         configuration['background_calculation_time'] = int(self.background_calculation_time.text())
-        configuration['opening_radius'] = int(self.opening_radius.text())
+        configuration['dilation_radius'] = int(self.dilation_radius.text())
+        configuration['erosion_radius'] = int(self.erosion_radius.text())
         configuration['binarization_threshold'] = int(self.binarization_threshold.text())
         configuration['record_video'] = self.record_video_checkbox.isChecked()
-        configuration['video_folder'] = self.video_folder.text()
         configuration['live_stream'] = self.live_stream_checkbox.isChecked()
         # mfc
         configuration['mfc_com_port'] = self.mfc_com_port.text()
@@ -474,21 +473,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # set the file name
         self.ffmpeg_path.setText(file_name)
     
-    def browse_video_folder(self):
-        """
-        A function to browse for the video folder
-        """
-        # get the directory
-        directory = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Video Folder')
-
-        if directory == '':
-            # show a warning
-            QtWidgets.QMessageBox.warning(self, 'Warning', 'No directory selected')
-            return
-
-        # set the directory
-        self.video_folder.setText(directory)
-    
     def browse_ros_environment_batch_file(self):
         """
         A function to browse for the ROS environment batch file
@@ -507,6 +491,9 @@ class MainWindow(QtWidgets.QMainWindow):
         
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
+    # set font for all QtWidgets as Arial with size 12
+    font = QtGui.QFont('Arial', 12)
+    app.setFont(font)
     if len(sys.argv) > 1:
         main = MainWindow(sys.argv[1])
     else:
