@@ -235,7 +235,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a text box to get ROS environment variable and a browse button
         layout.addWidget(QtWidgets.QLabel('ROS Environment Batch File'), 19, 0)
         self.ros_environment_batch_file = QtWidgets.QLineEdit()
-        self.ros_environment_batch_file.setText('C:\\yarena_ws\\install\\setup.bat')
+        self.ros_environment_batch_file.setText('C:/yarena_ws/install/setup.bat')
         self.ros_environment_batch_file.setReadOnly(True)
         self.browse_ros_environment_batch_file_button = QtWidgets.QPushButton('Browse')
         layout.addWidget(self.ros_environment_batch_file, 19, 1, 1, 2)
@@ -331,8 +331,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.live_stream_checkbox.setChecked(configuration['live_stream'])
 
         # mfc
-        self.mfc_com_port.setText(configuration['mfc_com_port'])
-        self.mfc_gas_type.setCurrentIndex(self.mfc_gas_type_dropbox.findText(configuration['mfc_gas_type']))
+        self.mfc_com_port.setCurrentIndex(self.mfc_com_port.findText(configuration['mfc_com_port']))
+        self.mfc_gas_type.setCurrentIndex(self.mfc_gas_type.findText(configuration['mfc_gas_type']))
         for i in range(16):
             self.mfc_device_id_droboxes[i].setCurrentIndex(self.mfc_device_id_droboxes[i].findText(configuration['mfc_device_ids'][i]))    
         self.mfc_flow_rate.setText(str(configuration['mfc_flow_rate']))
@@ -342,8 +342,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.minimum_message_delay.setText(str(configuration['minimum_message_delay']))
 
         # odor
-        self.odor_1_name.setText(configuration['odor_1_name'])
-        self.odor_2_name.setText(configuration['odor_2_name'])
+        self.odor_1_name.setText(configuration['odor_1'])
+        self.odor_2_name.setText(configuration['odor_2'])
 
         # gpu processing
         self.enable_gpu_processing_checkbox.setChecked(configuration['enable_gpu_processing'])
@@ -382,7 +382,7 @@ class MainWindow(QtWidgets.QMainWindow):
         configuration['record_video'] = self.record_video_checkbox.isChecked()
         configuration['live_stream'] = self.live_stream_checkbox.isChecked()
         # mfc
-        configuration['mfc_com_port'] = self.mfc_com_port.text()
+        configuration['mfc_com_port'] = self.mfc_com_port.currentText()
         configuration['mfc_gas_type'] = self.mfc_gas_type.currentText()
         configuration['mfc_device_ids'] = []
         for i in range(16):
@@ -491,9 +491,6 @@ class MainWindow(QtWidgets.QMainWindow):
         
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    # set font for all QtWidgets as Arial with size 12
-    font = QtGui.QFont('Arial', 12)
-    app.setFont(font)
     if len(sys.argv) > 1:
         main = MainWindow(sys.argv[1])
     else:

@@ -1,4 +1,4 @@
-from sixteeny.experimenter.base import Experimenter
+from sixteeny.utils.experimenter.base import Experimenter
 import pandas as pd
 
 class CSVExperimenter(Experimenter):
