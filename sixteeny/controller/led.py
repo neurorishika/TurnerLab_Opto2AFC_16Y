@@ -104,7 +104,7 @@ class LEDController(object):
         }
         self.color_state = {}
         self.pulse_state = {}
-        for conn in self.connections:
+        for conn in range(4):
             self.color_state[conn] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
             self.pulse_state[conn] = [
                 [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
@@ -337,11 +337,34 @@ class LEDController(object):
         """
         Resets the accumulated LED stimulus intensity
         """
-        self.module_state = {}
         self.color_state = {}
-        for conn in self.connections:
-            self.module_state[conn] = b"0000"
+        self.pulse_state = {}
+        for conn in range(4):
             self.color_state[conn] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
+            self.pulse_state[conn] = [
+                [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]], 
+                [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
+                [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
+                [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
+            ]
+
+    def accumulate_led_stimulus(self, arena, color, intensity, pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat):
+        """
+        Accumulates the LED stimulus
+
+        Variables:
+            arena: arena to accumulate the LED stimulus for (int)
+            color: color of the LED stimulus (byte str: 'R' or 'G' or 'B' or '#<hex color>' / tuple of ints (0-100,0-100,0-100))
+            intensity: intensity of the LED stimulus (int)
+            pulse_width: pulse width of the LED stimulus (int)
+            pulse_period: pulse period of the LED stimulus (int)
+            pulse_count: pulse count of the LED stimulus (int)
+            pulse_deadtime: pulse deadtime of the LED stimulus (int)
+            pulse_delay: pulse delay of the LED stimulus (int)
+            pulse_repeat: pulse repeat of the LED stimulus (int)
+        """
+        self.accumulate_led_stimulus_intensity(arena, color, intensity)
+        self.accumulate_led_pulse_pattern(arena, color, pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat)
 
     def accumulate_json(self, arena, json_dict):
         """
@@ -370,7 +393,7 @@ class LEDController(object):
         Runs the accumulated LED stimulus
         """
         for conn in self.conns:
-            conn("RESET\r")
+            conn.write(b"RESET\r")
             conn.write(b"RED 0\r")
             conn.write(b"GRN 0\r")
             conn.write(b"BLU 0\r")
@@ -394,7 +417,7 @@ class LEDController(object):
                 + b" "
                 + str(self.pulse_state[conn_id][quadrant_count][0][5]).encode()
                 + b" R "
-                + quadrant
+                # + quadrant
                 + b"\r"
             )
             conn.write(
@@ -411,7 +434,7 @@ class LEDController(object):
                 + b" "
                 + str(self.pulse_state[conn_id][quadrant_count][1][5]).encode()
                 + b" G "
-                + quadrant
+                # + quadrant
                 + b"\r"
             )
             conn.write(
@@ -428,7 +451,7 @@ class LEDController(object):
                 + b" "
                 + str(self.pulse_state[conn_id][quadrant_count][2][5]).encode()
                 + b" B "
-                + quadrant
+                # + quadrant
                 + b"\r"
             )
             conn.write(b"RED " + str(self.color_state[conn_id][quadrant_count][0]).encode() + b" 0 " + quadrant + b"\r")
@@ -436,7 +459,7 @@ class LEDController(object):
             conn.write(b"BLU " + str(self.color_state[conn_id][quadrant_count][2]).encode() + b" 0 " + quadrant + b"\r")
 
         for conn in self.conns:
-            conn("RUN\r")
+            conn.write(b"RUN\r")
 
         self.reset_accumulated_led_stimulus()
 
