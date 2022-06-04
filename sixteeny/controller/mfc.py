@@ -35,7 +35,7 @@ class MFCController(object):
         """
         for i in range(len(self.mfcs)):
             # set flow rate to 0
-            self.set_flow_rate(i, 0)
+            # self.set_flow_rate(i, 0)
             # close the connection
             self.mfcs[i].close()
         
