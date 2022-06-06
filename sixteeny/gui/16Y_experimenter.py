@@ -57,7 +57,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dropbox_layout = QtWidgets.QGridLayout()
 
         # Fly Numbers
-        self.fly_numbers = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        self.fly_numbers = [4,5,14,12,6,7,15,13,1,3,11,10,0,2,9,8]
 
         # define toggle state for all arenas
         self.toggle_state = False   
