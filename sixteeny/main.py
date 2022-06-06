@@ -90,7 +90,7 @@ if __name__ == "__main__":
         show_video=rig_config["live_stream"],
         show_every_n=1,
         ffmpeg_path=rig_config["ffmpeg_path"],
-    ) as camera, OdorValveController(minimum_delay=rig_config["minimum_message_delay"]/1000) as odor, LEDController(
+    ) as camera, OdorValveController(minimum_delay=rig_config["minimum_message_delay"] / 1000) as odor, LEDController(
         ports=rig_config["com_ports"], baudrate=rig_config["baud_rate"], arena_panel_ids=rig_config["quadrant_ids"]
     ) as led, MFCController(
         com_port=rig_config["mfc_com_port"],
@@ -182,7 +182,7 @@ if __name__ == "__main__":
             plt.imshow(background.get())
         else:
             plt.imshow(background)
-        plt.savefig(project_directory + experiment_name + "/background.png")
+        plt.imsave(project_directory + experiment_name + "/background.png", background, cmap="gray")
         plt.show()
 
         # Ask user to confirm background image
@@ -195,8 +195,23 @@ if __name__ == "__main__":
 
         # load the mask
         if not os.path.isfile(rig_config["mask_file"]):
-            print("Mask file does not exist. Exiting.")
-            sys.exit(1)
+            print("Mask file does not exist.")
+            # ask if the user wants to create a new mask
+            create_new_mask = input("Create new mask? (y/n) ")
+            if create_new_mask == "y":
+                # run mask_designer.py with the background image as the argument and wait for it to finish
+                print("Running mask designer...")
+                subprocess.call(
+                    [
+                        "python",
+                        "sixteeny/gui/mask_designer.py",
+                        project_directory + experiment_name + "/background.png",
+                    ]
+                )
+                print("Mask designer complete.")
+            else:
+                print("Exiting.")
+                sys.exit(1)
         else:
             # copy the mask file to the experiment folder
             shutil.copy(rig_config["mask_file"], project_directory + experiment_name + "/mask.npy")
@@ -210,7 +225,11 @@ if __name__ == "__main__":
         else:
             plt.imshow(background)
         plt.imshow(np.sum(arm_mask, axis=0) + np.sum(reward_mask, axis=0), alpha=0.5)
-        plt.savefig(project_directory + experiment_name + "/mask_overlay.png")
+        plt.imsave(
+            project_directory + experiment_name + "/mask.png",
+            np.sum(arm_mask, axis=0) + np.sum(reward_mask, axis=0),
+            cmap="gray",
+        )
         plt.show()
 
         # Ask user to confirm mask

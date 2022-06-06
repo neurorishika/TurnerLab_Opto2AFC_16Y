@@ -1,9 +1,11 @@
 import numpy as np
+import sys
 
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class MainWindow(QtWidgets.QMainWindow):
     """
@@ -34,31 +36,38 @@ class MainWindow(QtWidgets.QMainWindow):
         save_mask: Save the mask.
         show_tips: Show the tips for labelling.
     """
+
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         # set up the main layout
         layout = QtWidgets.QGridLayout()
-        
+
+        # if received arguments, set the first argument as the image file
+        if len(sys.argv) > 1:
+            self.image_file = sys.argv[1]
+        else:
+            self.image_file = None
+
         # Add button to get background image
-        self.getBackgroundImageButton = QtWidgets.QPushButton('Get Background Image')
+        self.getBackgroundImageButton = QtWidgets.QPushButton("Get Background Image")
         layout.addWidget(self.getBackgroundImageButton, 0, 0)
         self.getBackgroundImageButton.clicked.connect(self.get_image)
 
         # Add edit box for getting the number of Y-Arenas in the image
-        layout.addWidget(QtWidgets.QLabel('Number of Y-Arenas'), 0, 1)
-        self.numYArenas = QtWidgets.QLineEdit('16')
-        self.numYArenas.setValidator(QtGui.QIntValidator(1,100))
+        layout.addWidget(QtWidgets.QLabel("Number of Y-Arenas"), 0, 1)
+        self.numYArenas = QtWidgets.QLineEdit("16")
+        self.numYArenas.setValidator(QtGui.QIntValidator(1, 100))
         layout.addWidget(self.numYArenas, 0, 2)
 
         # Add edit box for getting the choice boundary distance
-        layout.addWidget(QtWidgets.QLabel('Choice Boundary Distance'), 0, 3)
-        self.choiceBoundaryDistance = QtWidgets.QLineEdit('0.8')
-        self.choiceBoundaryDistance.setValidator(QtGui.QDoubleValidator(0.0,1.0,1))
+        layout.addWidget(QtWidgets.QLabel("Choice Boundary Distance"), 0, 3)
+        self.choiceBoundaryDistance = QtWidgets.QLineEdit("0.8")
+        self.choiceBoundaryDistance.setValidator(QtGui.QDoubleValidator(0.0, 1.0, 1))
         layout.addWidget(self.choiceBoundaryDistance, 0, 4)
 
         # Add a labelling start button
-        self.startButton = QtWidgets.QPushButton('Start Labelling')
+        self.startButton = QtWidgets.QPushButton("Start Labelling")
         self.startButton.clicked.connect(self.start_labelling)
         layout.addWidget(self.startButton, 0, 5)
 
@@ -80,7 +89,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.instructionsLabel, 2, 0, 1, 4)
 
         # Add a button to show the tutorial for labelling
-        self.showTutorialButton = QtWidgets.QPushButton('Show Tutorial')
+        self.showTutorialButton = QtWidgets.QPushButton("Show Tutorial")
         self.showTutorialButton.clicked.connect(self.show_tutorial)
         layout.addWidget(self.showTutorialButton, 2, 4, 1, 2)
 
@@ -92,16 +101,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(w)
 
         # Set the window title
-        self.setWindowTitle('Y-Arena Mask Designer')
+        self.setWindowTitle("Y-Arena Mask Designer")
         self.show()
-    
+
     def get_image(self):
         """
         Get the image from the user.
         """
-        self.image_file = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Background PNG File', '.', '*.png')
+        # if an image file has been specified as an argument, ask the user if they want to use that image
+        if self.image_file is not None:
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Use Image File",
+                "Do you want to use the existing image file?",
+                QtWidgets.QMessageBox.Yes,
+                QtWidgets.QMessageBox.No,
+            )
+            if reply == QtWidgets.QMessageBox.No:
+                self.image_file = QtWidgets.QFileDialog.getOpenFileName(self, "Open Background PNG File", ".", "*.png")[
+                    0
+                ]
+        else:
+            self.image_file = QtWidgets.QFileDialog.getOpenFileName(self, "Open Background PNG File", ".", "*.png")[0]
+
         if self.image_file:
-            self.image = QtGui.QPixmap(self.image_file[0])
+            self.image = QtGui.QPixmap(self.image_file)
             self.imageLabel.setPixmap(self.image)
             self.imageLabel.resize(self.image.size())
             self.imageLabel.show()
@@ -110,13 +134,13 @@ class MainWindow(QtWidgets.QMainWindow):
             # give the user an error message
             self.instructionsLabel.setText('Please load an image and click "Start Labelling" to begin labelling.')
             self.loaded_image = False
-    
+
     def start_labelling(self):
         """
         Start labelling the Y-Arenas.
         """
         if self.loaded_image:
-            self.instructionsLabel.setText('Click on the Y-Arenas to label them.')
+            self.instructionsLabel.setText("Click on the Y-Arenas to label them.")
 
             # disable all buttons and text boxes
             self.getBackgroundImageButton.setEnabled(False)
@@ -157,9 +181,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # convert the pixmap position to the position of the image
         x = x * width / pixmap_width
         y = y * height / pixmap_height
-        
+
         return x, y
-    
+
     def draw_and_update_points(self):
         """
         Draw the points on the image and update the image label.
@@ -190,23 +214,28 @@ class MainWindow(QtWidgets.QMainWindow):
             source: The source of the event. (QObject)
             event: The event. (QEvent)
         """
-        
+
         # check if the object is the image label with a pixmap and if the event is a left mouse click and if the labelling has started
-        if (source == self.imageLabel and source.pixmap() and not source.pixmap().isNull() and 
-            event.type() == QtCore.QEvent.MouseButtonPress and
-            event.button() == QtCore.Qt.LeftButton and self.started_labelling):
-            
+        if (
+            source == self.imageLabel
+            and source.pixmap()
+            and not source.pixmap().isNull()
+            and event.type() == QtCore.QEvent.MouseButtonPress
+            and event.button() == QtCore.Qt.LeftButton
+            and self.started_labelling
+        ):
+
             # get the position of the click
             x, y = self.get_pointer_position(event)
             self.labelled_points.append((x, y))
 
-            if len(self.labelled_points) == int(self.numYArenas.text())*6:
-                self.instructionsLabel.setText('Processing and Saving...')
+            if len(self.labelled_points) == int(self.numYArenas.text()) * 6:
+                self.instructionsLabel.setText("Processing and Saving...")
                 self.create_mask_from_points()
                 self.plot_masks_and_verify()
                 if self.mask_correct:
                     self.save_mask()
-                self.instructionsLabel.setText('Done!')
+                self.instructionsLabel.setText("Done!")
                 self.started_labelling = False
                 self.getBackgroundImageButton.setEnabled(True)
                 self.numYArenas.setEnabled(True)
@@ -219,9 +248,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.draw_and_update_points()
 
         # check if the object is the image label with a pixmap and if the event is a right mouse click and if the labelling has started
-        elif (source == self.imageLabel and source.pixmap() and not source.pixmap().isNull() and
-            event.type() == QtCore.QEvent.MouseButtonPress and
-            event.button() == QtCore.Qt.RightButton and self.started_labelling):
+        elif (
+            source == self.imageLabel
+            and source.pixmap()
+            and not source.pixmap().isNull()
+            and event.type() == QtCore.QEvent.MouseButtonPress
+            and event.button() == QtCore.Qt.RightButton
+            and self.started_labelling
+        ):
 
             # remove the last point
             if len(self.labelled_points) >= 1:
@@ -231,7 +265,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.draw_and_update_points()
 
         return super(MainWindow, self).eventFilter(source, event)
-    
+
     def create_mask_from_polygon(self, polygon):
         """
         Create a mask from a polygon using numpy and matplotlib.
@@ -271,7 +305,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         # convert the keypoints to a array
         keypoints = np.array(keypoints)
-        
+
         # find the arena center
         arena_center = np.mean(keypoints[:3], axis=0)
 
@@ -280,18 +314,18 @@ class MainWindow(QtWidgets.QMainWindow):
         arm2_width = np.linalg.norm(keypoints[0] - keypoints[1])
         arm3_width = np.linalg.norm(keypoints[1] - keypoints[2])
 
-        # find the arena arm angles    
+        # find the arena arm angles
         arm1_slope = np.arctan2(keypoints[2][1] - keypoints[0][1], keypoints[2][0] - keypoints[0][0])
         arm2_slope = np.arctan2(keypoints[0][1] - keypoints[1][1], keypoints[0][0] - keypoints[1][0])
         arm3_slope = np.arctan2(keypoints[1][1] - keypoints[2][1], keypoints[1][0] - keypoints[2][0])
 
         # find the positions of the arena arms
-        arm1_end_1 = keypoints[3] - np.array([arm1_width/2 * np.cos(arm1_slope), arm1_width/2 * np.sin(arm1_slope)])
-        arm1_end_2 = keypoints[3] + np.array([arm1_width/2 * np.cos(arm1_slope), arm1_width/2 * np.sin(arm1_slope)])
-        arm2_end_1 = keypoints[4] - np.array([arm2_width/2 * np.cos(arm2_slope), arm2_width/2 * np.sin(arm2_slope)])
-        arm2_end_2 = keypoints[4] + np.array([arm2_width/2 * np.cos(arm2_slope), arm2_width/2 * np.sin(arm2_slope)])
-        arm3_end_1 = keypoints[5] - np.array([arm3_width/2 * np.cos(arm3_slope), arm3_width/2 * np.sin(arm3_slope)])
-        arm3_end_2 = keypoints[5] + np.array([arm3_width/2 * np.cos(arm3_slope), arm3_width/2 * np.sin(arm3_slope)])
+        arm1_end_1 = keypoints[3] - np.array([arm1_width / 2 * np.cos(arm1_slope), arm1_width / 2 * np.sin(arm1_slope)])
+        arm1_end_2 = keypoints[3] + np.array([arm1_width / 2 * np.cos(arm1_slope), arm1_width / 2 * np.sin(arm1_slope)])
+        arm2_end_1 = keypoints[4] - np.array([arm2_width / 2 * np.cos(arm2_slope), arm2_width / 2 * np.sin(arm2_slope)])
+        arm2_end_2 = keypoints[4] + np.array([arm2_width / 2 * np.cos(arm2_slope), arm2_width / 2 * np.sin(arm2_slope)])
+        arm3_end_1 = keypoints[5] - np.array([arm3_width / 2 * np.cos(arm3_slope), arm3_width / 2 * np.sin(arm3_slope)])
+        arm3_end_2 = keypoints[5] + np.array([arm3_width / 2 * np.cos(arm3_slope), arm3_width / 2 * np.sin(arm3_slope)])
 
         # find the edges of the reward zones
         reward_distance = float(self.choiceBoundaryDistance.text())
@@ -303,14 +337,14 @@ class MainWindow(QtWidgets.QMainWindow):
         arm3_reward_edge_2 = (1 - reward_distance) * keypoints[2] + reward_distance * arm3_end_1
 
         # define the boundaries of the arms of the arena
-        arm1_points = np.array([keypoints[2],arena_center,keypoints[0],arm1_end_1,arm1_end_2])
-        arm2_points = np.array([keypoints[0],arena_center,keypoints[1],arm2_end_1,arm2_end_2])
-        arm3_points = np.array([keypoints[1],arena_center,keypoints[2],arm3_end_1,arm3_end_2])
+        arm1_points = np.array([keypoints[2], arena_center, keypoints[0], arm1_end_1, arm1_end_2])
+        arm2_points = np.array([keypoints[0], arena_center, keypoints[1], arm2_end_1, arm2_end_2])
+        arm3_points = np.array([keypoints[1], arena_center, keypoints[2], arm3_end_1, arm3_end_2])
 
         # define the boundaries of the reward zones of the arena
-        arm1_reward_points = np.array([arm1_reward_edge_1,arm1_reward_edge_2,arm1_end_1,arm1_end_2])
-        arm2_reward_points = np.array([arm2_reward_edge_1,arm2_reward_edge_2,arm2_end_1,arm2_end_2])
-        arm3_reward_points = np.array([arm3_reward_edge_1,arm3_reward_edge_2,arm3_end_1,arm3_end_2])
+        arm1_reward_points = np.array([arm1_reward_edge_1, arm1_reward_edge_2, arm1_end_1, arm1_end_2])
+        arm2_reward_points = np.array([arm2_reward_edge_1, arm2_reward_edge_2, arm2_end_1, arm2_end_2])
+        arm3_reward_points = np.array([arm3_reward_edge_1, arm3_reward_edge_2, arm3_end_1, arm3_end_2])
 
         # create the masks for the arms of the arena
         arm_polygons = [arm1_points, arm2_points, arm3_points]
@@ -325,30 +359,36 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.arm_masks = []
         self.arm_reward_masks = []
-        for i in range(len(self.labelled_points)//6):
+        for i in range(len(self.labelled_points) // 6):
             # get the points of the Y-Arena and create the mask
-            arm, reward = self.create_mask_from_keypoints(self.labelled_points[i*6:(i+1)*6])
-            self.arm_masks+=arm
-            self.arm_reward_masks+=reward
+            arm, reward = self.create_mask_from_keypoints(self.labelled_points[i * 6 : (i + 1) * 6])
+            self.arm_masks += arm
+            self.arm_reward_masks += reward
 
     def plot_masks_and_verify(self):
         """
         Plot the masks.
         """
         image = np.zeros_like(self.arm_masks[0])
-        for i in range(1,len(self.arm_masks)+1):
-            image = image + (2*i)*self.arm_masks[i-1]
-            image = image + (2*i+1)*self.arm_reward_masks[i-1]
+        for i in range(1, len(self.arm_masks) + 1):
+            image = image + (2 * i) * self.arm_masks[i - 1]
+            image = image + (2 * i + 1) * self.arm_reward_masks[i - 1]
         # scale the image between 0 and 255
         image = (image - np.min(image)) / (np.max(image) - np.min(image)) * 255
         image = image.astype(np.uint8)
-        
+
         # plot the image
-        plt.imshow(image, cmap='gray')
+        plt.imshow(image, cmap="gray")
         plt.show()
 
         # send an dialog to ask if the mask is correct
-        reply = QtWidgets.QMessageBox.question(self, 'Verify Mask', "Is the mask correct?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Verify Mask",
+            "Is the mask correct?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No,
+        )
         if reply == QtWidgets.QMessageBox.Yes:
             self.mask_correct = True
         else:
@@ -359,25 +399,36 @@ class MainWindow(QtWidgets.QMainWindow):
         Save the mask.
         """
         # Create dialog to save the mask
-        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Masks', '.', '*.npy')
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Masks", ".", "*.npy")
         if file_name:
             # save the mask as a numpy array
-            np.save(file_name, np.array([np.array(self.arm_masks, dtype=np.int32), np.array(self.arm_reward_masks, dtype=np.int32), np.array(self.labelled_points, dtype=np.int32)],dtype=object), allow_pickle=True)
+            np.save(
+                file_name,
+                np.array(
+                    [
+                        np.array(self.arm_masks, dtype=np.int32),
+                        np.array(self.arm_reward_masks, dtype=np.int32),
+                        np.array(self.labelled_points, dtype=np.int32),
+                    ],
+                    dtype=object,
+                ),
+                allow_pickle=True,
+            )
         else:
             # show error message
-            QtWidgets.QMessageBox.warning(self, 'Error', 'Please select a file to save the mask.')
+            QtWidgets.QMessageBox.warning(self, "Error", "Please select a file to save the mask.")
             self.save_mask()
-    
+
     def show_tutorial(self):
         """
         Show the tutorial in a new dialog.
         """
         # create a new dialog
         dialog = QtWidgets.QDialog()
-        dialog.setWindowTitle('Tutorial')
+        dialog.setWindowTitle("Tutorial")
 
         # draw an image in the dialog
-        tutorial_image = QtGui.QPixmap('tutorial.png')
+        tutorial_image = QtGui.QPixmap("tutorial.png")
         image_label = QtWidgets.QLabel()
         image_label.setPixmap(tutorial_image)
         image_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -391,8 +442,12 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.show()
         pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-    window = MainWindow()
+    if len(sys.argv) > 1:
+        window = MainWindow(sys.argv[1])
+    else:
+        window = MainWindow()
     window.show()
     app.exec_()
