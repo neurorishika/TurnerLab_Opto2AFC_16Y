@@ -1,12 +1,9 @@
 ===========SETUP===========
 
-## create conda environment
-conda create -n sixteenY python=3.8
+## install python 3.8 using Anaconda Distribution
 
-## activate environment
-er
 ## install packages
-conda install pyserial numpy matplotlib cupy scikit-image scikit-video PyQt5 alicat
+pip install pyserial numpy matplotlib cupy scikit-image scikit-video PyQt5 alicat
 
 ## install cucim on Windows
 # clone the cucim repo from https://github.com/rapidsai/cucim

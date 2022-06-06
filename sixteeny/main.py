@@ -1,11 +1,6 @@
 import subprocess
 import sys
 
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-install("pandas")
-
 import numpy as np
 import cupy as cp
 import matplotlib.pyplot as plt
@@ -87,21 +82,20 @@ if __name__ == "__main__":
         CAMERA_FORMAT=rig_config["pixel_format"],
         EXPOSURE_TIME=rig_config["exposure_time"],
         GAIN=rig_config["gain"],
-        GAMMA=10,
+        GAMMA=1.0,
         MAX_FRAME_RATE=rig_config["max_frame_rate"],
         record_video=rig_config["record_video"],
         video_output_path=video_folder,
         video_output_name=experiment_name + "_" + str(rig_config["camera_index"]),
-        show_video=rig_config["show_video"],
+        show_video=rig_config["live_stream"],
         show_every_n=1,
         ffmpeg_path=rig_config["ffmpeg_path"],
-    ) as camera, OdorValveController(minimum_delay=rig_config["minimum_message_delay"]) as odor, LEDController(
+    ) as camera, OdorValveController(minimum_delay=rig_config["minimum_message_delay"]/1000) as odor, LEDController(
         ports=rig_config["com_ports"], baudrate=rig_config["baud_rate"], arena_panel_ids=rig_config["quadrant_ids"]
     ) as led, MFCController(
         com_port=rig_config["mfc_com_port"],
         device_ids=rig_config["mfc_device_ids"],
         default_flow_rate=rig_config["mfc_flow_rate"],
-        default_gas_type=rig_config["mfc_gas_type"],
     ) as mfc:
         controllers["camera"] = camera
         controllers["odor"] = odor
@@ -117,40 +111,51 @@ if __name__ == "__main__":
         # Check MFC values
         print("Checking MFC values...")
 
-        n_observations = 10
-        mfc_observations = np.zeros((n_observations, len(rig_config["mfc_device_ids"])))
-        for i in range(n_observations):
-            observed = False
-            while not observed:
-                try:
-                    for j in range(len(rig_config["mfc_device_ids"])):
-                        mfc_observations[i, j] = mfc.get_flow_rate(j)
-                    observed = True
-                except:
-                    print("MFC communication error. Trying again...")
-            time.sleep(1)
+        keep_trying = True
+        while keep_trying:
+            n_observations = 10
+            mfc_observations = np.zeros((n_observations, len(rig_config["mfc_device_ids"])))
+            for i in range(n_observations):
+                observed = False
+                while not observed:
+                    try:
+                        for j in range(len(rig_config["mfc_device_ids"])):
+                            mfc_observations[i, j] = mfc.get_flow_rate(j)
+                        observed = True
+                    except:
+                        print("MFC communication error for device " + str(j) + ".")
+                time.sleep(1)
 
-        error_margin = 0.1
+            error_margin = 0.1
 
-        # get the average flow rate for each MFC
-        average_flow_rates = np.mean(mfc_observations, axis=0)
+            # get the average flow rate for each MFC
+            average_flow_rates = np.mean(mfc_observations, axis=0)
 
-        # check that the flow rates are within the expected range
-        for i in range(len(rig_config["mfc_device_ids"])):
-            if average_flow_rates[i] < rig_config["mfc_flow_rate"] * (1 - error_margin) or average_flow_rates[
-                i
-            ] > rig_config["mfc_flow_rate"] * (1 + error_margin):
-                print(
-                    "Flow rate for MFC "
-                    + str(i)
-                    + " is out of range. Expected "
-                    + str(rig_config["mfc_flow_rate"])
-                    + " mL/min, got "
-                    + str(average_flow_rates[i])
-                    + " mL/min."
-                )
-                sys.exit(1)
+            # check that the flow rates are within the expected range
+            for i in range(len(rig_config["mfc_device_ids"])):
+                if average_flow_rates[i] < rig_config["mfc_flow_rate"] * (1 - error_margin) or average_flow_rates[
+                    i
+                ] > rig_config["mfc_flow_rate"] * (1 + error_margin):
+                    print(
+                        "Flow rate for MFC "
+                        + str(i)
+                        + " is out of range. Expected "
+                        + str(rig_config["mfc_flow_rate"])
+                        + " mL/min, got "
+                        + str(average_flow_rates[i])
+                        + " mL/min."
+                    )
+                    keep_trying = True
+                    retry = input("Retry? (y/n) ")
+                    if retry == "n":
+                        print("Exiting.")
+                        sys.exit(1)
+                    else:
+                        break
+                else:
+                    keep_trying = False
 
+        print("Flow rates are: {} mL/min.".format(" ".join(["{:0.2f}".format(x) for x in average_flow_rates])))
         print(
             "MFC values are within {}% error margin based on {} observations.".format(
                 error_margin * 100, n_observations
@@ -164,13 +169,13 @@ if __name__ == "__main__":
         print("All odor valves flipped to air.")
 
         # record the background image
-        print("Recording background image for {} seconds...".format(rig_config["background_record_time"]))
+        print("Recording background image for {} seconds...".format(rig_config["background_calculation_time"]))
         background, eff_fps, eff_duration, timestamp = record_background(
-            time_to_record=rig_config["background_record_time"],
+            time_to_record=rig_config["background_calculation_time"],
             camera=camera,
             gpu_enabled=rig_config["enable_gpu_processing"],
         )
-        print("Background image recorded at {} fps for {} seconds").format(eff_fps, eff_duration)
+        print("Background image recorded at {} fps for {} seconds".format(eff_fps, eff_duration))
 
         # show the background image
         if rig_config["enable_gpu_processing"]:

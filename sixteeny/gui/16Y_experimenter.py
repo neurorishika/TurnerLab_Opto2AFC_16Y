@@ -360,9 +360,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # run main.py
         subprocess.Popen(['python', 'sixteeny/main.py', self.project_directory.text(), self.experiment_name.text()])
 
-        # close the window
-        self.close()
-
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

@@ -50,7 +50,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add a dropbox for selecting the COM port for the 4 LED Modules in a 1x4 grid
         self.com_ports_dropboxes = []
-        default_indices = [2,5,4,3]
+        default_indices = [9,5,11,4]
         led_array_layout.addWidget(QtWidgets.QLabel('COM Port:'), 0, 0)
         for i in range(4):
             led_array_layout.addWidget(QtWidgets.QLabel('Module {}'.format(i+1)), 0, 2*i+1, QtCore.Qt.AlignRight)
@@ -462,16 +462,16 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to browse for the ffmpeg path
         """
-        # get the file name
-        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select FFMPEG Path', '', '*.exe')[0]
+        # get the folder name
+        folder_name = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select FFMPEG Folder')
 
-        if file_name == '':
-            # show an warning
-            QtWidgets.QMessageBox.warning(self, 'Warning', 'No file selected')
+        if folder_name == '':
+            # show a warning
+            QtWidgets.QMessageBox.warning(self, 'Warning', 'No folder selected')
             return
 
         # set the file name
-        self.ffmpeg_path.setText(file_name)
+        self.ffmpeg_path.setText(folder_name)
     
     def browse_ros_environment_batch_file(self):
         """
