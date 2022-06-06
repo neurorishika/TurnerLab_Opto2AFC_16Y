@@ -273,6 +273,13 @@ if __name__ == "__main__":
         print("Starting experiment...")
         experiment_ongoing = True
 
+        # if live stream is enabled, create a new matplotlib figure to display the live stream
+        if rig_config["live_stream"]:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            plt.ion()
+            plt.show()
+
         camera.start()
         while experiment_ongoing:
             # get the current time
@@ -296,6 +303,17 @@ if __name__ == "__main__":
 
             # label the frame
             labels = skmeas.label(frame)
+
+            # if live stream is enabled, show the frame
+            if rig_config["live_stream"]:
+                # clear the plot
+                ax.cla()
+                if rig_config["enable_gpu_processing"]:
+                    ax.imshow(frame.get())
+                else:
+                    ax.imshow(frame)
+                # update the plot
+                plt.pause(0.001)
 
             # find all regions in the frame
             regions = skmeas.regionprops(labels)
