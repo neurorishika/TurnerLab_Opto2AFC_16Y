@@ -37,17 +37,13 @@ class MainWindow(QtWidgets.QMainWindow):
         show_tips: Show the tips for labelling.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, image_file = None, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         # set up the main layout
         layout = QtWidgets.QGridLayout()
 
-        # if received arguments, set the first argument as the image file
-        if len(sys.argv) > 1:
-            self.image_file = sys.argv[1]
-        else:
-            self.image_file = None
+        self.image_file = image_file
 
         # Add button to get background image
         self.getBackgroundImageButton = QtWidgets.QPushButton("Get Background Image")
@@ -118,14 +114,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.No,
             )
             if reply == QtWidgets.QMessageBox.No:
-                self.image_file = QtWidgets.QFileDialog.getOpenFileName(self, "Open Background PNG File", ".", "*.png")[
-                    0
-                ]
+                self.image_file = QtWidgets.QFileDialog.getOpenFileName(self, "Open Background PNG File", ".", "*.png")
+            else:
+                self.image_file = [self.image_file]
         else:
-            self.image_file = QtWidgets.QFileDialog.getOpenFileName(self, "Open Background PNG File", ".", "*.png")[0]
+            self.image_file = QtWidgets.QFileDialog.getOpenFileName(self, "Open Background PNG File", ".", "*.png")
 
         if self.image_file:
-            self.image = QtGui.QPixmap(self.image_file)
+            self.image = QtGui.QPixmap(self.image_file[0])
             self.imageLabel.setPixmap(self.image)
             self.imageLabel.resize(self.image.size())
             self.imageLabel.show()

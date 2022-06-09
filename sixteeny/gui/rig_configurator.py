@@ -52,7 +52,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add a dropbox for selecting the COM port for the 4 LED Modules in a 1x4 grid
         self.com_ports_dropboxes = []
-        default_indices = [9, 5, 11, 4]
+        default_indices = [8, 4, 10, 3]
         led_array_layout.addWidget(QtWidgets.QLabel("COM Port:"), 0, 0)
         for i in range(4):
             led_array_layout.addWidget(QtWidgets.QLabel("Module {}".format(i + 1)), 0, 2 * i + 1, QtCore.Qt.AlignRight)
@@ -335,7 +335,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # mfc
         self.mfc_com_port.setCurrentIndex(self.mfc_com_port.findText(configuration["mfc_com_port"]))
-        self.mfc_gas_type.setCurrentIndex(self.mfc_gas_type.findText(configuration["mfc_gas_type"]))
         for i in range(16):
             self.mfc_device_id_droboxes[i].setCurrentIndex(
                 self.mfc_device_id_droboxes[i].findText(configuration["mfc_device_ids"][i])
@@ -388,7 +387,6 @@ class MainWindow(QtWidgets.QMainWindow):
         configuration["live_stream"] = self.live_stream_checkbox.isChecked()
         # mfc
         configuration["mfc_com_port"] = self.mfc_com_port.currentText()
-        configuration["mfc_gas_type"] = self.mfc_gas_type.currentText()
         configuration["mfc_device_ids"] = []
         for i in range(16):
             configuration["mfc_device_ids"].append(self.mfc_device_id_droboxes[i].currentText())

@@ -17,6 +17,9 @@ class CSVExperimenter(Experimenter):
         assert self.experiment_config_file.endswith('.csv')
         # read the experiment config file
         self.experiment_config = pd.read_csv(self.experiment_config_file)
+        # get experiment folder as the full path to the folder containing the experiment config file
+        self.experiment_folder = self.experiment_config_file.split('/')[:-2]
+        self.experiment_folder = '/'.join(self.experiment_folder)+'/'
     
     def get_next_trial(self, history):
         """

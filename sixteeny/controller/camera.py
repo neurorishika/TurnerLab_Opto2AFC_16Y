@@ -40,18 +40,18 @@ def video_writer(save_queue, writer):
             writer.writeFrame(image)
             save_queue.task_done()
 
-def video_player(play_queue, temp_folder):
-    """
-    Plot imaged from queue.
-    """
-    while True:
-        image = play_queue.get()
-        if image is None:
-            break
-        else:
-            # save image to disk
-            np.save(temp_folder + 'image.npy', image)
-            play_queue.task_done()
+# def video_player(play_queue, temp_folder):
+#     """
+#     Plot imaged from queue.
+#     """
+#     while True:
+#         image = play_queue.get()
+#         if image is None:
+#             break
+#         else:
+#             # save image to disk
+#             np.save(temp_folder + 'image.npy', image)
+#             play_queue.task_done()
 
 class SpinnakerCamera:
     """
@@ -183,10 +183,10 @@ class SpinnakerCamera:
             self.save_queue = queue.Queue()
             self.save_thread = threading.Thread(target=video_writer, args=(self.save_queue, self.writer))
         
-        if self.show_video:
-            self.play_queue = queue.Queue()
-            self.frame_count = 0
-            self.play_thread = threading.Thread(target=video_player, args=(self.play_queue, 'temp/'))
+        # if self.show_video:
+        #     self.play_queue = queue.Queue()
+        #     self.frame_count = 0
+        #     self.play_thread = threading.Thread(target=video_player, args=(self.play_queue, 'temp/'))
         
         self.initialized = True
 
@@ -220,8 +220,8 @@ class SpinnakerCamera:
             self.cam.BeginAcquisition()
             if self.record_video:
                 self.save_thread.start()
-            if self.show_video:
-                self.play_thread.start()
+            # if self.show_video:
+            #     self.play_thread.start()
             self.running = True
             self.time_of_last_frame = time.time()
 
@@ -236,9 +236,9 @@ class SpinnakerCamera:
                 self.writer.close()
                 with open(self.video_output_path + self.video_output_name + '_timestamps.pkl', 'wb') as f:
                     pickle.dump(self.timestamps, f)
-            if self.show_video:
-                self.play_queue.join()
-                self.frame_count = 0
+            # if self.show_video:
+            #     self.play_queue.join()
+            #     self.frame_count = 0
         self.running = False
 
     def get_raw_image(self, wait=True):
@@ -280,10 +280,10 @@ class SpinnakerCamera:
             self.timestamps.append(img.GetTimeStamp())
             self.save_queue.put(arr)
         
-        if self.show_video:
-            if self.frame_count % self.show_every_n == 0:
-                self.play_queue.put(arr)
-            self.frame_count += 1
+        # if self.show_video:
+        #     if self.frame_count % self.show_every_n == 0:
+        #         self.play_queue.put(arr)
+        #     self.frame_count += 1
 
         if self.gpu_enabled:
             dtype = cp.uint8 if self.CAMERA_FORMAT == 'Mono8' else cp.uint16

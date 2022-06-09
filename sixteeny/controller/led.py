@@ -393,7 +393,6 @@ class LEDController(object):
         Runs the accumulated LED stimulus
         """
         for conn in self.conns:
-            conn.write(b"RESET\r")
             conn.write(b"RED 0\r")
             conn.write(b"GRN 0\r")
             conn.write(b"BLU 0\r")

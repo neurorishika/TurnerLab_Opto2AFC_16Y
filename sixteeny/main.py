@@ -21,14 +21,39 @@ import datetime
 import shutil
 
 if __name__ == "__main__":
+
+    start_string = """
+====================================================================
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    ██╗ ██████╗██╗   ██╗     ███╗   ███╗ █████╗ ███████╗███████╗
+   ███║██╔════╝╚██╗ ██╔╝     ████╗ ████║██╔══██╗╚══███╔╝██╔════╝
+   ╚██║███████╗ ╚████╔╝█████╗██╔████╔██║███████║  ███╔╝ █████╗  
+    ██║██╔═══██╗ ╚██╔╝ ╚════╝██║╚██╔╝██║██╔══██║ ███╔╝  ██╔══╝  
+    ██║╚██████╔╝  ██║        ██║ ╚═╝ ██║██║  ██║███████╗███████╗
+    ╚═╝ ╚═════╝   ╚═╝        ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝
+    Developed by:
+    - Rishika Mohanta, Turner Lab, Janelia Research Campus
+    
+            " May flies be ever in your favor "
+                    - Someone, somewhere c. Sometime
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+====================================================================
+    """
+    print(start_string)
+
     # Get project directory and name from command line arguments
     if len(sys.argv) > 2:
         project_directory = sys.argv[1]
         experiment_name = sys.argv[2]
+        print("Project directory: " + project_directory)
+        print("Experiment name: " + experiment_name)
     else:
         # send error message
         print("Please specify experiment directory and name as command line arguments.")
         sys.exit(1)
+
+    print()
 
     # ensure that project directory exists
     if project_directory[-1] != "/":
@@ -36,22 +61,32 @@ if __name__ == "__main__":
     if not os.path.isdir(project_directory):
         print("Project directory does not exist.")
         sys.exit(1)
+    else:
+        print("Project directory found.")
 
     # ensure that experiment name directory exists
     if not os.path.isdir(project_directory + experiment_name):
         print("Experiment directory does not exist.")
         sys.exit(1)
+    else:
+        print("Experiment directory found.")
+
+    print()
 
     # load the rig configuration file
     if not os.path.isfile(project_directory + experiment_name + "/config.yarena"):
         print("Experiment config file does not exist.")
         sys.exit(1)
+    else:
+        print("Experiment config file found.")
 
     with open(project_directory + experiment_name + "/config.yarena", "r") as f:
         rig_config = json.load(f)
+    print("Rig config loaded.")
 
     # find all *.yexperiment files in the folder
     experiment_files = [f for f in os.listdir(project_directory + experiment_name) if f.endswith(".yexperiment")]
+    print("Found " + str(len(experiment_files)) + " experiment files.")
 
     n_flies = len(experiment_files)
     fly_arenas = [int(experiment.split(".")[0].split("_")[1]) for experiment in experiment_files]
@@ -76,6 +111,8 @@ if __name__ == "__main__":
     # Initialize controllers
     controllers = {}
 
+    print("Initializing controllers.")
+    
     with SpinnakerCamera(
         index=rig_config["camera_index"],
         gpu_enabled=rig_config["enable_gpu_processing"],
@@ -155,7 +192,7 @@ if __name__ == "__main__":
                 else:
                     keep_trying = False
 
-        print("Flow rates are: {} mL/min.".format(" ".join(["{:0.2f}".format(x) for x in average_flow_rates])))
+        print("Flow rates are:\n {} mL/min.".format(" ml/min\n ".join(["{:0.2f}".format(x) for x in average_flow_rates])))
         print(
             "MFC values are within {}% error margin based on {} observations.".format(
                 error_margin * 100, n_observations
@@ -180,18 +217,24 @@ if __name__ == "__main__":
         # show the background image
         if rig_config["enable_gpu_processing"]:
             plt.imshow(background.get())
+            plt.imsave(project_directory + experiment_name + "/background.png", background.get(), cmap="gray")
         else:
             plt.imshow(background)
-        plt.imsave(project_directory + experiment_name + "/background.png", background, cmap="gray")
+            plt.imsave(project_directory + experiment_name + "/background.png", background, cmap="gray")
         plt.show()
 
-        # Ask user to confirm background image
-        background_confirmed = input("Is this the background image? (y/n) ")
-        if background_confirmed == "y" or background_confirmed == "Y":
-            print("Background image verified.")
-        else:
-            print("Background image capture failed. Exiting.")
-            sys.exit(1)
+        # Ask user to confirm background image and wait for correct input
+        while True:
+            background_confirmed = input("Is this the background image? (y/n) ")
+            if background_confirmed == "y" or background_confirmed == "Y":
+                print("Background image verified.")
+                break
+            elif background_confirmed == "n" or background_confirmed == "N":
+                print("Background image capture failed. Exiting.")
+                sys.exit(1)
+            else:
+                print("Invalid input. Enter 'y' or 'n'.")
+                continue
 
         # load the mask
         if not os.path.isfile(rig_config["mask_file"]):
@@ -200,7 +243,7 @@ if __name__ == "__main__":
             create_new_mask = input("Create new mask? (y/n) ")
             if create_new_mask == "y":
                 # run mask_designer.py with the background image as the argument and wait for it to finish
-                print("Running mask designer...")
+                print("Running mask designer...\nPlease make sure to save the mask file as mask.npy in the experiment directory.")
                 subprocess.call(
                     [
                         "python",
@@ -209,6 +252,9 @@ if __name__ == "__main__":
                     ]
                 )
                 print("Mask designer complete.")
+                # load the mask
+                arm_mask, reward_mask, _ = np.load(project_directory + experiment_name + "/mask.npy", allow_pickle=True)
+                print("Mask loaded.")
             else:
                 print("Exiting.")
                 sys.exit(1)
@@ -216,7 +262,7 @@ if __name__ == "__main__":
             # copy the mask file to the experiment folder
             shutil.copy(rig_config["mask_file"], project_directory + experiment_name + "/mask.npy")
             # load the mask
-            arm_mask, reward_mask, _ = np.load(rig_config["mask_file"])
+            arm_mask, reward_mask, _ = np.load(project_directory + experiment_name + "/mask.npy", allow_pickle=True)
             print("Mask loaded.")
 
         # overlay the mask on the background image
@@ -232,13 +278,18 @@ if __name__ == "__main__":
         )
         plt.show()
 
-        # Ask user to confirm mask
-        mask_confirmed = input("Is this the mask? (y/n) ")
-        if mask_confirmed == "y" or mask_confirmed == "Y":
-            print("Mask verified.")
-        else:
-            print("Mask was not verified. Exiting.")
-            sys.exit(1)
+        # Ask user to confirm mask and wait for correct response
+        while True:
+            mask_confirmed = input("Is this the mask? (y/n) ")
+            if mask_confirmed == "y" or mask_confirmed == "Y":
+                print("Mask verified.")
+                break
+            elif mask_confirmed == "n" or mask_confirmed == "N":
+                print("Mask capture failed. Exiting.")
+                sys.exit(1)
+            else:
+                print("Invalid input. Enter 'y' or 'n'.")
+                continue
 
         # determine the max value of the background image
         max_value = 255 if rig_config["pixel_format"] == "Mono8" else 65535
@@ -249,13 +300,13 @@ if __name__ == "__main__":
         # create experimenters
         print("Creating experimenters...")
         experimenters = {}
-        for i in experiment_files:
+        for i,n in zip(experiment_files,fly_arenas):
             # load experiment file as json
             with open(project_directory + experiment_name + "/" + i) as f:
                 experiment_file = json.load(f)
             # get experimenter file
             if experiment_file["fly_experiment"].endswith(".csv"):
-                experimenters[i] = CSVExperimenter(
+                experimenters[n] = CSVExperimenter(
                     project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
                 )
             else:
@@ -273,101 +324,136 @@ if __name__ == "__main__":
         print("Starting experiment...")
         experiment_ongoing = True
 
-        # if live stream is enabled, create a new matplotlib figure to display the live stream
-        if rig_config["live_stream"]:
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            plt.ion()
-            plt.show()
+        # # if live stream is enabled, create a new matplotlib figure to display the live stream
+        # if rig_config["live_stream"]:
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(111)
 
         camera.start()
         while experiment_ongoing:
-            # get the current time
-            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            try:
+                # get the current time
+                current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-            # acquire a frame
-            frame = camera.get_array()
+                # acquire a frame
+                frame = camera.get_array()
 
-            # invert the frame
-            frame = max_value - frame
+                # invert the frame
+                frame = max_value - frame
 
-            # subtract the background image
-            frame = change_in_image(frame, background, rig_config["enable_gpu_processing"])
+                # subtract the background image
+                frame = change_in_image(frame, background, rig_config["enable_gpu_processing"])
 
-            # binarize the frame
-            frame = binarize(frame, rig_config["binarization_threshold"], rig_config["enable_gpu_processing"])
+                # binarize the frame
+                frame = binarize(frame, rig_config["binarization_threshold"], rig_config["enable_gpu_processing"])
 
-            # perform morphological operations
-            frame = skmorph.binary_dilation(frame, selem=skmorph.disk(rig_config["dilation_radius"]))
-            frame = skmorph.binary_erosion(frame, selem=skmorph.disk(rig_config["erosion_radius"]))
+                # # perform morphological operations
+                # frame = skmorph.binary_dilation(frame, footprint=skmorph.disk(rig_config["dilation_radius"]))
+                # frame = skmorph.binary_erosion(frame, footprint=skmorph.disk(rig_config["erosion_radius"]))
 
-            # label the frame
-            labels = skmeas.label(frame)
+                # apply binary closing
+                frame = skmorph.binary_closing(frame, skmorph.disk(5))
 
-            # if live stream is enabled, show the frame
-            if rig_config["live_stream"]:
-                # clear the plot
-                ax.cla()
-                if rig_config["enable_gpu_processing"]:
-                    ax.imshow(frame.get())
-                else:
-                    ax.imshow(frame)
-                # update the plot
-                plt.pause(0.001)
+                # label the frame
+                labels = skmeas.label(frame)
 
-            # find all regions in the frame
-            regions = skmeas.regionprops(labels)
+                # find all regions in the frame
+                regions = skmeas.regionprops(labels)
 
-            n_objects = len(regions)
-            if n_objects == 0:
-                print("No objects detected.")
-                continue
+                n_objects = len(regions)
+                # if n_objects == 0:
+                #     print("T: " + str(current_time) + " - No objects detected.")
+                #     continue
+                # else:
+                #     print("T: " + str(current_time) + " - " + str(n_objects) + " objects detected.")
 
-            # enumerate all objects
-            object_summary = np.zeros((n_objects, 6))
-            for i in range(n_objects):
-                # get position of the object
-                position_x, position_y = regions[i].centroid
-                # convert to integer indices
-                position_x, position_y = int(position_x), int(position_y)
-                # get the values at the mask indices
-                arm_values = arm_mask[:, position_y, position_x]
-                reward_values = reward_mask[:, position_y, position_x]
-                # find the arena and arm and reward zone status
-                arena = np.argmax(arm_values) // 3
-                arm = np.argmax(arm_values) % 3
-                area = regions[i].area
-                in_reward_region = reward_mask[:, position_y, position_x].any and np.argmax(reward_values) == np.argmax(
-                    arm_values
-                )
-                # add the object to the summary
-                object_summary[i, :] = [position_x, position_y, arena, arm, area, in_reward_region]
+                # enumerate all objects
+                object_summary = np.ones((n_objects, 6))*np.nan
 
-            # loop over active arenas and find the largest object in each arena
-            for i in fly_arenas:
-                # find the largest object in the arena
-                largest_object = np.argmax(object_summary[object_summary[:, 2] == i, 4])
-                # get the position of the largest object
-                position_x, position_y = (
-                    object_summary[object_summary[:, 2] == i, 0][largest_object],
-                    object_summary[object_summary[:, 2] == i, 1][largest_object],
-                )
-                # get the arm of the largest object
-                arm = object_summary[object_summary[:, 2] == i, 3][largest_object]
-                # get the reward region status of the largest object
-                in_reward_region = object_summary[object_summary[:, 2] == i, 5][largest_object]
-                # update the arena tracker
-                trackers[i].update(arm, (position_x, position_y), in_reward_region)
+                for i in range(n_objects):
+                    # get position of the object
+                    position_x, position_y = regions[i].centroid
+                    # convert to integer indices 
+                    position_x, position_y = int(position_x), int(position_y)
+                    # get the values at the mask indices
+                    arm_values = arm_mask[:, position_x, position_y]
+                    reward_values = reward_mask[:, position_x, position_y]
+                    # check if the object is in any of the arenas
+                    if np.any(arm_values>0):
+                        # find the arena and arm and reward zone status
+                        # print(arm_values)
+                        arena = np.argmax(arm_values) // 3
+                        arm = np.argmax(arm_values) % 3
+                        area = regions[i].area
+                        in_reward_region = reward_mask[:, position_x, position_y].any() and np.argmax(reward_values) == np.argmax(
+                            arm_values
+                        )
+                        # add the object to the summary
+                        area = area.get() if rig_config["enable_gpu_processing"] else area
+                        object_summary[i, :] = [position_x, position_y, arena, arm, area, float(in_reward_region)]
+                        # print details
+                    #     print("T: " + str(current_time) + " - Object found in Arena " + str(arena) + ": Arm " + str(arm) + " in reward region: " + str(in_reward_region))
+                    # else:
+                    #     print("T: " + str(current_time) + " - Object not in Arena.")
+                
+                # remove all rows with NaN values
+                object_summary = object_summary[~np.isnan(object_summary).any(axis=1)]
 
-            # run all LED stimuli
-            led.run_accumulated_led_stimulus()
+                # loop over active arenas and find the largest object in each arena
+                detected = []
+                rewarded = []
+                for i in fly_arenas:
+                    
+                    # see if any objects are in the arena
+                    if not np.any(object_summary[:, 2] == i):
+                        continue
+                    else:
+                        detected.append(i)
+                    
+                    # find the largest object in the arena
+                    largest_object = np.argmax(object_summary[object_summary[:, 2] == i, 4])
+                    
+                    # get the position of the largest object
+                    position_x, position_y = (
+                        object_summary[object_summary[:, 2] == i, 0][largest_object],
+                        object_summary[object_summary[:, 2] == i, 1][largest_object],
+                    )
+                    
+                    # get the arm of the largest object
+                    arm = int(object_summary[object_summary[:, 2] == i, 3][largest_object])
+                    # get the reward region status of the largest object
+                    in_reward_region = bool(object_summary[object_summary[:, 2] == i, 5][largest_object])
+                    
+                    # update the arena tracker
+                    print("T: " + str(current_time) + " Fly found in Arena " + str(i) + ": Arm " + str(arm) + " in reward region: " + str(in_reward_region))
+                    reward = trackers[i].update(arm, (position_x, position_y), in_reward_region)
+                    
+                    # if the frame was rewarded, add the arena to the list of rewarded arenas
+                    if reward:
+                        rewarded.append(i)
+                
+                # if live stream is enabled and any fly was detected, save the frame
+                if rig_config["live_stream"] and len(detected) > 0:
+                    # save image to file
+                    plt.imsave(
+                        project_directory + experiment_name + "/video/" + current_time + "_" + str(i) + ".png",
+                        frame.get() if rig_config["enable_gpu_processing"] else frame,
+                        cmap="gray",
+                    )
 
-            # find all imcomplete arenas
-            incomplete_arenas = [i for i in fly_arenas if not trackers[i].completed]
+                # run all LED stimuli if any of the arenas were rewarded
+                if len(rewarded) > 0:
+                    led.run_accumulated_led_stimulus()
 
-            if len(incomplete_arenas) == 0:
-                # all arenas are complete
-                print("All arenas complete.")
+                # find all imcomplete arenas
+                incomplete_arenas = [i for i in fly_arenas if not trackers[i].completed]
+
+                if len(incomplete_arenas) == 0:
+                    # all arenas are complete
+                    print("All arenas complete.")
+                    experiment_ongoing = False
+            except KeyboardInterrupt:
+                print("Experiment interrupted.")
                 experiment_ongoing = False
 
         # create data directory

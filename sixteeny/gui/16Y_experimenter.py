@@ -227,18 +227,19 @@ class MainWindow(QtWidgets.QMainWindow):
         
         # check if the project directory already has a folder for the experiment name
         experiment_name = self.experiment_name.text()
+        project_directory = os.path.join(self.project_directory.text(), experiment_name).replace('\\', '/')
+
         if os.path.isdir(os.path.join(self.project_directory.text(), experiment_name)):
             # show a warning message and ask the user if they want to overwrite the experiment
             reply = QtWidgets.QMessageBox.question(self, 'Overwrite Experiment', 'The project directory already has a folder for the experiment name. Do you want to clear the directory?', QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
             if reply == QtWidgets.QMessageBox.Yes:
                 # remove the experiment folder
-                shutil.rmtree(os.path.join(self.project_directory.text(), experiment_name))
+                shutil.rmtree(project_directory)
                 # create the experiment folder
-                os.mkdir(os.path.join(self.project_directory.text(), experiment_name))
+                os.mkdir(project_directory)
         else:
             # create the experiment folder
-            os.mkdir(os.path.join(self.project_directory.text(), experiment_name))
-
+            os.mkdir(project_directory)
         
         # check if there is a config.yarena file in the experiment name directory
         config_present = False
