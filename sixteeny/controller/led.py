@@ -237,21 +237,6 @@ class LEDController(object):
             or (type(color) == tuple and len(color) == 3)
         ), "Invalid color"
 
-        if arena<0:
-            for conn_id in range(4):
-                for quadrant_count in range(4):
-                    if color == b"R" and self.pulse_state[conn_id][quadrant_count][0] == [0,0,0,0,0,0]:
-                        self.pulse_state[conn_id][quadrant_count][0]=[pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat]
-                    elif color == b"G" and self.pulse_state[conn_id][quadrant_count][1] == [0,0,0,0,0,0]:
-                        self.pulse_state[conn_id][quadrant_count][1]=[pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat]
-                    elif color == b"B" and self.pulse_state[conn_id][quadrant_count][2] == [0,0,0,0,0,0]:
-                        self.pulse_state[conn_id][quadrant_count][2]=[pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat]
-                    else:
-                        for i in range(3):
-                            if self.pulse_state[conn_id][quadrant_count][i]==[0,0,0,0,0,0]:
-                                self.pulse_state[conn_id][quadrant_count][i]=[pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat]
-            return
-
         conn_id = self.arena_specs[arena]["conn"]
         quadrant_count = self.arena_specs[arena]["quadrant_count"]
         if color == b"R":
@@ -359,13 +344,25 @@ class LEDController(object):
         for conn in range(4):
             self.color_state[conn] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
             self.pulse_state[conn] = [
-                [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]], 
+                [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
                 [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
                 [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
                 [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
             ]
 
-    def accumulate_led_stimulus(self, arena, color, intensity, pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat, common_pulse=False):
+    def accumulate_led_stimulus(
+        self,
+        arena,
+        color,
+        intensity,
+        pulse_width,
+        pulse_period,
+        pulse_count,
+        pulse_deadtime,
+        pulse_delay,
+        pulse_repeat,
+        debug_mode=False,
+    ):
         """
         Accumulates the LED stimulus
 
@@ -379,27 +376,31 @@ class LEDController(object):
             pulse_deadtime: pulse deadtime of the LED stimulus (int)
             pulse_delay: pulse delay of the LED stimulus (int)
             pulse_repeat: pulse repeat of the LED stimulus (int)
-            common_pulse: whether the LED stimulus is common (bool)
+            debug_mode: whether to hardcode the LED stimulus (bool)
         """
         self.accumulate_led_stimulus_intensity(arena, color, intensity)
-        if common_pulse:
-            self.accumulate_led_stimulus_pulse(-1, color, pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat)
+        if debug_mode:
+            for i in range(16):
+                self.accumulate_led_pulse_pattern(i, b"R", 500, 1000, 1, 0, 0, 1)
         else:
-            self.accumulate_led_stimulus_pulse(arena, color, pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat)
+            self.accumulate_led_pulse_pattern(
+                arena, color, pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat
+            )
 
-    def accumulate_json(self, arena, json_dict, common_pulse=False):
+    def accumulate_json(self, arena, json_dict, debug_mode=False):
         """
         Accumulates the LED stimulus from a JSON dictionary
 
         Variables:
             arena: arena to accumulate the LED stimulus for (int)
             json_dict: JSON data to accumulate the LED stimulus for (dict)
-            common_pulse: whether the LED stimulus is common (bool)
+            debug_mode: whether to hardcode the LED stimulus (bool)
         """
         assert type(json_dict) == dict, "Invalid JSON data"
         self.accumulate_led_stimulus_intensity(arena, json_dict["color"].encode(), json_dict["intensity"])
-        if common_pulse:
-            self.accumulate_led_pulse_pattern(-1, json_dict["color"].encode(), json_dict["pulse_width"], json_dict["pulse_period"], json_dict["pulse_count"], json_dict["pulse_deadtime"], json_dict["pulse_delay"], json_dict["pulse_repeat"])
+        if debug_mode:
+            for i in range(16):
+                self.accumulate_led_pulse_pattern(i, b"R", 500, 1000, 1, 0, 0, 1)
         else:
             self.accumulate_led_pulse_pattern(
                 arena,
@@ -412,7 +413,7 @@ class LEDController(object):
                 json_dict["pulse_repeat"],
             )
 
-    def run_accumulated_led_stimulus(self,pulse_common=False):
+    def run_accumulated_led_stimulus(self):
         """
         Runs the accumulated LED stimulus
         """
@@ -420,7 +421,7 @@ class LEDController(object):
             conn.write(b"RED 0\r")
             conn.write(b"GRN 0\r")
             conn.write(b"BLU 0\r")
-        
+
         for i in range(16):
             conn_id = self.arena_specs[i]["conn"]
             conn = self.conns[conn_id]
@@ -480,7 +481,11 @@ class LEDController(object):
             conn.write(b"RED " + str(self.color_state[conn_id][quadrant_count][0]).encode() + b" 0 " + quadrant + b"\r")
             conn.write(b"GRN " + str(self.color_state[conn_id][quadrant_count][1]).encode() + b" 0 " + quadrant + b"\r")
             conn.write(b"BLU " + str(self.color_state[conn_id][quadrant_count][2]).encode() + b" 0 " + quadrant + b"\r")
-            if self.color_state[conn_id][quadrant_count][0] > 0 or self.color_state[conn_id][quadrant_count][1] > 0 or self.color_state[conn_id][quadrant_count][2] > 0:
+            if (
+                self.color_state[conn_id][quadrant_count][0] > 0
+                or self.color_state[conn_id][quadrant_count][1] > 0
+                or self.color_state[conn_id][quadrant_count][2] > 0
+            ):
                 print("Flash on arena " + str(i) + " quadrant " + quadrant.decode() + " conn " + str(conn_id))
 
         for conn in self.conns:

@@ -6,7 +6,7 @@ import cupy as cp
 import matplotlib.pyplot as plt
 
 from sixteeny.utils.tracker import ArenaTracker
-from sixteeny.utils.experimenter import CSVExperimenter
+from sixteeny.utils.experimenter import CSVExperimenter, FiniteStateExperimenter
 from sixteeny.utils.camera import record_background, change_in_image, binarize
 
 from sixteeny.controller.camera import SpinnakerCamera
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     controllers = {}
 
     print("Initializing controllers.")
-    
+
     with SpinnakerCamera(
         index=rig_config["camera_index"],
         gpu_enabled=rig_config["enable_gpu_processing"],
@@ -194,7 +194,9 @@ if __name__ == "__main__":
                 else:
                     keep_trying = False
 
-        print("Flow rates are:\n {} mL/min.".format(" ml/min\n ".join(["{:0.2f}".format(x) for x in average_flow_rates])))
+        print(
+            "Flow rates are:\n {} mL/min.".format(" ml/min\n ".join(["{:0.2f}".format(x) for x in average_flow_rates]))
+        )
         print(
             "MFC values are within {}% error margin based on {} observations.".format(
                 error_margin * 100, n_observations
@@ -245,7 +247,9 @@ if __name__ == "__main__":
             create_new_mask = input("Create new mask? (y/n) ")
             if create_new_mask == "y":
                 # run mask_designer.py with the background image as the argument and wait for it to finish
-                print("Running mask designer...\nPlease make sure to save the mask file as mask.npy in the experiment directory.")
+                print(
+                    "Running mask designer...\nPlease make sure to save the mask file as mask.npy in the experiment directory."
+                )
                 subprocess.call(
                     [
                         "python",
@@ -302,13 +306,17 @@ if __name__ == "__main__":
         # create experimenters
         print("Creating experimenters...")
         experimenters = {}
-        for i,n in zip(experiment_files,fly_arenas):
+        for i, n in zip(experiment_files, fly_arenas):
             # load experiment file as json
             with open(project_directory + experiment_name + "/" + i) as f:
                 experiment_file = json.load(f)
             # get experimenter file
             if experiment_file["fly_experiment"].endswith(".csv"):
                 experimenters[n] = CSVExperimenter(
+                    project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
+                )
+            elif experiment_file["fly_experiment"].endswith(".yfse"):
+                experimenters[n] = FiniteStateExperimenter(
                     project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
                 )
             else:
@@ -370,26 +378,26 @@ if __name__ == "__main__":
                 #     print("T: " + str(current_time) + " - " + str(n_objects) + " objects detected.")
 
                 # enumerate all objects
-                object_summary = np.ones((n_objects, 6))*np.nan
+                object_summary = np.ones((n_objects, 6)) * np.nan
 
                 for i in range(n_objects):
                     # get position of the object
                     position_x, position_y = regions[i].centroid
-                    # convert to integer indices 
+                    # convert to integer indices
                     position_x, position_y = int(position_x), int(position_y)
                     # get the values at the mask indices
                     arm_values = arm_mask[:, position_x, position_y]
                     reward_values = reward_mask[:, position_x, position_y]
                     # check if the object is in any of the arenas
-                    if np.any(arm_values>0):
+                    if np.any(arm_values > 0):
                         # find the arena and arm and reward zone status
                         # print(arm_values)
                         arena = np.argmax(arm_values) // 3
                         arm = np.argmax(arm_values) % 3
                         area = regions[i].area
-                        in_reward_region = reward_mask[:, position_x, position_y].any() and np.argmax(reward_values) == np.argmax(
-                            arm_values
-                        )
+                        in_reward_region = reward_mask[:, position_x, position_y].any() and np.argmax(
+                            reward_values
+                        ) == np.argmax(arm_values)
                         # add the object to the summary
                         area = area.get() if rig_config["enable_gpu_processing"] else area
                         object_summary[i, :] = [position_x, position_y, arena, arm, area, float(in_reward_region)]
@@ -397,7 +405,7 @@ if __name__ == "__main__":
                     #     print("T: " + str(current_time) + " - Object found in Arena " + str(arena) + ": Arm " + str(arm) + " in reward region: " + str(in_reward_region))
                     # else:
                     #     print("T: " + str(current_time) + " - Object not in Arena.")
-                
+
                 # remove all rows with NaN values
                 object_summary = object_summary[~np.isnan(object_summary).any(axis=1)]
 
@@ -405,35 +413,44 @@ if __name__ == "__main__":
                 detected = []
                 rewarded = []
                 for i in fly_arenas:
-                    
+
                     # see if any objects are in the arena
                     if not np.any(object_summary[:, 2] == i):
                         continue
                     else:
                         detected.append(i)
-                    
+
                     # find the largest object in the arena
                     largest_object = np.argmax(object_summary[object_summary[:, 2] == i, 4])
-                    
+
                     # get the position of the largest object
                     position_x, position_y = (
                         object_summary[object_summary[:, 2] == i, 0][largest_object],
                         object_summary[object_summary[:, 2] == i, 1][largest_object],
                     )
-                    
+
                     # get the arm of the largest object
                     arm = int(object_summary[object_summary[:, 2] == i, 3][largest_object])
                     # get the reward region status of the largest object
                     in_reward_region = bool(object_summary[object_summary[:, 2] == i, 5][largest_object])
-                    
+
                     # update the arena tracker
-                    print("T: " + str(current_time) + " Fly found in Arena " + str(i) + ": Arm " + str(arm) + " in reward region: " + str(in_reward_region))
+                    print(
+                        "T: "
+                        + str(current_time)
+                        + " Fly found in Arena "
+                        + str(i)
+                        + ": Arm "
+                        + str(arm)
+                        + " in reward region: "
+                        + str(in_reward_region)
+                    )
                     reward = trackers[i].update(arm, (position_x, position_y), in_reward_region)
-                    
+
                     # if the frame was rewarded, add the arena to the list of rewarded arenas
                     if reward:
                         rewarded.append(i)
-                
+
                 # # if live stream is enabled and any fly was detected, save the frame
                 # if rig_config["live_stream"] and len(detected) > 0:
                 #     # save image to file

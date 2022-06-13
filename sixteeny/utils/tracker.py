@@ -1,3 +1,4 @@
+from doctest import debug_script
 import numpy as np
 import json
 import time
@@ -46,7 +47,7 @@ class ArenaTracker(object):
 
         self.lengths_of_trials = np.zeros(self.n_trials)
 
-        self.clockwise_arena_indices = [0,2,4,6,8,10,12,14]
+        self.clockwise_arena_indices = [0, 2, 4, 6, 8, 10, 12, 14]
 
     def relative_to_absolute_arm(self, relative_position, start_arm, arena_index):
         """
@@ -125,24 +126,25 @@ class ArenaTracker(object):
 
             # if reward condition is met, start new trial
             time_needed_in_reward_zone = self.time_needed_in_reward_zone[self.odor_vector[self.current_arm]]
-            
-            if time_needed_in_reward_zone == 'inf':
+
+            if time_needed_in_reward_zone == "inf":
                 time_needed_in_reward_zone = np.inf
             else:
                 time_needed_in_reward_zone = float(time_needed_in_reward_zone)
 
             if in_reward_zone:
                 if time_needed_in_reward_zone == 0 or (
-                    time_needed_in_reward_zone > 0 and (time.time() - self.time_enter_reward_zone) > time_needed_in_reward_zone
+                    time_needed_in_reward_zone > 0
+                    and (time.time() - self.time_enter_reward_zone) > time_needed_in_reward_zone
                 ):
                     rewarded = True
                     self.administer_reward()
                     self.start_new_trial()
-        
+
         if not self.started:
             self.start_new_trial()
             self.started = True
-        
+
         return rewarded
 
     def administer_reward(self):
@@ -155,15 +157,15 @@ class ArenaTracker(object):
         self.chosen_odor[self.trial_count] = self.odor_vector[self.current_arm]
 
         reward_probability = self.reward_probability[self.odor_vector[self.current_arm]]
-        reward_stimulus = self.experiment_folder+ "stimuli/"+self.reward_stimulus[self.odor_vector[self.current_arm]]
-        
+        reward_stimulus = self.experiment_folder + "stimuli/" + self.reward_stimulus[self.odor_vector[self.current_arm]]
+
         # sample reward
         if np.random.rand() < reward_probability:
             # load json file
             with open(reward_stimulus, "r") as f:
                 reward_stimulus = json.load(f)
             # deliver reward
-            self.controllers["led"].accumulate_json(self.arena_index, reward_stimulus, common_pulse=True)
+            self.controllers["led"].accumulate_json(self.arena_index, reward_stimulus, debug_mode=True)
         pass
 
     def start_new_trial(self):
@@ -203,7 +205,9 @@ class ArenaTracker(object):
 
         ### TODO: update data for next trial
         new_indices = [self.relative_to_absolute_arm(i, self.start_arm, self.arena_index) for i in range(3)]
-        self.odor_vector = [int(next_trial["relative_odor_vector"][i]) for i in new_indices]  # odor vectors for each absolute arm
+        self.odor_vector = [
+            int(next_trial["relative_odor_vector"][i]) for i in new_indices
+        ]  # odor vectors for each absolute arm
 
         # flip the valves to the new odor vector
         self.controllers["odor"].publish(self.arena_index, self.odor_vector)
@@ -217,14 +221,14 @@ class ArenaTracker(object):
         Saves data to a .ydata file.
         """
         # remove the last few NaN values from the data
-        self.fly_positions = self.fly_positions[:self.frame_count, :]
-        self.frame_times = self.frame_times[:self.frame_count]
+        self.fly_positions = self.fly_positions[: self.frame_count, :]
+        self.frame_times = self.frame_times[: self.frame_count]
         # remove the data for the unused trials
-        self.chosen_arms = self.chosen_arms[:self.trial_count]
-        self.chosen_odor = self.chosen_odor[:self.trial_count]
-        self.reward_delivered = self.reward_delivered[:self.trial_count]
-        self.time_spent_in_reward_zone = self.time_spent_in_reward_zone[:self.trial_count]
-        self.lengths_of_trials = self.lengths_of_trials[:self.trial_count]
+        self.chosen_arms = self.chosen_arms[: self.trial_count]
+        self.chosen_odor = self.chosen_odor[: self.trial_count]
+        self.reward_delivered = self.reward_delivered[: self.trial_count]
+        self.time_spent_in_reward_zone = self.time_spent_in_reward_zone[: self.trial_count]
+        self.lengths_of_trials = self.lengths_of_trials[: self.trial_count]
         # save data as .ydata file in json format
         data = {
             "fly_positions": self.fly_positions.tolist(),
@@ -234,7 +238,7 @@ class ArenaTracker(object):
             "reward_delivered": self.reward_delivered.tolist(),
             "time_spent_in_reward_zone": self.time_spent_in_reward_zone.tolist(),
             "lengths_of_trials": self.lengths_of_trials.tolist(),
-            "n_trials": self.n_trials, 
+            "n_trials": self.n_trials,
             "max_frame_count": self.frame_count,
             "trial_count": self.trial_count,
         }
