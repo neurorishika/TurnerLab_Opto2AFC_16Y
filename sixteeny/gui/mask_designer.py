@@ -37,7 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
         show_tips: Show the tips for labelling.
     """
 
-    def __init__(self, image_file = None, *args, **kwargs):
+    def __init__(self, image_file=None, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         # set up the main layout
@@ -423,8 +423,8 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog = QtWidgets.QDialog()
         dialog.setWindowTitle("Tutorial")
 
-        # draw an image in the dialog
-        tutorial_image = QtGui.QPixmap("tutorial.png")
+        # draw image from file called marker_tutorial.png
+        tutorial_image = QtGui.QPixmap("sixteeny/gui/marker_tutorial.png")
         image_label = QtWidgets.QLabel()
         image_label.setPixmap(tutorial_image)
         image_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -436,6 +436,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # show the dialog
         dialog.show()
+        dialog.exec_()
         pass
 
 

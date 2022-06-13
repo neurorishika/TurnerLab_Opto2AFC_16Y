@@ -358,9 +358,6 @@ if __name__ == "__main__":
                 frame = binarize(frame, rig_config["binarization_threshold"], rig_config["enable_gpu_processing"])
 
                 # # perform morphological operations
-                # frame = skmorph.binary_dilation(frame, footprint=skmorph.disk(rig_config["dilation_radius"]))
-                # frame = skmorph.binary_erosion(frame, footprint=skmorph.disk(rig_config["erosion_radius"]))
-
                 # apply binary closing
                 frame = skmorph.binary_closing(frame, skmorph.disk(5))
 
