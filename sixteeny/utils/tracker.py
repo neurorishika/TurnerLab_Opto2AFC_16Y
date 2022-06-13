@@ -216,6 +216,15 @@ class ArenaTracker(object):
         """
         Saves data to a .ydata file.
         """
+        # remove the last few NaN values from the data
+        self.fly_positions = self.fly_positions[:self.frame_count, :]
+        self.frame_times = self.frame_times[:self.frame_count]
+        # remove the data for the unused trials
+        self.chosen_arms = self.chosen_arms[:self.trial_count]
+        self.chosen_odor = self.chosen_odor[:self.trial_count]
+        self.reward_delivered = self.reward_delivered[:self.trial_count]
+        self.time_spent_in_reward_zone = self.time_spent_in_reward_zone[:self.trial_count]
+        self.lengths_of_trials = self.lengths_of_trials[:self.trial_count]
         # save data as .ydata file in json format
         data = {
             "fly_positions": self.fly_positions.tolist(),
