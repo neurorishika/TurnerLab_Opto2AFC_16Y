@@ -226,7 +226,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return False
         
         # check if the project directory already has a folder for the experiment name
-        experiment_name = self.experiment_name.text()
+        experiment_name = 'data/'+self.experiment_name.text()
         project_directory = os.path.join(self.project_directory.text(), experiment_name).replace('\\', '/')
 
         if os.path.isdir(os.path.join(self.project_directory.text(), experiment_name)):
@@ -284,7 +284,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 experiment_details['fly_experiment'] = self.dropboxes[i].currentText()
                 experiment_details['fly_arena'] = self.fly_numbers[i]
                 # save the experiment details for each fly
-                with open(os.path.join(self.project_directory.text(), self.experiment_name.text(), 'fly_'+str(self.fly_numbers[i])+'.yexperiment'), 'w') as f:
+                with open(os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'fly_'+str(self.fly_numbers[i])+'.yexperiment'), 'w') as f:
                     json.dump(experiment_details, f)
 
     def prepare_directory(self):
@@ -297,22 +297,22 @@ class MainWindow(QtWidgets.QMainWindow):
         # copy the used experiments from experiment_zoo to a new experiments folder in the experiment directory
         for experiment in used_experiments:
             # check if the experiments folder already exists
-            if os.path.isdir(os.path.join(self.project_directory.text(), self.experiment_name.text(), 'experiments')):
+            if os.path.isdir(os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'experiments')):
                 # remove the experiments folder
-                shutil.rmtree(os.path.join(self.project_directory.text(), self.experiment_name.text(), 'experiments'))
+                shutil.rmtree(os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'experiments'))
             # create the experiments folder
-            os.mkdir(os.path.join(self.project_directory.text(), self.experiment_name.text(), 'experiments'))
+            os.mkdir(os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'experiments'))
             # copy the experiment file from the experiment_zoo to the experiments folder overwriting the old experiment
-            shutil.copy(os.path.join(self.project_directory.text(), 'experiment_zoo', experiment), os.path.join(self.project_directory.text(), self.experiment_name.text(), 'experiments'))
+            shutil.copy(os.path.join(self.project_directory.text(), 'experiment_zoo', experiment), os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'experiments'))
         
         # look for the metadata file for the used experiments
         for experiment in used_experiments:
             # check if the metadata file exists
             if os.path.isfile(os.path.join(self.project_directory.text(), 'experiment_zoo', experiment.split('.')[0]+'.meta')):
                 # copy the metadata file to the experiment directory
-                shutil.copy(os.path.join(self.project_directory.text(), 'experiment_zoo', experiment.split('.')[0]+'.meta'), os.path.join(self.project_directory.text(), self.experiment_name.text(), 'experiments'))
+                shutil.copy(os.path.join(self.project_directory.text(), 'experiment_zoo', experiment.split('.')[0]+'.meta'), os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'experiments'))
                 # open the metadata file as a json
-                with open(os.path.join(self.project_directory.text(), self.experiment_name.text(), 'experiments', experiment.split('.')[0]+'.meta'), 'r') as f:
+                with open(os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'experiments', experiment.split('.')[0]+'.meta'), 'r') as f:
                     metadata = json.load(f)
                 
                 # check if the metadata file has the 'used_stimuli' key
@@ -322,17 +322,17 @@ class MainWindow(QtWidgets.QMainWindow):
                     return False
                 else:
                     # check if the stimuli folder already exists
-                    if os.path.isdir(os.path.join(self.project_directory.text(), self.experiment_name.text(), 'stimuli')):
+                    if os.path.isdir(os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'stimuli')):
                         # remove the stimuli folder
-                        shutil.rmtree(os.path.join(self.project_directory.text(), self.experiment_name.text(), 'stimuli'))
+                        shutil.rmtree(os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'stimuli'))
                     # create the stimuli folder
-                    os.mkdir(os.path.join(self.project_directory.text(), self.experiment_name.text(), 'stimuli'))
+                    os.mkdir(os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'stimuli'))
                     # copy the used stimuli from the stimulus_zoo to a new stimuli folder in the experiment directory
                     for stimulus in metadata['used_stimuli']:
                         # check if the stimulus_zoo has the stimulus file
                         if os.path.isfile(os.path.join(self.project_directory.text(), 'stimulus_zoo', stimulus)):
                             # copy the stimulus file from the stimulus_zoo to the stimuli folder
-                            shutil.copy(os.path.join(self.project_directory.text(), 'stimulus_zoo', stimulus), os.path.join(self.project_directory.text(), self.experiment_name.text(), 'stimuli'))
+                            shutil.copy(os.path.join(self.project_directory.text(), 'stimulus_zoo', stimulus), os.path.join(self.project_directory.text(), 'data/'+self.experiment_name.text(), 'stimuli'))
                         else:
                             # send a warning message saying that the stimulus is missing
                             QtWidgets.QMessageBox.warning(self, 'Missing Stimulus', 'The stimulus: "'+stimulus+'" is missing.')
@@ -361,8 +361,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # run main.py
         subprocess.Popen(['python', 'sixteeny/main.py', self.project_directory.text(), 'data/'+self.experiment_name.text()])
 
-        # exit the application
-        self.close()
 
 
 if __name__ == '__main__':

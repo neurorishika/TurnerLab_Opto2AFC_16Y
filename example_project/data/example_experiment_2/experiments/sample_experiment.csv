@@ -1,0 +1,11 @@
+Trial#,P(R|Air),P(R|O1),P(R|O2),Odor(Start),Odor(Left),Odor(Right),CStim(Air),CStim(O1),CStim(O2),StayTime(Air),StayTime(O1),StayTime(O2),Timed,OdorDelay,UStim
+1,0,1,0,0,1,2,empty.stim,1X_500_1000_R_25.stim,1X_500_1000_R_25.stim,inf,0,0,0,0,empty.stim
+2,0,1,0,0,2,1,empty.stim,1X_500_1000_R_25.stim,1X_500_1000_R_25.stim,inf,0,0,0,0,empty.stim
+3,0,1,0,0,2,1,empty.stim,1X_500_1000_R_25.stim,1X_500_1000_R_25.stim,inf,0,0,0,0,empty.stim
+4,0,1,0,0,1,2,empty.stim,1X_500_1000_R_25.stim,1X_500_1000_R_25.stim,inf,0,0,0,0,empty.stim
+5,0,1,0,0,2,1,empty.stim,1X_500_1000_R_25.stim,1X_500_1000_R_25.stim,inf,0,0,0,0,empty.stim
+6,0,0,1,0,1,2,empty.stim,1X_500_1000_R_25.stim,1X_500_1000_R_25.stim,inf,0,0,0,0,empty.stim
+7,0,0,1,0,1,2,empty.stim,1X_500_1000_R_25.stim,1X_500_1000_R_25.stim,inf,0,0,0,0,empty.stim
+8,0,0,1,0,1,2,empty.stim,1X_500_1000_R_25.stim,1X_500_1000_R_25.stim,inf,0,0,0,0,empty.stim
+9,0,0,1,0,2,1,empty.stim,1X_500_1000_R_25.stim,1X_500_1000_R_25.stim,inf,0,0,0,0,empty.stim
+10,0,0,1,0,1,2,empty.stim,1X_500_1000_R_25.stim,1X_500_1000_R_25.stim,inf,0,0,0,0,empty.stim

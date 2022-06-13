@@ -163,7 +163,7 @@ class ArenaTracker(object):
             with open(reward_stimulus, "r") as f:
                 reward_stimulus = json.load(f)
             # deliver reward
-            self.controllers["led"].accumulate_json(self.arena_index, reward_stimulus)
+            self.controllers["led"].accumulate_json(self.arena_index, reward_stimulus, common_pulse=True)
         pass
 
     def start_new_trial(self):

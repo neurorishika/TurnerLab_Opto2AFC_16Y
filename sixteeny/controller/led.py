@@ -399,7 +399,7 @@ class LEDController(object):
         assert type(json_dict) == dict, "Invalid JSON data"
         self.accumulate_led_stimulus_intensity(arena, json_dict["color"].encode(), json_dict["intensity"])
         if common_pulse:
-            self.accumulate_led_stimulus_pulse(-1, json_dict["color"].encode(), json_dict["pulse_width"], json_dict["pulse_period"], json_dict["pulse_count"], json_dict["pulse_deadtime"], json_dict["pulse_delay"], json_dict["pulse_repeat"])
+            self.accumulate_led_pulse_pattern(-1, json_dict["color"].encode(), json_dict["pulse_width"], json_dict["pulse_period"], json_dict["pulse_count"], json_dict["pulse_deadtime"], json_dict["pulse_delay"], json_dict["pulse_repeat"])
         else:
             self.accumulate_led_pulse_pattern(
                 arena,
