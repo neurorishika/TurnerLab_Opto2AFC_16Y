@@ -20,6 +20,7 @@ class CSVExperimenter(Experimenter):
         # get experiment folder as the full path to the folder containing the experiment config file
         self.experiment_folder = self.experiment_config_file.split('/')[:-2]
         self.experiment_folder = '/'.join(self.experiment_folder)+'/'
+        self.n_trials = self.experiment_config.shape[0]
     
     def get_next_trial(self, history):
         """

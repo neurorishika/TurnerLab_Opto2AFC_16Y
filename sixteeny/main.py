@@ -93,11 +93,13 @@ if __name__ == "__main__":
 
     # create video folder
     video_folder = project_directory + experiment_name + "/video/"
-    if not os.path.isdir(video_folder):
-        os.makedirs(video_folder)
-    else:
+    # if the folder already exists, delete it
+    if os.path.isdir(video_folder):
         shutil.rmtree(video_folder)
-        os.makedirs(video_folder)
+    # create the folder
+    os.mkdir(video_folder)
+    print("Video folder created.")
+    print()
 
     # import the skimage module
     if rig_config["enable_gpu_processing"]:
@@ -123,7 +125,7 @@ if __name__ == "__main__":
         MAX_FRAME_RATE=rig_config["max_frame_rate"],
         record_video=rig_config["record_video"],
         video_output_path=video_folder,
-        video_output_name=experiment_name + "_" + str(rig_config["camera_index"]),
+        video_output_name=experiment_name[5:] + "_" + str(rig_config["camera_index"]),
         show_video=rig_config["live_stream"],
         show_every_n=1,
         ffmpeg_path=rig_config["ffmpeg_path"],
@@ -432,14 +434,14 @@ if __name__ == "__main__":
                     if reward:
                         rewarded.append(i)
                 
-                # if live stream is enabled and any fly was detected, save the frame
-                if rig_config["live_stream"] and len(detected) > 0:
-                    # save image to file
-                    plt.imsave(
-                        project_directory + experiment_name + "/video/" + current_time + "_" + str(i) + ".png",
-                        frame.get() if rig_config["enable_gpu_processing"] else frame,
-                        cmap="gray",
-                    )
+                # # if live stream is enabled and any fly was detected, save the frame
+                # if rig_config["live_stream"] and len(detected) > 0:
+                #     # save image to file
+                #     plt.imsave(
+                #         project_directory + experiment_name + "/video/" + current_time + "_" + str(i) + ".png",
+                #         frame.get() if rig_config["enable_gpu_processing"] else frame,
+                #         cmap="gray",
+                #     )
 
                 # run all LED stimuli if any of the arenas were rewarded
                 if len(rewarded) > 0:
@@ -468,4 +470,16 @@ if __name__ == "__main__":
         # save all tracker data
         for i in fly_arenas:
             trackers[i].save_data(project_directory + experiment_name + "/data/")
+
+        # flip all valves to air
+        print("Flipping all odor valves to air...")
+        for i in range(16):
+            odor.publish(i, [0, 0, 0])
+        print("All odor valves flipped to air.")
+
+        # final message
+        print("Experiment complete. Thank you for using 16Y-Maze Rig for your experiment.")
+
+        # end python script
+        sys.exit()
 

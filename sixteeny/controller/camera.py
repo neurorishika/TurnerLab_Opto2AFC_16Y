@@ -11,6 +11,10 @@ import numpy as np
 import cupy as cp
 import time
 
+import skvideo
+skvideo.setFFmpegPath("C:/ffmpeg/bin/")
+import skvideo.io
+
 _SYSTEM = None
 
 class CameraError(Exception):
@@ -79,7 +83,7 @@ class SpinnakerCamera:
                 EXPOSURE_TIME=15000, 
                 GAIN=10, 
                 GAMMA=1, 
-                MAX_FRAME_RATE=100,
+                MAX_FRAME_RATE=-1,
                 record_video=False, 
                 video_output_path=None, 
                 video_output_name=None, 
@@ -105,9 +109,6 @@ class SpinnakerCamera:
             show_every_n : If not None, show every nth frame. (int)
             ffmpeg_path : Path to ffmpeg. (str)
         """
-        import skvideo
-        skvideo.setFFmpegPath(ffmpeg_path)
-        import skvideo.io
 
         self.initialized = False
         self.gpu_enabled = gpu_enabled
@@ -212,26 +213,26 @@ class SpinnakerCamera:
         """
         self.close()
 
-    def start(self):
+    def start(self,dont_record=False):
         """
         Start image acquisition.
         """
         if not self.running:
             self.cam.BeginAcquisition()
-            if self.record_video:
+            if self.record_video and not dont_record:
                 self.save_thread.start()
             # if self.show_video:
             #     self.play_thread.start()
             self.running = True
             self.time_of_last_frame = time.time()
 
-    def stop(self):
+    def stop(self,dont_record=False):
         """
         Stop image acquisition.
         """
         if self.running:
             self.cam.EndAcquisition()
-            if self.record_video:
+            if self.record_video and not dont_record:
                 self.save_queue.join()
                 self.writer.close()
                 with open(self.video_output_path + self.video_output_name + '_timestamps.pkl', 'wb') as f:
@@ -266,7 +267,7 @@ class SpinnakerCamera:
             chunk : PySpin chunk data (PySpin)
         """
         time_since_last_frame = time.time() - self.time_of_last_frame
-        if time_since_last_frame < 1.0 / self.MAX_FRAME_RATE:
+        if  self.MAX_FRAME_RATE > 0 and time_since_last_frame < 1.0 / self.MAX_FRAME_RATE:
             time.sleep(max(1.0 / self.MAX_FRAME_RATE - time_since_last_frame, 0))
         
         img = self.get_raw_image(wait)

@@ -63,7 +63,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add a dropbox for selecting the quadrant id in a 1x4 grid
         self.quadrant_ids_dropboxes = []
-        options = ["1000", "0100", "0010", "0001"]
+        options = ["0001", "0010", "1000", "0100"]
         default_indices = [1, 2, 3, 0]
         led_array_layout.addWidget(QtWidgets.QLabel("Panel ID:"), 1, 0)
         for i in range(4):
@@ -120,10 +120,10 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.pixel_formats_dropbox, 8, 1)
 
         # add a textbox to set the camera maximum frame rate
-        layout.addWidget(QtWidgets.QLabel("Max Frame Rate"), 8, 2)
+        layout.addWidget(QtWidgets.QLabel("Max Frame Rate (-1=inf)"), 8, 2)
         self.max_frame_rate = QtWidgets.QLineEdit()
-        self.max_frame_rate.setText("50")
-        self.max_frame_rate.setValidator(QtGui.QIntValidator(1, 200))
+        self.max_frame_rate.setText("-1")
+        self.max_frame_rate.setValidator(QtGui.QIntValidator(-1, 200))
         layout.addWidget(self.max_frame_rate, 8, 3)
 
         # add a textbox to set the camera gain in dB
@@ -135,7 +135,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add a textbox to set the camera exposure time in us
         layout.addWidget(QtWidgets.QLabel("Exposure Time (us)"), 9, 2)
-        max_exposure_time = int(1 / int(self.max_frame_rate.text()) * 1e6)
+        if self.max_frame_rate.text() == "-1":
+            max_exposure_time = 20000
+        else:
+            max_exposure_time = int(1 / int(self.max_frame_rate.text()) * 1e6)
         self.exposure_time = QtWidgets.QLineEdit()
         self.exposure_time.setText("{}".format(max_exposure_time))
         self.exposure_time.setValidator(QtGui.QIntValidator(1, max_exposure_time))

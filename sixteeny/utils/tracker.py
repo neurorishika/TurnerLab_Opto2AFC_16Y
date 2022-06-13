@@ -33,8 +33,8 @@ class ArenaTracker(object):
         self.time_enter_reward_zone = None
 
         # initialize tracker matrices
-        self.n_trials = 100
-        self.max_frames = 100 * 60 * 120
+        self.n_trials = experimenter.n_trials
+        self.max_frames = experimenter.n_trials * 60 * 120
         self.fly_positions = np.zeros((self.max_frames, 2)) * np.nan
         self.frame_times = np.zeros(self.max_frames) * np.nan
 

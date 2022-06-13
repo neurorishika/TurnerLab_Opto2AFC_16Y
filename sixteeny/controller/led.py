@@ -309,6 +309,7 @@ class LEDController(object):
             or (len(color) == 7 and color[0] == 35)
             or (type(color) == tuple and len(color) == 3)
         ), "Invalid color"
+        print("Accumulating on arena:" + str(arena))
         conn = self.arena_specs[arena]["conn"]
         quadrant_count = self.arena_specs[arena]["quadrant_count"]
         # accumulate color to color state
@@ -456,6 +457,8 @@ class LEDController(object):
             conn.write(b"RED " + str(self.color_state[conn_id][quadrant_count][0]).encode() + b" 0 " + quadrant + b"\r")
             conn.write(b"GRN " + str(self.color_state[conn_id][quadrant_count][1]).encode() + b" 0 " + quadrant + b"\r")
             conn.write(b"BLU " + str(self.color_state[conn_id][quadrant_count][2]).encode() + b" 0 " + quadrant + b"\r")
+            if self.color_state[conn_id][quadrant_count][0] > 0 or self.color_state[conn_id][quadrant_count][1] > 0 or self.color_state[conn_id][quadrant_count][2] > 0:
+                print("Flash on arena " + str(i) + " quadrant " + quadrant.decode() + " conn " + str(conn_id))
 
         for conn in self.conns:
             conn.write(b"RUN\r")

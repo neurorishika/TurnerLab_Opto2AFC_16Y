@@ -131,6 +131,6 @@ def start_gui(MFCController=None,save_directory=''):
 with MFCController(
         com_port='COM8', 
         device_ids=[chr(i) for i in range(ord('A'), ord('A') + 16)], 
-        default_flow_rate=300
+        default_flow_rate=900
     ) as mfc:
     start_gui(mfc, save_directory='Z:/Rishika/4Y-Maze/TurnerLab_Opto2AFC_16Y/sixteeny')

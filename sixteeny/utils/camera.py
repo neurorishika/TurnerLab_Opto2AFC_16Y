@@ -19,13 +19,13 @@ def record_background(time_to_record, camera, gpu_enabled=False):
         eff_fps (int): effective frames per second
         eff_duration (float): effective duration
     """
-    camera.start()
+    camera.start(dont_record=True)
     images = []
     timestamps = [time.time()]
     while timestamps[-1]-timestamps[0] < time_to_record:
         images.append(camera.get_array())
         timestamps.append(time.time())
-    camera.stop()
+    camera.stop(dont_record=True)
     if gpu_enabled:
         background = cp.mean(cp.array(images), axis=0)
     else:

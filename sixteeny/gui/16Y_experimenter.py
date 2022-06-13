@@ -276,7 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # create a dictionary to store the experiment details
                 experiment_details = {}
-                experiment_details['fly_experiment_name'] = self.experiment_name.text()
+                experiment_details['fly_experiment_name'] = 'data/'+self.experiment_name.text()
                 experiment_details['fly_project_directory'] = self.project_directory.text()
                 experiment_details['fly_config_file'] = self.config_file
                 experiment_details['fly_experiment_start_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -359,7 +359,10 @@ class MainWindow(QtWidgets.QMainWindow):
         print('Start experiment')
         
         # run main.py
-        subprocess.Popen(['python', 'sixteeny/main.py', self.project_directory.text(), self.experiment_name.text()])
+        subprocess.Popen(['python', 'sixteeny/main.py', self.project_directory.text(), 'data/'+self.experiment_name.text()])
+
+        # exit the application
+        self.close()
 
 
 if __name__ == '__main__':
