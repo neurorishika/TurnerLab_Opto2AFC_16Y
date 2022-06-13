@@ -443,7 +443,7 @@ class MainWindow(QtWidgets.QMainWindow):
         A function to browse for the mask file
         """
         # get the file name
-        file_name = QtWidgets.QFileDialog.getOpenFileName(self, "Select Mask File", "", "*.npy")[0]
+        file_name = QtWidgets.QFileDialog.getOpenFileName(self, "Select Mask File", "", "*.npz")[0]
 
         if file_name == "":
             # show an warning

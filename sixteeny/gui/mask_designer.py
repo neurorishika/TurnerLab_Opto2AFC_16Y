@@ -395,10 +395,10 @@ class MainWindow(QtWidgets.QMainWindow):
         Save the mask.
         """
         # Create dialog to save the mask
-        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Masks", ".", "*.npy")
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Masks", ".", "*.npz")
         if file_name:
             # save the mask as a numpy array
-            np.save(
+            np.savez_compressed(
                 file_name,
                 np.array(
                     [

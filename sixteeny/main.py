@@ -259,16 +259,16 @@ if __name__ == "__main__":
                 )
                 print("Mask designer complete.")
                 # load the mask
-                arm_mask, reward_mask, _ = np.load(project_directory + experiment_name + "/mask.npy", allow_pickle=True)
+                arm_mask, reward_mask, _ = np.load(project_directory + experiment_name + "/mask.npz", allow_pickle=True)
                 print("Mask loaded.")
             else:
                 print("Exiting.")
                 sys.exit(1)
         else:
             # copy the mask file to the experiment folder
-            shutil.copy(rig_config["mask_file"], project_directory + experiment_name + "/mask.npy")
+            shutil.copy(rig_config["mask_file"], project_directory + experiment_name + "/mask.npz")
             # load the mask
-            arm_mask, reward_mask, _ = np.load(project_directory + experiment_name + "/mask.npy", allow_pickle=True)
+            arm_mask, reward_mask, _ = np.load(project_directory + experiment_name + "/mask.npz", allow_pickle=True)
             print("Mask loaded.")
 
         # overlay the mask on the background image
