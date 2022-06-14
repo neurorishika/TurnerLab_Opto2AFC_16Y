@@ -2,6 +2,7 @@ import serial
 import time
 import random
 
+
 def hex_to_rgb_intensity(hex_value):
     hex_value = hex_value.decode().lstrip("#")
     rgb = tuple(int(hex_value[i : i + 2], 16) for i in (0, 2, 4))
@@ -457,10 +458,13 @@ class LEDController(object):
             conn.write(b"GRN 0\r")
             conn.write(b"BLU 0\r")
 
-        random_order = list(range(16))
-        random.shuffle(random_order)
+        order = []
+        for i in range(4):
+            red_intensities = [self.color_state[i][j][0] for j in range(4)]
+            descending_order = sorted(range(4), key=lambda k: red_intensities[k], reverse=True)
+            order += [4 * i + j for j in descending_order]
 
-        for i in random_order:
+        for i in order:
             conn_id = self.arena_specs[i]["conn"]
             conn = self.conns[conn_id]
             quadrant = self.arena_specs[i]["quadrant"]
