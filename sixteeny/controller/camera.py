@@ -266,13 +266,13 @@ class SpinnakerCamera:
             image : Image from the camera (numpy.ndarray/cupy.ndarray)
             chunk : PySpin chunk data (PySpin)
         """
-        time_since_last_frame = time.time() - self.time_of_last_frame
-        if  self.MAX_FRAME_RATE > 0 and time_since_last_frame < 1.0 / self.MAX_FRAME_RATE:
-            time.sleep(max(1.0 / self.MAX_FRAME_RATE - time_since_last_frame, 0))
+        # time_since_last_frame = time.time() - self.time_of_last_frame
+        # if  self.MAX_FRAME_RATE > 0 and time_since_last_frame < 1.0 / self.MAX_FRAME_RATE:
+        #     time.sleep(max(1.0 / self.MAX_FRAME_RATE - time_since_last_frame, 0))
         
         img = self.get_raw_image(wait)
         
-        self.time_of_last_frame = time.time()
+        # self.time_of_last_frame = time.time()
 
         dtype = np.uint8 if self.CAMERA_FORMAT == 'Mono8' else np.uint16
         arr = np.array(img.GetData(), dtype=dtype).reshape(img.GetHeight(), img.GetWidth())

@@ -244,10 +244,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.No,
             )
             if reply == QtWidgets.QMessageBox.Yes:
-                # remove the experiment folder
-                shutil.rmtree(project_directory)
-                # create the experiment folder
-                os.mkdir(project_directory)
+                # remove files in all the directories and subdirectories
+                for root, dirs, files in os.walk(project_directory):
+                    for file in files:
+                        os.remove(os.path.join(root, file))
         else:
             # create the experiment folder
             os.mkdir(project_directory)

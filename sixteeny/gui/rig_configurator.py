@@ -64,7 +64,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a dropbox for selecting the quadrant id in a 1x4 grid
         self.quadrant_ids_dropboxes = []
         options = ["0001", "0010", "1000", "0100"]
-        default_indices = [1, 2, 3, 0]
+        default_indices = [0,1,2,3]
         led_array_layout.addWidget(QtWidgets.QLabel("Panel ID:"), 1, 0)
         for i in range(4):
             led_array_layout.addWidget(
