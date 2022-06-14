@@ -36,7 +36,7 @@ if __name__ == "__main__":
     - Rishika Mohanta, Turner Lab, Janelia Research Campus
     
             " May flies be ever in your favor "
-                    - Someone, somewhere c. Sometime
+                    - Someone, Somewhere c. Sometime
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ====================================================================
     """
