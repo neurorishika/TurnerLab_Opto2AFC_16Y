@@ -136,7 +136,9 @@ class MainWindow(QtWidgets.QMainWindow):
         Start labelling the Y-Arenas.
         """
         if self.loaded_image:
-            self.instructionsLabel.setText("Click on the Y-Arenas to label them.")
+            self.instructionsLabel.setText(
+                "Right Click to add next Y-Arena keypoint and Left Click to remove the last one. (Click on Show Tutorial button for Keypoint identity)"
+            )
 
             # disable all buttons and text boxes
             self.getBackgroundImageButton.setEnabled(False)
@@ -226,7 +228,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.labelled_points.append((x, y))
 
             if len(self.labelled_points) == int(self.numYArenas.text()) * 6:
+                self.instructionsLabel.setText("Click anywhere on the image to finish labelling.")
+
+            if len(self.labelled_points) == int(self.numYArenas.text()) * 6 + 1:
                 self.instructionsLabel.setText("Processing and Saving...")
+                # remove the last point
+                self.labelled_points.pop()
+                # start the processing
                 self.create_mask_from_points()
                 self.plot_masks_and_verify()
                 if self.mask_correct:
