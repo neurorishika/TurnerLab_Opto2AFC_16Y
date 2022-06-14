@@ -250,6 +250,15 @@ class LEDController(object):
                     pulse_delay,
                     pulse_repeat,
                 ]
+            elif self.pulse_state[conn_id][quadrant_count][color_id] == [
+                pulse_width,
+                pulse_period,
+                pulse_count,
+                pulse_deadtime,
+                pulse_delay,
+                pulse_repeat,
+            ]:
+                pass
             else:
                 raise Exception("Already initialized pulse for red, cannot multiplex.")
         elif color == b"G":
@@ -263,6 +272,15 @@ class LEDController(object):
                     pulse_delay,
                     pulse_repeat,
                 ]
+            elif self.pulse_state[conn_id][quadrant_count][color_id] == [
+                pulse_width,
+                pulse_period,
+                pulse_count,
+                pulse_deadtime,
+                pulse_delay,
+                pulse_repeat,
+            ]:
+                pass
             else:
                 raise Exception("Already initialized pulse for green, cannot multiplex.")
         elif color == b"B":
@@ -276,6 +294,15 @@ class LEDController(object):
                     pulse_delay,
                     pulse_repeat,
                 ]
+            elif self.pulse_state[conn_id][quadrant_count][color_id] == [
+                pulse_width,
+                pulse_period,
+                pulse_count,
+                pulse_deadtime,
+                pulse_delay,
+                pulse_repeat,
+            ]:
+                pass
             else:
                 raise Exception("Already initialized pulse for blue, cannot multiplex.")
         else:
@@ -290,6 +317,15 @@ class LEDController(object):
                         pulse_delay,
                         pulse_repeat,
                     ]
+                elif self.pulse_state[conn_id][quadrant_count][i] == [
+                    pulse_width,
+                    pulse_period,
+                    pulse_count,
+                    pulse_deadtime,
+                    pulse_delay,
+                    pulse_repeat,
+                ]:
+                    pass
                 else:
                     raise Exception("Already initialized pulse for " + colors[i] + ", cannot multiplex.")
 
