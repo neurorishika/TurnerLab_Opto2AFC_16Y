@@ -461,7 +461,7 @@ class LEDController(object):
         order = []
         for i in range(4):
             red_intensities = [self.color_state[i][j][0] for j in range(4)]
-            descending_order = sorted(range(4), key=lambda k: red_intensities[k], reverse=True)
+            descending_order = sorted(range(4), key=lambda k: red_intensities[k], reverse=False)
             order += [4 * i + j for j in descending_order]
 
         for i in order:
