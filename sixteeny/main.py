@@ -248,7 +248,7 @@ if __name__ == "__main__":
             if create_new_mask == "y":
                 # run mask_designer.py with the background image as the argument and wait for it to finish
                 print(
-                    "Running mask designer...\nPlease make sure to save the mask file as mask.npy in the experiment directory."
+                    "Running mask designer...\nPlease make sure to save the mask file as mask.npz in the experiment directory."
                 )
                 subprocess.call(
                     [
@@ -259,7 +259,9 @@ if __name__ == "__main__":
                 )
                 print("Mask designer complete.")
                 # load the mask
-                arm_mask, reward_mask, _ = np.load(project_directory + experiment_name + "/mask.npz", allow_pickle=True)
+                temp = np.load(project_directory + experiment_name + "/mask.npz", allow_pickle=True)
+                arm_mask = temp["arm_masks"]
+                reward_mask = temp["arm_reward_masks"]
                 print("Mask loaded.")
             else:
                 print("Exiting.")
@@ -268,7 +270,9 @@ if __name__ == "__main__":
             # copy the mask file to the experiment folder
             shutil.copy(rig_config["mask_file"], project_directory + experiment_name + "/mask.npz")
             # load the mask
-            arm_mask, reward_mask, _ = np.load(project_directory + experiment_name + "/mask.npz", allow_pickle=True)
+            temp = np.load(project_directory + experiment_name + "/mask.npz", allow_pickle=True)
+            arm_mask = temp["arm_masks"]
+            reward_mask = temp["arm_reward_masks"]
             print("Mask loaded.")
 
         # overlay the mask on the background image

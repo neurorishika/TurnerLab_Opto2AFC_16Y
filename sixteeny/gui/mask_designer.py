@@ -400,14 +400,9 @@ class MainWindow(QtWidgets.QMainWindow):
             # save the mask as a numpy array
             np.savez_compressed(
                 file_name,
-                np.array(
-                    [
-                        np.array(self.arm_masks, dtype=np.int32),
-                        np.array(self.arm_reward_masks, dtype=np.int32),
-                        np.array(self.labelled_points, dtype=np.int32),
-                    ],
-                    dtype=object,
-                ),
+                arm_masks=self.arm_masks,
+                arm_reward_masks=self.arm_reward_masks,
+                arm_keypoints=self.labelled_points,
                 allow_pickle=True,
             )
         else:

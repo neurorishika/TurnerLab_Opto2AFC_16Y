@@ -1,7 +1,6 @@
-from typing import ByteString
 import serial
 import time
-
+import random
 
 def hex_to_rgb_intensity(hex_value):
     hex_value = hex_value.decode().lstrip("#")
@@ -458,7 +457,10 @@ class LEDController(object):
             conn.write(b"GRN 0\r")
             conn.write(b"BLU 0\r")
 
-        for i in range(16):
+        random_order = list(range(16))
+        random.shuffle(random_order)
+
+        for i in random_order:
             conn_id = self.arena_specs[i]["conn"]
             conn = self.conns[conn_id]
             quadrant = self.arena_specs[i]["quadrant"]
