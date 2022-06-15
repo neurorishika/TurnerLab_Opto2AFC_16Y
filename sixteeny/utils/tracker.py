@@ -234,7 +234,7 @@ class ArenaTracker(object):
         self.reward_stimulus = next_trial["reward_stimulus"]  # indexed wrt odors
         self.reward_probability = next_trial["reward_probability"]  # indexed wrt odors
 
-        self.trial_baited[self.trial_count] = next_trial["trial_baited"]  # 0 or 1 depending on if trial was baited
+        self.trial_baited[self.trial_count] = next_trial["baited"]  # 0 or 1 depending on if trial was baited
 
     def save_data(self, directory):
         """

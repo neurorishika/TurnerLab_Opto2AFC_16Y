@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from sixteeny.utils.tracker import ArenaTracker
 from sixteeny.utils.experimenter import CSVExperimenter, FiniteStateExperimenter
-from sixteeny.utils.camera import record_background, change_in_image, binarize
+from sixteeny.utils.camera import record_background, change_in_image, binarize, combine_binarized_images
 
 from sixteeny.controller.camera import SpinnakerCamera
 from sixteeny.controller.odor import OdorValveController
@@ -299,6 +299,12 @@ if __name__ == "__main__":
             else:
                 print("Invalid input. Enter 'y' or 'n'.")
                 continue
+        
+        # convert the combined mask to a correct format
+        if rig_config["enable_gpu_processing"]:
+            combined_mask = cp.array(combined_mask)
+        else:
+            combined_mask = np.array(combined_mask)
 
         # determine the max value of the background image
         max_value = 255 if rig_config["pixel_format"] == "Mono8" else 65535
@@ -317,7 +323,7 @@ if __name__ == "__main__":
             if experiment_file["fly_experiment"].endswith(".csv"):
                 experimenters[n] = CSVExperimenter(
                     project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
-                )
+                )   
             elif experiment_file["fly_experiment"].endswith(".yfse"):
                 experimenters[n] = FiniteStateExperimenter(
                     project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
@@ -374,7 +380,7 @@ if __name__ == "__main__":
                 frame = skmorph.binary_closing(frame, skmorph.disk(rig_config["closing_radius"]))
 
                 # filter the frame using the combined mask
-                frame = np.logical_and(frame, combined_mask)
+                frame = combine_binarized_images(frame, combined_mask,'and', rig_config["enable_gpu_processing"])   
 
                 # label the frame
                 labels = skmeas.label(frame)

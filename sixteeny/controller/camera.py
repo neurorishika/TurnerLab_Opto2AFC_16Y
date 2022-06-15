@@ -180,6 +180,7 @@ class SpinnakerCamera:
         if self.record_video:
             self.timestamps = []
             if self.gpu_enabled:
+                # create an FFmpegWriter object with lossless encoding
                 self.writer = skvideo.io.FFmpegWriter(
                     self.video_output_path + self.video_output_name + ".mp4", outputdict={"-vcodec": "h264"}
                 )
