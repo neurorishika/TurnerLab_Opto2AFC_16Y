@@ -121,7 +121,7 @@ if __name__ == "__main__":
         CAMERA_FORMAT=rig_config["pixel_format"],
         EXPOSURE_TIME=rig_config["exposure_time"],
         GAIN=rig_config["gain"],
-        GAMMA=1.0,
+        GAMMA=rig_config["gamma"],
         record_video=rig_config["record_video"],
         video_output_path=video_folder,
         video_output_name=experiment_name[5:] + "_" + str(rig_config["camera_index"]),
