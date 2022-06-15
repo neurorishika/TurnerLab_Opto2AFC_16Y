@@ -398,6 +398,8 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.mask_correct = False
 
+        self.combined_mask = np.int32(np.sum(self.arm_masks, axis=0) > 0)
+
     def save_mask(self):
         """
         Save the mask.
@@ -411,6 +413,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 arm_masks=self.arm_masks,
                 arm_reward_masks=self.arm_reward_masks,
                 arm_keypoints=self.labelled_points,
+                combined_mask=self.combined_mask,
                 allow_pickle=True,
             )
         else:

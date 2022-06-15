@@ -122,13 +122,11 @@ if __name__ == "__main__":
         EXPOSURE_TIME=rig_config["exposure_time"],
         GAIN=rig_config["gain"],
         GAMMA=1.0,
-        MAX_FRAME_RATE=rig_config["max_frame_rate"],
         record_video=rig_config["record_video"],
         video_output_path=video_folder,
         video_output_name=experiment_name[5:] + "_" + str(rig_config["camera_index"]),
         show_video=rig_config["live_stream"],
         show_every_n=1,
-        ffmpeg_path=rig_config["ffmpeg_path"],
     ) as camera, OdorValveController(minimum_delay=rig_config["minimum_message_delay"] / 1000) as odor, LEDController(
         ports=rig_config["com_ports"], baudrate=rig_config["baud_rate"], arena_panel_ids=rig_config["quadrant_ids"]
     ) as led, MFCController(
@@ -273,6 +271,7 @@ if __name__ == "__main__":
             temp = np.load(project_directory + experiment_name + "/mask.npz", allow_pickle=True)
             arm_mask = temp["arm_masks"]
             reward_mask = temp["arm_reward_masks"]
+            combined_mask = temp["combined_mask"]
             print("Mask loaded.")
 
         # overlay the mask on the background image
@@ -356,14 +355,26 @@ if __name__ == "__main__":
                 frame = max_value - frame
 
                 # subtract the background image
-                frame = change_in_image(frame, background, rig_config["enable_gpu_processing"])
+                frame = change_in_image(
+                    frame, background, rig_config["threshold_type"] == "relative", rig_config["enable_gpu_processing"]
+                )
 
                 # binarize the frame
-                frame = binarize(frame, rig_config["binarization_threshold"], rig_config["enable_gpu_processing"])
+                if rig_config["threshold_type"] == "relative":
+                    frame = binarize(
+                        frame, rig_config["binarization_threshold_relative"], rig_config["enable_gpu_processing"]
+                    )
+                else:
+                    frame = binarize(
+                        frame, rig_config["binarization_threshold_absolute"], rig_config["enable_gpu_processing"]
+                    )
 
                 # # perform morphological operations
                 # apply binary closing
-                frame = skmorph.binary_closing(frame, skmorph.disk(5))
+                frame = skmorph.binary_closing(frame, skmorph.disk(rig_config["closing_radius"]))
+
+                # filter the frame using the combined mask
+                frame = np.logical_and(frame, combined_mask)
 
                 # label the frame
                 labels = skmeas.label(frame)

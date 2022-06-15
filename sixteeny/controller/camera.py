@@ -12,16 +12,20 @@ import cupy as cp
 import time
 
 import skvideo
+
 skvideo.setFFmpegPath("C:/ffmpeg/bin/")
 import skvideo.io
 
 _SYSTEM = None
 
+
 class CameraError(Exception):
     """
     Exception raised when an error occurs in a camera.
     """
+
     pass
+
 
 def list_cameras():
     """
@@ -31,6 +35,7 @@ def list_cameras():
     if _SYSTEM is None:
         _SYSTEM = PySpin.System.GetInstance()
     return _SYSTEM.GetCameras()
+
 
 def video_writer(save_queue, writer):
     """
@@ -44,6 +49,7 @@ def video_writer(save_queue, writer):
             writer.writeFrame(image)
             save_queue.task_done()
 
+
 # def video_player(play_queue, temp_folder):
 #     """
 #     Plot imaged from queue.
@@ -56,6 +62,7 @@ def video_writer(save_queue, writer):
 #             # save image to disk
 #             np.save(temp_folder + 'image.npy', image)
 #             play_queue.task_done()
+
 
 class SpinnakerCamera:
     """
@@ -76,21 +83,19 @@ class SpinnakerCamera:
     """
 
     def __init__(
-                self, 
-                index=0, 
-                gpu_enabled=True,
-                CAMERA_FORMAT='Mono8',
-                EXPOSURE_TIME=15000, 
-                GAIN=10, 
-                GAMMA=1, 
-                MAX_FRAME_RATE=-1,
-                record_video=False, 
-                video_output_path=None, 
-                video_output_name=None, 
-                show_video=False, 
-                show_every_n=None,
-                ffmpeg_path='C:\\ffmpeg\\bin\\',
-                ):
+        self,
+        index=0,
+        gpu_enabled=True,
+        CAMERA_FORMAT="Mono8",
+        EXPOSURE_TIME=15000,
+        GAIN=10,
+        GAMMA=1,
+        record_video=False,
+        video_output_path=None,
+        video_output_name=None,
+        show_video=False,
+        show_every_n=None,
+    ):
         """
         Initialize the camera object.
 
@@ -119,19 +124,16 @@ class SpinnakerCamera:
             assert video_output_name is not None, "video_output_name must be specified if record_video is True"
             self.video_output_path = video_output_path
             self.video_output_name = video_output_name
-        
+
         self.show_video = show_video
         if self.show_video:
             assert show_every_n is not None, "show_every_n must be specified if show_video is True"
             self.show_every_n = show_every_n
-        
+
         self.CAMERA_FORMAT = CAMERA_FORMAT
         self.EXPOSURE_TIME = EXPOSURE_TIME
         self.GAIN = GAIN
         self.GAMMA = GAMMA
-        self.MAX_FRAME_RATE = MAX_FRAME_RATE
-
-        self.time_of_last_frame = None
 
         cam_list = list_cameras()
         if not cam_list.GetSize():
@@ -170,25 +172,29 @@ class SpinnakerCamera:
         self.cam.Gamma.SetValue(self.GAMMA)
 
         # set pixel format
-        if self.CAMERA_FORMAT == 'Mono8':
+        if self.CAMERA_FORMAT == "Mono8":
             self.cam.PixelFormat.SetValue(PySpin.PixelFormat_Mono8)
-        elif self.CAMERA_FORMAT == 'Mono16':
+        elif self.CAMERA_FORMAT == "Mono16":
             self.cam.PixelFormat.SetValue(PySpin.PixelFormat_Mono16)
 
         if self.record_video:
             self.timestamps = []
             if self.gpu_enabled:
-                self.writer = skvideo.io.FFmpegWriter(self.video_output_path + self.video_output_name + '.mp4', outputdict={'-vcodec': 'h264'})
+                self.writer = skvideo.io.FFmpegWriter(
+                    self.video_output_path + self.video_output_name + ".mp4", outputdict={"-vcodec": "h264"}
+                )
             else:
-                self.writer = skvideo.io.FFmpegWriter(self.video_output_path + self.video_output_name + '.mp4', outputdict={'-vcodec': 'mpeg4'})
+                self.writer = skvideo.io.FFmpegWriter(
+                    self.video_output_path + self.video_output_name + ".mp4", outputdict={"-vcodec": "mpeg4"}
+                )
             self.save_queue = queue.Queue()
             self.save_thread = threading.Thread(target=video_writer, args=(self.save_queue, self.writer))
-        
+
         # if self.show_video:
         #     self.play_queue = queue.Queue()
         #     self.frame_count = 0
         #     self.play_thread = threading.Thread(target=video_player, args=(self.play_queue, 'temp/'))
-        
+
         self.initialized = True
 
     def __enter__(self):
@@ -213,7 +219,7 @@ class SpinnakerCamera:
         """
         self.close()
 
-    def start(self,dont_record=False):
+    def start(self, dont_record=False):
         """
         Start image acquisition.
         """
@@ -226,7 +232,7 @@ class SpinnakerCamera:
             self.running = True
             self.time_of_last_frame = time.time()
 
-    def stop(self,dont_record=False):
+    def stop(self, dont_record=False):
         """
         Stop image acquisition.
         """
@@ -235,7 +241,7 @@ class SpinnakerCamera:
             if self.record_video and not dont_record:
                 self.save_queue.join()
                 self.writer.close()
-                with open(self.video_output_path + self.video_output_name + '_timestamps.pkl', 'wb') as f:
+                with open(self.video_output_path + self.video_output_name + "_timestamps.pkl", "wb") as f:
                     pickle.dump(self.timestamps, f)
             # if self.show_video:
             #     self.play_queue.join()
@@ -266,33 +272,27 @@ class SpinnakerCamera:
             image : Image from the camera (numpy.ndarray/cupy.ndarray)
             chunk : PySpin chunk data (PySpin)
         """
-        # time_since_last_frame = time.time() - self.time_of_last_frame
-        # if  self.MAX_FRAME_RATE > 0 and time_since_last_frame < 1.0 / self.MAX_FRAME_RATE:
-        #     time.sleep(max(1.0 / self.MAX_FRAME_RATE - time_since_last_frame, 0))
-        
-        img = self.get_raw_image(wait)
-        
-        # self.time_of_last_frame = time.time()
 
-        dtype = np.uint8 if self.CAMERA_FORMAT == 'Mono8' else np.uint16
+        img = self.get_raw_image(wait)
+
+        dtype = np.uint8 if self.CAMERA_FORMAT == "Mono8" else np.uint16
         arr = np.array(img.GetData(), dtype=dtype).reshape(img.GetHeight(), img.GetWidth())
-        
+
         if self.record_video:
             self.timestamps.append(img.GetTimeStamp())
             self.save_queue.put(arr)
-        
+
         # if self.show_video:
         #     if self.frame_count % self.show_every_n == 0:
         #         self.play_queue.put(arr)
         #     self.frame_count += 1
 
         if self.gpu_enabled:
-            dtype = cp.uint8 if self.CAMERA_FORMAT == 'Mono8' else cp.uint16
+            dtype = cp.uint8 if self.CAMERA_FORMAT == "Mono8" else cp.uint16
             arr = cp.array(arr, dtype=dtype)
-        
+
         if get_chunk:
             return arr, img.GetChunkData()
         else:
             return arr
-
 

@@ -5,6 +5,7 @@ import cucim.skimage.morphology as cskm
 from controller.camera import SpinnakerCamera
 import time
 
+
 def record_background(time_to_record, camera, gpu_enabled=False):
     """
     Record a background image averaged over a given time.
@@ -22,7 +23,7 @@ def record_background(time_to_record, camera, gpu_enabled=False):
     camera.start(dont_record=True)
     images = []
     timestamps = [time.time()]
-    while timestamps[-1]-timestamps[0] < time_to_record:
+    while timestamps[-1] - timestamps[0] < time_to_record:
         images.append(camera.get_array())
         timestamps.append(time.time())
     camera.stop(dont_record=True)
@@ -33,6 +34,7 @@ def record_background(time_to_record, camera, gpu_enabled=False):
     eff_fps = 1 / np.mean(np.diff(timestamps))
     eff_duration = timestamps[-1] - timestamps[0]
     return background, eff_fps, eff_duration, timestamps
+
 
 def background_subtraction(image, background, gpu_enabled=False):
     """
@@ -51,7 +53,8 @@ def background_subtraction(image, background, gpu_enabled=False):
         subtracted_image = np.maximum(image - background, 0)
     return subtracted_image
 
-def change_in_image(current_image, previous_image, gpu_enabled=False):
+
+def change_in_image(current_image, previous_image, relative=False, gpu_enabled=False):
     """
     Calculate change in image keeping only positive values.
 
@@ -63,10 +66,17 @@ def change_in_image(current_image, previous_image, gpu_enabled=False):
         del_image (numpy.ndarray/cupy.ndarray): change in image
     """
     if gpu_enabled:
-        del_image = cp.maximum(current_image - previous_image, 0)
+        if relative:
+            del_image = cp.maximum(current_image - previous_image, 0) / cp.maximum(previous_image, 1)
+        else:
+            del_image = cp.maximum(current_image - previous_image, 0)
     else:
-        del_image = np.maximum(current_image - previous_image, 0)
+        if relative:
+            del_image = np.maximum(current_image - previous_image, 0) / np.maximum(previous_image, 1)
+        else:
+            del_image = np.maximum(current_image - previous_image, 0)
     return del_image
+
 
 def binarize(image, threshold, gpu_enabled=False):
     """
@@ -84,6 +94,7 @@ def binarize(image, threshold, gpu_enabled=False):
     else:
         binarized_image = np.greater(image, threshold)
     return binarized_image
+
 
 def clean_objects(current_image, previous_image, background_image, threshold, closing_radius, gpu_enabled=False):
     """

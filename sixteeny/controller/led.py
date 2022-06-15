@@ -1,6 +1,4 @@
 import serial
-import time
-import random
 
 
 def hex_to_rgb_intensity(hex_value):

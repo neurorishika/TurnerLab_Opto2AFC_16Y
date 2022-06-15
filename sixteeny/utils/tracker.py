@@ -36,10 +36,14 @@ class ArenaTracker(object):
         # initialize tracker matrices
         self.n_trials = experimenter.n_trials
         self.max_frames = experimenter.n_trials * 60 * 120
+
         self.fly_positions = np.zeros((self.max_frames, 2)) * np.nan
         self.frame_times = np.zeros(self.max_frames) * np.nan
 
         self.time_spent_in_reward_zone = np.zeros(self.n_trials)
+
+        self.trial_baited = np.zeros(self.n_trials)
+        self.reward_states = np.zeros((self.n_trials, 3))
 
         self.chosen_arms = np.zeros(self.n_trials)
         self.chosen_odor = np.zeros(self.n_trials)
@@ -150,23 +154,37 @@ class ArenaTracker(object):
     def administer_reward(self):
         # update tracker matrices
         self.time_spent_in_reward_zone[self.trial_count] = time.time() - self.time_enter_reward_zone
-        self.reward_delivered[self.trial_count] = 1
         self.chosen_arms[self.trial_count] = self.absolute_to_relative_arm(
             self.current_arm, self.start_arm, self.arena_index
         )
         self.chosen_odor[self.trial_count] = self.odor_vector[self.current_arm]
 
-        reward_probability = self.reward_probability[self.odor_vector[self.current_arm]]
+        # sample reward state
+        reward_state = [np.random.choice(2, p=[1 - i, i]) for i in self.reward_probability]
+
+        # check if trial is baited, if so, get the logical OR of past reward states
+        if self.trial_baited[self.trial_count] == 1:
+            reward_state = (
+                np.int32(np.logical_or(reward_state, self.reward_states[self.trial_count - 1, :]))
+                if self.trial_count > 0
+                else reward_state
+            )
+
         reward_stimulus = self.experiment_folder + "stimuli/" + self.reward_stimulus[self.odor_vector[self.current_arm]]
 
         # sample reward
-        if np.random.rand() < reward_probability:
+        if reward_state[self.odor_vector[self.current_arm]] == 1:
             # load json file
             with open(reward_stimulus, "r") as f:
                 reward_stimulus = json.load(f)
             # deliver reward
             self.controllers["led"].accumulate_json(self.arena_index, reward_stimulus, debug_mode=True)
-        pass
+            self.reward_delivered[self.trial_count] = 1
+            # reset reward state
+            reward_state[self.odor_vector[self.current_arm]] = 0
+
+        # update reward states
+        self.reward_states[self.trial_count, :] = reward_state
 
     def start_new_trial(self):
 
@@ -215,6 +233,8 @@ class ArenaTracker(object):
         self.time_needed_in_reward_zone = next_trial["time_needed_in_reward_zone"]  # indexed wrt odors
         self.reward_stimulus = next_trial["reward_stimulus"]  # indexed wrt odors
         self.reward_probability = next_trial["reward_probability"]  # indexed wrt odors
+
+        self.trial_baited[self.trial_count] = next_trial["trial_baited"]  # 0 or 1 depending on if trial was baited
 
     def save_data(self, directory):
         """

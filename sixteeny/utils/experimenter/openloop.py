@@ -45,6 +45,7 @@ class CSVExperimenter(Experimenter):
         next_trial["timed"] = self.experiment_config.iloc[self.trial_number]["Timed"]
         next_trial["odor_delay"] = self.experiment_config.iloc[self.trial_number]["OdorDelay"]
         next_trial["unconditioned_stimulus"] = self.experiment_config.iloc[self.trial_number]["UStim"]
+        next_trial["baited"] = self.experiment_config.iloc[self.trial_number]["Baited"]
         # increment the trial number
         self.trial_number += 1
         # add to states

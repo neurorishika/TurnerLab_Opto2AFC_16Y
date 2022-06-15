@@ -64,7 +64,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a dropbox for selecting the quadrant id in a 1x4 grid
         self.quadrant_ids_dropboxes = []
         options = ["0001", "0010", "1000", "0100"]
-        default_indices = [0,1,2,3]
+        default_indices = [0, 1, 2, 3]
         led_array_layout.addWidget(QtWidgets.QLabel("Panel ID:"), 1, 0)
         for i in range(4):
             led_array_layout.addWidget(
@@ -101,17 +101,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a centre-aligned label at the top of the next row
         layout.addWidget(QtWidgets.QLabel("Camera Configuration:"), 6, 0, 1, 4, QtCore.Qt.AlignCenter)
 
-        # add a textbox to set FFMPEG path with a browse button
-        layout.addWidget(QtWidgets.QLabel("FFMPEG Path"), 7, 0)
-        self.ffmpeg_path = QtWidgets.QLineEdit()
-        self.ffmpeg_path.setText("C:\\ffmpeg\\bin\\")
-        self.ffmpeg_path.setReadOnly(True)
-        self.browse_ffmpeg_button = QtWidgets.QPushButton("Browse")
-        layout.addWidget(self.ffmpeg_path, 7, 1)
-        layout.addWidget(self.browse_ffmpeg_button, 7, 2, 1, 2)
-
-        self.browse_ffmpeg_button.clicked.connect(self.browse_ffmpeg_path)
-
         # add a dropbox to set the camera pixel format
         layout.addWidget(QtWidgets.QLabel("Pixel Format"), 8, 0)
         self.pixel_formats_dropbox = QtWidgets.QComboBox()
@@ -120,11 +109,11 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.pixel_formats_dropbox, 8, 1)
 
         # add a textbox to set the camera maximum frame rate
-        layout.addWidget(QtWidgets.QLabel("Max Frame Rate (-1=inf)"), 8, 2)
-        self.max_frame_rate = QtWidgets.QLineEdit()
-        self.max_frame_rate.setText("-1")
-        self.max_frame_rate.setValidator(QtGui.QIntValidator(-1, 200))
-        layout.addWidget(self.max_frame_rate, 8, 3)
+        layout.addWidget(QtWidgets.QLabel("Gamma"), 8, 2)
+        self.gamma = QtWidgets.QLineEdit()
+        self.gamma.setText("1")
+        self.gamma.setValidator(QtGui.QDoubleValidator(0.1, 10, 2))
+        layout.addWidget(self.gamma, 8, 3)
 
         # add a textbox to set the camera gain in dB
         layout.addWidget(QtWidgets.QLabel("Gain (dB)"), 9, 0)
@@ -135,13 +124,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add a textbox to set the camera exposure time in us
         layout.addWidget(QtWidgets.QLabel("Exposure Time (us)"), 9, 2)
-        if self.max_frame_rate.text() == "-1":
-            max_exposure_time = 20000
-        else:
-            max_exposure_time = int(1 / int(self.max_frame_rate.text()) * 1e6)
         self.exposure_time = QtWidgets.QLineEdit()
-        self.exposure_time.setText("{}".format(max_exposure_time))
-        self.exposure_time.setValidator(QtGui.QIntValidator(1, max_exposure_time))
+        self.exposure_time.setText("{}".format(20000))
+        self.exposure_time.setValidator(QtGui.QIntValidator(1, 100000))
         layout.addWidget(self.exposure_time, 9, 3)
 
         # add a textbox to set the camera index
@@ -158,19 +143,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.background_calculation_time.setValidator(QtGui.QIntValidator(1, 120))
         layout.addWidget(self.background_calculation_time, 10, 3)
 
-        # add a text box to set the dilation radius
-        layout.addWidget(QtWidgets.QLabel("Dilation Radius (pixels)"), 11, 0)
-        self.dilation_radius = QtWidgets.QLineEdit()
-        self.dilation_radius.setText("5")
-        self.dilation_radius.setValidator(QtGui.QIntValidator(1, 20))
-        layout.addWidget(self.dilation_radius, 11, 1)
+        # add a text box to set the closing radius
+        layout.addWidget(QtWidgets.QLabel("Closing Radius (pixels)"), 11, 0)
+        self.closing_radius = QtWidgets.QLineEdit()
+        self.closing_radius.setText("5")
+        self.closing_radius.setValidator(QtGui.QIntValidator(1, 20))
+        layout.addWidget(self.closing_radius, 11, 1)
 
         # add a text box to set the erosion radius
-        layout.addWidget(QtWidgets.QLabel("Erosion Radius (pixels)"), 11, 2)
-        self.erosion_radius = QtWidgets.QLineEdit()
-        self.erosion_radius.setText("5")
-        self.erosion_radius.setValidator(QtGui.QIntValidator(1, 20))
-        layout.addWidget(self.erosion_radius, 11, 3)
+        layout.addWidget(QtWidgets.QLabel("Binarization Threshold (Relative; %)"), 11, 2)
+        self.binarization_threshold_relative = QtWidgets.QLineEdit()
+        self.binarization_threshold_relative.setText("0")
+        self.binarization_threshold_relative.setValidator(QtGui.QIntValidator(0, 100))
+        layout.addWidget(self.binarization_threshold_relative, 11, 3)
 
         # add a checkbox to record video
         self.record_video_checkbox = QtWidgets.QCheckBox("Record Video")
@@ -181,11 +166,11 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.live_stream_checkbox, 12, 1)
 
         # add a text box to set the binarization threshold
-        layout.addWidget(QtWidgets.QLabel("Binarization Threshold"), 12, 2)
-        self.binarization_threshold = QtWidgets.QLineEdit()
-        self.binarization_threshold.setText("15")
-        self.binarization_threshold.setValidator(QtGui.QIntValidator(1, 255))
-        layout.addWidget(self.binarization_threshold, 12, 3)
+        layout.addWidget(QtWidgets.QLabel("Binarization Threshold (Absolute)"), 12, 2)
+        self.binarization_threshold_absolute = QtWidgets.QLineEdit()
+        self.binarization_threshold_absolute.setText("15")
+        self.binarization_threshold_absolute.setValidator(QtGui.QIntValidator(0, 65535))
+        layout.addWidget(self.binarization_threshold_absolute, 12, 3)
 
         # add a button to test the video stream
         self.test_video_stream_button = QtWidgets.QPushButton("Test Video Stream")
@@ -233,17 +218,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add a centre-aligned label at the top of the next row
         layout.addWidget(QtWidgets.QLabel("Valve Control Configuration:"), 18, 0, 1, 4, QtCore.Qt.AlignCenter)
-
-        # add a text box to get ROS environment variable and a browse button
-        layout.addWidget(QtWidgets.QLabel("ROS Environment Batch File"), 19, 0)
-        self.ros_environment_batch_file = QtWidgets.QLineEdit()
-        self.ros_environment_batch_file.setText("C:/yarena_ws/install/setup.bat")
-        self.ros_environment_batch_file.setReadOnly(True)
-        self.browse_ros_environment_batch_file_button = QtWidgets.QPushButton("Browse")
-        layout.addWidget(self.ros_environment_batch_file, 19, 1, 1, 2)
-        layout.addWidget(self.browse_ros_environment_batch_file_button, 19, 3)
-
-        self.browse_ros_environment_batch_file_button.clicked.connect(self.browse_ros_environment_batch_file)
 
         # add a button to set minimum message delay
         layout.addWidget(QtWidgets.QLabel("Minimum Message Delay (ms)"), 20, 0)
@@ -323,16 +297,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.baud_rates_dropbox.setCurrentIndex(self.baud_rates_dropbox.findText(configuration["baud_rate"]))
 
         # camera
-        self.ffmpeg_path.setText(configuration["ffmpeg_path"])
         self.pixel_formats_dropbox.setCurrentIndex(self.pixel_formats_dropbox.findText(configuration["pixel_format"]))
-        self.max_frame_rate.setText(str(configuration["max_frame_rate"]))
         self.gain.setText(str(configuration["gain"]))
+        self.gamma.setText(str(configuration["gamma"]))
         self.exposure_time.setText(str(configuration["exposure_time"]))
         self.camera_index.setText(str(configuration["camera_index"]))
         self.background_calculation_time.setText(str(configuration["background_calculation_time"]))
-        self.dilation_radius.setText(str(configuration["dilation_radius"]))
-        self.erosion_radius.setText(str(configuration["erosion_radius"]))
-        self.binarization_threshold.setText(str(configuration["binarization_threshold"]))
+        self.closing_radius.setText(str(configuration["closing_radius"]))
+        self.binarization_threshold_relative.setText(str(configuration["binarization_threshold_relative"]))
+        self.binarization_threshold_absolute.setText(str(configuration["binarization_threshold_absolute"]))
         self.record_video_checkbox.setChecked(configuration["record_video"])
         self.live_stream_checkbox.setChecked(configuration["live_stream"])
 
@@ -345,7 +318,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mfc_flow_rate.setText(str(configuration["mfc_flow_rate"]))
 
         # valve control
-        self.ros_environment_batch_file.setText(configuration["ros_environment_batch_file"])
         self.minimum_message_delay.setText(str(configuration["minimum_message_delay"]))
 
         # odor
@@ -362,6 +334,19 @@ class MainWindow(QtWidgets.QMainWindow):
         # set experiment directory as the file name
         file_name = self.experiment_directory.text() + "/config.yarena"
 
+        # verify either the relative or absolute binarization threshold is 0
+        if (
+            self.binarization_threshold_relative.text() == "0" and self.binarization_threshold_absolute.text() == "0"
+        ) or (
+            self.binarization_threshold_relative.text() != "0" and self.binarization_threshold_absolute.text() != "0"
+        ):
+            QtWidgets.QMessageBox.warning(
+                self, "Error", "Either the relative or absolute binarization threshold must be non-zero",
+            )
+            return
+        else:
+            threshold_type = "relative" if self.binarization_threshold_relative.text() != "0" else "absolute"
+
         # create the json object
         configuration = {}
         # general
@@ -376,16 +361,16 @@ class MainWindow(QtWidgets.QMainWindow):
         configuration["ir_intensity"] = int(self.ir_intensity.text())
         configuration["baud_rate"] = self.baud_rates_dropbox.currentText()
         # camera
-        configuration["ffmpeg_path"] = self.ffmpeg_path.text()
         configuration["pixel_format"] = self.pixel_formats_dropbox.currentText()
-        configuration["max_frame_rate"] = int(self.max_frame_rate.text())
         configuration["gain"] = int(self.gain.text())
+        configuration["gamma"] = int(self.gamma.text())
         configuration["exposure_time"] = int(self.exposure_time.text())
         configuration["camera_index"] = int(self.camera_index.text())
         configuration["background_calculation_time"] = int(self.background_calculation_time.text())
-        configuration["dilation_radius"] = int(self.dilation_radius.text())
-        configuration["erosion_radius"] = int(self.erosion_radius.text())
-        configuration["binarization_threshold"] = int(self.binarization_threshold.text())
+        configuration["closing_radius"] = int(self.closing_radius.text())
+        configuration["binarization_threshold_relative"] = int(self.binarization_threshold_relative.text())
+        configuration["binarization_threshold_absolute"] = int(self.binarization_threshold_absolute.text())
+        configuration["threshold_type"] = threshold_type
         configuration["record_video"] = self.record_video_checkbox.isChecked()
         configuration["live_stream"] = self.live_stream_checkbox.isChecked()
         # mfc
@@ -395,7 +380,6 @@ class MainWindow(QtWidgets.QMainWindow):
             configuration["mfc_device_ids"].append(self.mfc_device_id_droboxes[i].currentText())
         configuration["mfc_flow_rate"] = int(self.mfc_flow_rate.text())
         # valve control
-        configuration["ros_environment_batch_file"] = self.ros_environment_batch_file.text()
         configuration["minimum_message_delay"] = int(self.minimum_message_delay.text())
         # gpu processing
         configuration["enable_gpu_processing"] = self.enable_gpu_processing_checkbox.isChecked()
