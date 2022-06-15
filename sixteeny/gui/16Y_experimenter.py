@@ -239,7 +239,7 @@ class MainWindow(QtWidgets.QMainWindow):
             reply = QtWidgets.QMessageBox.question(
                 self,
                 "Overwrite Experiment",
-                "The project directory already has a folder for the experiment name. Do you want to clear the directory?",
+                "The project directory already has a folder for the experiment name. Do you want to clear the data and reuse configuration?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                 QtWidgets.QMessageBox.No,
             )
@@ -247,7 +247,29 @@ class MainWindow(QtWidgets.QMainWindow):
                 # remove files in all the directories and subdirectories
                 for root, dirs, files in os.walk(project_directory):
                     for file in files:
+                        if file == "config.yarena":
+                            # skip the file
+                            continue
                         os.remove(os.path.join(root, file))
+            else:
+                # ask the user if they want to continue
+                reply = QtWidgets.QMessageBox.question(
+                    self,
+                    "Continue",
+                    "Proceeding will overwrite the experiment. Do you want to continue?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                    QtWidgets.QMessageBox.No,
+                )
+                if reply == QtWidgets.QMessageBox.No:
+                    # show a warning message that the experiment was not started
+                    QtWidgets.QMessageBox.warning(self, "Error", "The experiment was not started.")
+                    # return if the user does not want to continue
+                    return False
+                else:
+                    # remove all the files in the experiment directory
+                    for root, dirs, files in os.walk(project_directory):
+                        for file in files:
+                            os.remove(os.path.join(root, file))
         else:
             # create the experiment folder
             os.mkdir(project_directory)
