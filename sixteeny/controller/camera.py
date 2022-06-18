@@ -156,6 +156,9 @@ class SpinnakerCamera:
         self.cam.UserSetSelector.SetValue(PySpin.UserSetSelector_Default)
         self.cam.UserSetLoad()
 
+        # set stream buffer to newest only
+        self.cam.TLStream.StreamBufferHandlingMode.SetValue(PySpin.StreamBufferHandlingMode_NewestOnly)
+
         # set acquisition mode to continuous
         self.cam.AcquisitionMode.SetValue(PySpin.AcquisitionMode_Continuous)
 
