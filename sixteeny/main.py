@@ -469,14 +469,14 @@ if __name__ == "__main__":
                     if reward:
                         rewarded.append(i)
 
-                # # if live stream is enabled and any fly was detected, save the frame
-                # if rig_config["live_stream"] and len(detected) > 0:
-                #     # save image to file
-                #     plt.imsave(
-                #         project_directory + experiment_name + "/video/" + current_time + "_" + str(i) + ".png",
-                #         frame.get() if rig_config["enable_gpu_processing"] else frame,
-                #         cmap="gray",
-                #     )
+                # if live stream is enabled and any fly was detected, save the frame
+                if rig_config["live_stream"] and len(detected) > 0:
+                    # save image to file
+                    plt.imsave(
+                        project_directory + experiment_name + "/video/" + current_time + "_" + str(i) + ".png",
+                        frame.get() if rig_config["enable_gpu_processing"] else frame,
+                        cmap="gray",
+                    )
 
                 # run all LED stimuli if any of the arenas were rewarded
                 if len(rewarded) > 0:

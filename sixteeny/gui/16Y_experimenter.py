@@ -18,6 +18,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # set the window title
         self.setWindowTitle("16-Y Experimenter")
 
+        # set the window size
+        self.setFixedSize(1500, 700)
+
         # create a the main layout
         layout = QtWidgets.QGridLayout()
 

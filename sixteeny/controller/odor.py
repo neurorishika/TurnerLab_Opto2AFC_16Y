@@ -23,6 +23,7 @@ class OdorValveController(object):
         self.node = rclpy.create_node('arena_odors_publisher')
         self.publisher = self.node.create_publisher(ArenaOdors, 'arena_odors', 10)
         time.sleep(1)
+        print('ROS2 interface initialised')
     
     def __enter__(self):
         """

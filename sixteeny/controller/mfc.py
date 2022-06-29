@@ -21,6 +21,7 @@ class MFCController(object):
                 self.set_flow_rate(i, self.default_flow_rate)
             else:
                 raise Exception('No Alicat MFC with ID: {} found on COM{}'.format(self.device_ids[i], self.com_port))
+        print('Alicat MFCs initialised')
 
     def __enter__(self):
         """

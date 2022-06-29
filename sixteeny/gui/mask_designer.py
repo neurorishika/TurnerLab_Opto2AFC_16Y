@@ -412,7 +412,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 file_name,
                 arm_masks=self.arm_masks,
                 arm_reward_masks=self.arm_reward_masks,
-                arm_keypoints=self.labelled_points.reshape(-1,6,2),
+                arm_keypoints=np.array(self.labelled_points).reshape(-1,6,2),
                 combined_mask=self.combined_mask,
                 allow_pickle=True,
             )

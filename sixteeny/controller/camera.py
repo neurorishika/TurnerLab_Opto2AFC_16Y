@@ -60,7 +60,8 @@ def video_writer(save_queue, writer):
 #             break
 #         else:
 #             # save image to disk
-#             np.save(temp_folder + 'image.npy', image)
+#             filename = "{}/{}.png".format(temp_folder, time.time())
+#             plt.imsave(filename, image)
 #             play_queue.task_done()
 
 
@@ -146,6 +147,7 @@ class SpinnakerCamera:
 
         self.running = False
 
+
     def init(self):
         """
         Initializes the camera setup.
@@ -185,7 +187,7 @@ class SpinnakerCamera:
             if self.gpu_enabled:
                 # create an FFmpegWriter object with lossless encoding
                 self.writer = skvideo.io.FFmpegWriter(
-                    self.video_output_path + self.video_output_name + ".mp4", outputdict={"-vcodec": "h264"}
+                    self.video_output_path + self.video_output_name + ".mp4", outputdict={"-vcodec": "h264"} # , "-hwaccel": "cuda", "-preset": "lossless", "-rc": "constantqp", "-qp": "0"
                 )
             else:
                 self.writer = skvideo.io.FFmpegWriter(
@@ -197,9 +199,10 @@ class SpinnakerCamera:
         # if self.show_video:
         #     self.play_queue = queue.Queue()
         #     self.frame_count = 0
-        #     self.play_thread = threading.Thread(target=video_player, args=(self.play_queue, 'temp/'))
+        #     self.play_thread = threading.Thread(target=video_player, args=(self.play_queue, self.video_output_path))
 
         self.initialized = True
+        print("Camera initialized.")
 
     def __enter__(self):
         """
@@ -231,7 +234,7 @@ class SpinnakerCamera:
             self.cam.BeginAcquisition()
             if self.record_video and not dont_record:
                 self.save_thread.start()
-            # if self.show_video:
+            # if self.show_video and not dont_record:
             #     self.play_thread.start()
             self.running = True
             self.time_of_last_frame = time.time()
@@ -247,7 +250,7 @@ class SpinnakerCamera:
                 self.writer.close()
                 with open(self.video_output_path + self.video_output_name + "_timestamps.pkl", "wb") as f:
                     pickle.dump(self.timestamps, f)
-            # if self.show_video:
+            # if self.show_video and not dont_record:
             #     self.play_queue.join()
             #     self.frame_count = 0
         self.running = False

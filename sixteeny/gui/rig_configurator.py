@@ -52,7 +52,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add a dropbox for selecting the COM port for the 4 LED Modules in a 1x4 grid
         self.com_ports_dropboxes = []
-        default_indices = [8, 4, 10, 3]
+        default_indices = [12,4,11,3]
         led_array_layout.addWidget(QtWidgets.QLabel("COM Port:"), 0, 0)
         for i in range(4):
             led_array_layout.addWidget(QtWidgets.QLabel("Module {}".format(i + 1)), 0, 2 * i + 1, QtCore.Qt.AlignRight)

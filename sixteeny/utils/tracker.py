@@ -205,6 +205,7 @@ class ArenaTracker(object):
 
         # update air arm to current arm
         self.start_arm = self.current_arm
+        print("Start arm:", self.start_arm)
 
         # reset reward zone timer
         self.in_reward_zone = False
@@ -221,8 +222,9 @@ class ArenaTracker(object):
         }
         next_trial = self.experimenter.get_next_trial(history)
 
-        ### TODO: update data for next trial
-        new_indices = [self.relative_to_absolute_arm(i, self.start_arm, self.arena_index) for i in range(3)]
+        # update data for next trial
+        new_indices = [self.absolute_to_relative_arm(i, self.start_arm, self.arena_index) for i in range(3)]
+        print("New indices:", new_indices)
         self.odor_vector = [
             int(next_trial["relative_odor_vector"][i]) for i in new_indices
         ]  # odor vectors for each absolute arm

@@ -1,5 +1,5 @@
 import serial
-
+import random
 
 def hex_to_rgb_intensity(hex_value):
     hex_value = hex_value.decode().lstrip("#")
@@ -153,6 +153,7 @@ class LEDController(object):
         """
         self.setup_connections()
         self.initialized = True
+        print("LED controllers initialized")
 
     def __enter__(self):
         """
@@ -457,13 +458,14 @@ class LEDController(object):
             conn.write(b"BLU 0\r")
 
         # stopgap solution for the issue where the LEDs aren't turning on unless the last RED command has non-zero intensity
-        order = []
-        for i in range(4):
-            red_intensities = [self.color_state[i][j][0] for j in range(4)]
-            descending_order = sorted(range(4), key=lambda k: red_intensities[k], reverse=False)
-            order += [4 * i + j for j in descending_order]
-        # ideal solution = randomized order
-        # order = random.sample(range(16), 16, replace=False)
+        # order = []
+        # for i in range(4):
+        #     red_intensities = [self.color_state[i][j][0] for j in range(4)]
+        #     descending_order = sorted(range(4), key=lambda k: red_intensities[k], reverse=False)
+        #     order += [4 * i + j for j in descending_order]
+        
+        # ideal solution
+        order = range(16)
 
         for i in order:
             conn_id = self.arena_specs[i]["conn"]
@@ -484,7 +486,7 @@ class LEDController(object):
                 + b" "
                 + str(self.pulse_state[conn_id][quadrant_count][0][5]).encode()
                 + b" R "
-                # + quadrant
+                + quadrant
                 + b"\r"
             )
             conn.write(
@@ -501,7 +503,7 @@ class LEDController(object):
                 + b" "
                 + str(self.pulse_state[conn_id][quadrant_count][1][5]).encode()
                 + b" G "
-                # + quadrant
+                + quadrant
                 + b"\r"
             )
             conn.write(
@@ -518,7 +520,7 @@ class LEDController(object):
                 + b" "
                 + str(self.pulse_state[conn_id][quadrant_count][2][5]).encode()
                 + b" B "
-                # + quadrant
+                + quadrant
                 + b"\r"
             )
             conn.write(b"RED " + str(self.color_state[conn_id][quadrant_count][0]).encode() + b" 0 " + quadrant + b"\r")
