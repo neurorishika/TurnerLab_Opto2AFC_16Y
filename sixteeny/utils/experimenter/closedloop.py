@@ -58,7 +58,11 @@ class FiniteStateExperimenter(Experimenter):
         self.state_update(chosen_odor)
         # get the next trial
         next_trial = {}
-        next_trial["reward_probability"] = [0, self.current_reward_probability[0], self.current_reward_probability[1]]
+        next_trial["reward_probability"] = [
+            0,
+            self.current_reward_probability[0],
+            self.current_reward_probability[1],
+        ]  # adjust from randomization
         randomize = np.random.choice(2)
         next_trial["relative_odor_vector"] = [0, 1 + randomize, 2 - randomize]
         next_trial["time_needed_in_reward_zone"] = ["inf", "0", "0"]
