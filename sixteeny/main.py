@@ -401,7 +401,7 @@ if __name__ == "__main__":
         while experiment_ongoing:
             try:
                 # get the current time
-                current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
 
                 # acquire a frame
                 frame = camera.get_array()

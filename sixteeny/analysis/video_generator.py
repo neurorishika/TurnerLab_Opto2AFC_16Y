@@ -3,6 +3,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 import numpy as np
 import skimage
 import skimage.io as io
+from PIL import Image, ImageDraw, ImageFont
 import os
 import sys
 import datetime
@@ -24,7 +25,22 @@ def parse_filename(filename):
     hour = int(filename.split("-")[2].split("_")[1])
     minute = int(filename.split("-")[3])
     second = int(filename.split("-")[4].split("_")[0])  # needs to be fixed!
+    # millisecond = int(filename.split("-")[5])
     return datetime.datetime(year, month, day, hour, minute, second).timestamp()
+
+
+def get_timestamped_image(frame, duration):
+    message = "T: +{:02d}h {:02d}m {:02d}s".format(
+        int(duration // 3600), int(duration % 3600 // 60), int(duration % 60)
+    )
+    font = ImageFont.truetype("arial.ttf", 32)
+    image = Image.new("RGBA", (frame.shape[1], frame.shape[0]), (0, 0, 0, 255))
+    draw = ImageDraw.Draw(image)
+    tw, th = draw.textsize(message, font=font)
+    x, y = (frame.shape[1] - tw) / 2, (frame.shape[0] - th) / 2
+    draw.text((x, y), message, (255, 255, 255), font=font)
+    timestamp_image = np.clip(np.array(image), 0, 255)
+    return np.max([timestamp_image, frame], axis=0)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -52,7 +68,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a label and an empty text box to enter the speed multiplier
         self.speed_multiplier_label = QtWidgets.QLabel("Speed Multiplier:")
         self.speed_multiplier_textbox = QtWidgets.QLineEdit()
-        self.speed_multiplier_textbox.setText("1")
+        self.speed_multiplier_textbox.setText("5")
         self.speed_multiplier_textbox.setValidator(QtGui.QDoubleValidator())
         self.main_layout.addWidget(self.speed_multiplier_label, 1, 0)
         self.main_layout.addWidget(self.speed_multiplier_textbox, 1, 1, 1, 3)
@@ -161,7 +177,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # get data files
         self.progress_label.setText("Getting data files...")
-        data_files = filter(lambda v: ".ydata" in v, os.listdir(os.path.join(experiment_folder_path, "data")))
+        data_files = filter(lambda v: ".ydatanew" in v, os.listdir(os.path.join(experiment_folder_path, "data")))
         data_files = list(sorted(data_files, key=lambda v: int(v.split(".")[0].split("_")[-1])))
         n_data_files = len(data_files)
         data = []
@@ -216,6 +232,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a duplicate image and timestamp to the end of the list to make sure the video ends on a trial boundary
         image_files.append(image_files[-1])
         timestamps.append(timestamps[-1] + np.mean(np.diff(timestamps)))
+
+        # get the timestamp of the first image
+        start_time = timestamps[0]
 
         for timestamp, image_file in zip(timestamps, image_files):
 
@@ -293,11 +312,16 @@ class MainWindow(QtWidgets.QMainWindow):
             # combine with the image
             processed_image = combined_mask.copy()
             processed_image[:, :, :3] = np.int32(skimage.util.invert(image[:, :, :3]) > 0) * processed_image[:, :, :3]
+
+            # generate timestamp and add it to the image
+            duration = timestamp - start_time
+            processed_image = get_timestamped_image(processed_image, duration)
+
             processed_images.append(processed_image)
 
         # save the video as a lossless mp4
         self.progress_label.setText("Saving video...")
-        imageio.mimsave(os.path.join(experiment_folder_path, "video", "processed.mp4"), processed_images, fps=save_fps)
+        imageio.mimsave(os.path.join(experiment_folder_path, "processed_video.mp4"), processed_images, fps=save_fps)
 
         self.progress_label.setText("Video generation complete!")
 

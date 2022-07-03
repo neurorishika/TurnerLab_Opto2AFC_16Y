@@ -38,6 +38,7 @@ class ArenaTracker(object):
 
         self.fly_positions = np.zeros((self.max_frames, 2)) * np.nan
         self.frame_times = np.zeros(self.max_frames) * np.nan
+        self.current_arms = np.zeros(self.max_frames) * np.nan
 
         self.trial_start_times = np.zeros(self.n_trials) * np.nan
         self.time_spent_in_reward_zone = np.zeros(self.n_trials)
@@ -111,6 +112,7 @@ class ArenaTracker(object):
         # update tracker matrices
         self.fly_positions[self.frame_count, :] = current_position
         self.frame_times[self.frame_count] = time.time()
+        self.current_arms[self.frame_count] = current_arm
 
         self.fly_position = current_position
         self.current_arm = current_arm
@@ -248,8 +250,9 @@ class ArenaTracker(object):
         Saves data to a .ydata file.
         """
         # remove the last few NaN values from the data
-        self.fly_positions = self.fly_positions[: self.frame_count, :]
-        self.frame_times = self.frame_times[: self.frame_count]
+        self.fly_positions = self.fly_positions[: self.frame_count + 1, :]
+        self.frame_times = self.frame_times[: self.frame_count + 1]
+        self.current_arms = self.current_arms[: self.frame_count + 1]
         # remove the data for the unused trials
         self.chosen_arms = self.chosen_arms[: self.trial_count + 1]
         self.chosen_odor = self.chosen_odor[: self.trial_count + 1]
@@ -260,6 +263,7 @@ class ArenaTracker(object):
         data = {
             "fly_positions": self.fly_positions.tolist(),
             "frame_times": self.frame_times.tolist(),
+            "current_arms": self.current_arms.tolist(),
             "chosen_arms": self.chosen_arms.tolist(),
             "chosen_odor": self.chosen_odor.tolist(),
             "reward_delivered": self.reward_delivered.tolist(),
@@ -272,7 +276,7 @@ class ArenaTracker(object):
             "start_arms": self.start_arms.tolist(),
             "n_trials": self.n_trials,
             "max_frame_count": self.frame_count,
-            "trial_count": self.trial_count,
+            "trial_count": self.trial_count + 1,
             "experiment_states": self.experimenter.get_all_states(),
         }
         with open(directory + "fly_{}.ydata".format(self.arena_index), "w") as f:
