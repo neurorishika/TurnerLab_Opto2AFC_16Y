@@ -19,6 +19,30 @@ import json
 import time
 import datetime
 import shutil
+import threading
+import queue
+
+frame_write_count = 0
+
+
+def async_video_writer(save_queue, gpu):
+    """
+    Save a frame queue to .png files asynchronously.
+    """
+    global frame_write_count
+    while True:
+        image, filename = save_queue.get()
+        image = image.get() if gpu else image
+        if image is None:
+            break
+        else:
+            # save image to disk
+            plt.imsave(filename, image, cmap="gray")
+            frame_write_count += 1
+            if frame_write_count % 100 == 0:
+                print("Saved {} frames. {} frames left in queue.".format(frame_write_count, save_queue.qsize() - 1))
+            save_queue.task_done()
+
 
 if __name__ == "__main__":
 
@@ -35,8 +59,7 @@ if __name__ == "__main__":
     Developed by:
     - Rishika Mohanta, Turner Lab, Janelia Research Campus
     
-            " May flies be ever in your favor "
-                    - Someone, Somewhere c. Sometime
+            " May the flies be ever in your favor "
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ====================================================================
     """
@@ -299,7 +322,7 @@ if __name__ == "__main__":
             else:
                 print("Invalid input. Enter 'y' or 'n'.")
                 continue
-        
+
         # convert the combined mask to a correct format
         if rig_config["enable_gpu_processing"]:
             combined_mask = cp.array(combined_mask)
@@ -323,7 +346,7 @@ if __name__ == "__main__":
             if experiment_file["fly_experiment"].endswith(".csv"):
                 experimenters[n] = CSVExperimenter(
                     project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
-                )   
+                )
             elif experiment_file["fly_experiment"].endswith(".yfse"):
                 experimenters[n] = FiniteStateExperimenter(
                     project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
@@ -339,14 +362,40 @@ if __name__ == "__main__":
             tracker = ArenaTracker(i, experimenters[i], controllers)
             trackers[i] = tracker
 
+        # ask user if they want to start the experiment in debug mode
+        while True:
+            debug_mode = input("Start in debug mode? (y/n) ")
+            if debug_mode == "y" or debug_mode == "Y":
+                debug_mode = True
+                print("Debug mode enabled.")
+                break
+            elif debug_mode == "n" or debug_mode == "N":
+                debug_mode = False
+                print("Debug mode disabled.")
+                break
+            else:
+                print("Invalid input. Enter 'y' or 'n'.")
+                continue
+
         # start experiment loop
         print("Starting experiment...")
         experiment_ongoing = True
 
-        # # if live stream is enabled, create a new matplotlib figure to display the live stream
-        # if rig_config["live_stream"]:
-        #     fig = plt.figure()
-        #     ax = fig.add_subplot(111)
+        # if live stream is enabled, create a new save queue and thread
+        if rig_config["live_stream"]:
+            # check if there is a processed folder in the video directory
+            if not os.path.isdir(project_directory + experiment_name + "/video/processed"):
+                os.mkdir(project_directory + experiment_name + "/video/processed")
+            else:
+                # delete all files in the processed folder
+                for f in os.listdir(project_directory + experiment_name + "/video/processed"):
+                    os.remove(project_directory + experiment_name + "/video/processed/" + f)
+            # create a new save queue
+            save_queue = queue.Queue()
+            save_thread = threading.Thread(
+                target=async_video_writer, args=(save_queue, rig_config["enable_gpu_processing"],)
+            )
+            save_thread.start()
 
         camera.start()
         while experiment_ongoing:
@@ -376,11 +425,12 @@ if __name__ == "__main__":
                     )
 
                 # # perform morphological operations
+
                 # apply binary closing
                 frame = skmorph.binary_closing(frame, skmorph.disk(rig_config["closing_radius"]))
 
                 # filter the frame using the combined mask
-                frame = combine_binarized_images(frame, combined_mask,'and', rig_config["enable_gpu_processing"])   
+                frame = combine_binarized_images(frame, combined_mask, "and", rig_config["enable_gpu_processing"])
 
                 # label the frame
                 labels = skmeas.label(frame)
@@ -389,6 +439,7 @@ if __name__ == "__main__":
                 regions = skmeas.regionprops(labels)
 
                 n_objects = len(regions)
+
                 # if n_objects == 0:
                 #     print("T: " + str(current_time) + " - No objects detected.")
                 #     continue
@@ -407,6 +458,7 @@ if __name__ == "__main__":
                     arm_values = arm_mask[:, position_x, position_y]
                     reward_values = reward_mask[:, position_x, position_y]
                     # check if the object is in any of the arenas
+
                     if np.any(arm_values > 0):
                         # find the arena and arm and reward zone status
                         # print(arm_values)
@@ -419,13 +471,17 @@ if __name__ == "__main__":
                         # add the object to the summary
                         area = area.get() if rig_config["enable_gpu_processing"] else area
                         object_summary[i, :] = [position_x, position_y, arena, arm, area, float(in_reward_region)]
-                        # print details
+
+                    # print details
                     #     print("T: " + str(current_time) + " - Object found in Arena " + str(arena) + ": Arm " + str(arm) + " in reward region: " + str(in_reward_region))
                     # else:
                     #     print("T: " + str(current_time) + " - Object not in Arena.")
 
                 # remove all rows with NaN values
                 object_summary = object_summary[~np.isnan(object_summary).any(axis=1)]
+
+                if debug_mode:
+                    print("T: " + str(current_time), end="\t")
 
                 # loop over active arenas and find the largest object in each arena
                 detected = []
@@ -434,6 +490,8 @@ if __name__ == "__main__":
 
                     # see if any objects are in the arena
                     if not np.any(object_summary[:, 2] == i):
+                        if debug_mode:
+                            print("NA", end="\t")
                         continue
                     else:
                         detected.append(i)
@@ -453,30 +511,33 @@ if __name__ == "__main__":
                     in_reward_region = bool(object_summary[object_summary[:, 2] == i, 5][largest_object])
 
                     # update the arena tracker
-                    print(
-                        "T: "
-                        + str(current_time)
-                        + " Fly found in Arena "
-                        + str(i)
-                        + ": Arm "
-                        + str(arm)
-                        + " in reward region: "
-                        + str(in_reward_region)
-                    )
+                    if debug_mode:
+                        print(str(arm) + "," + str(1 if in_reward_region else 0), end="\t")
+
                     reward = trackers[i].update(arm, (position_x, position_y), in_reward_region)
 
                     # if the frame was rewarded, add the arena to the list of rewarded arenas
                     if reward:
                         rewarded.append(i)
 
+                if debug_mode:
+                    print("")
+
                 # if live stream is enabled and any fly was detected, save the frame
                 if rig_config["live_stream"] and len(detected) > 0:
-                    # save image to file
-                    plt.imsave(
-                        project_directory + experiment_name + "/video/" + current_time + "_" + str(i) + ".png",
-                        frame.get() if rig_config["enable_gpu_processing"] else frame,
-                        cmap="gray",
+                    save_queue.put(
+                        (
+                            frame.copy(),
+                            # frame.get() if rig_config["enable_gpu_processing"] else frame, # might be very slow if using gpu
+                            project_directory + experiment_name + "/video/processed/" + current_time + ".png",
+                        )
                     )
+                    # # save image to file
+                    # plt.imsave(
+                    #     project_directory + experiment_name + "/video/" + current_time + ".png",
+                    #     frame.get() if rig_config["enable_gpu_processing"] else frame,
+                    #     cmap="gray",
+                    # )
 
                 # run all LED stimuli if any of the arenas were rewarded
                 if len(rewarded) > 0:
@@ -511,6 +572,12 @@ if __name__ == "__main__":
         for i in range(16):
             odor.publish(i, [0, 0, 0])
         print("All odor valves flipped to air.")
+
+        # wait for save queue to empty
+        if rig_config["live_stream"]:
+            print("Waiting for save queue to empty...")
+            save_queue.join()
+            print("Saved all frames.")
 
         # final message
         print("Experiment complete. Thank you for using 16Y-Maze Rig for your experiment.")

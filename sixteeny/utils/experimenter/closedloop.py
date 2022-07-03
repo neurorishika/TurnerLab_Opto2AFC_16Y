@@ -1,4 +1,3 @@
-from selectors import SelectorKey
 from sixteeny.utils.experimenter.base import Experimenter
 import json
 import numpy as np
@@ -52,22 +51,27 @@ class FiniteStateExperimenter(Experimenter):
         """
         Return the next trial based on current state
         """
-        # get latest choice
-        chosen_odor = history["chosen_odor"][-1]
-        # update the current state
-        self.state_update(chosen_odor)
+        # get latest choice if there is one
+        if len(history["chosen_odor"]) > 0:
+            chosen_odor = history["chosen_odor"][-1]
+            # update the current state
+            self.state_update(chosen_odor)
+
         # get the next trial
         next_trial = {}
+        randomize = np.random.choice(2)
+        next_trial["world_state"] = self.current_state
+        next_trial["world_state_label"] = self.current_state_label
+        next_trial["relative_odor_vector"] = [0, 1 + randomize, 2 - randomize]
         next_trial["reward_probability"] = [
             0,
-            self.current_reward_probability[0],
-            self.current_reward_probability[1],
+            self.current_reward_probability[randomize],
+            self.current_reward_probability[1 - randomize],
         ]  # adjust from randomization
-        randomize = np.random.choice(2)
-        next_trial["relative_odor_vector"] = [0, 1 + randomize, 2 - randomize]
         next_trial["time_needed_in_reward_zone"] = ["inf", "0", "0"]
         next_trial["reward_stimulus"] = ["empty.stim", self.rewarded_stimulus, self.unrewarded_stimulus]
         next_trial["timed"] = 0
         next_trial["odor_delay"] = 0
         next_trial["unconditioned_stimulus"] = "empty.stim"
+        self.states.append(next_trial)
         return next_trial

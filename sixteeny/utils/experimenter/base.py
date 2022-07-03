@@ -34,3 +34,9 @@ class Experimenter(object):
         }
         self.states.append(next_trial)
         return next_trial
+
+    def get_all_states(self):
+        """
+        Return the full state history of the experiment
+        """
+        return self.states

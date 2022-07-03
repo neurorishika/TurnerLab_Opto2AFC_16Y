@@ -147,7 +147,6 @@ class SpinnakerCamera:
 
         self.running = False
 
-
     def init(self):
         """
         Initializes the camera setup.
@@ -187,7 +186,10 @@ class SpinnakerCamera:
             if self.gpu_enabled:
                 # create an FFmpegWriter object with lossless encoding
                 self.writer = skvideo.io.FFmpegWriter(
-                    self.video_output_path + self.video_output_name + ".mp4", outputdict={"-vcodec": "h264"} # , "-hwaccel": "cuda", "-preset": "lossless", "-rc": "constantqp", "-qp": "0"
+                    self.video_output_path + self.video_output_name + ".mp4",
+                    outputdict={
+                        "-vcodec": "h264"
+                    },  # , "-hwaccel": "cuda", "-preset": "lossless", "-rc": "constantqp", "-qp": "0"
                 )
             else:
                 self.writer = skvideo.io.FFmpegWriter(
