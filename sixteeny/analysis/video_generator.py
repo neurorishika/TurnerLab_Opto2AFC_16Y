@@ -177,7 +177,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # get data files
         self.progress_label.setText("Getting data files...")
-        data_files = filter(lambda v: ".ydatanew" in v, os.listdir(os.path.join(experiment_folder_path, "data")))
+        data_files = filter(lambda v: ".ydata" in v, os.listdir(os.path.join(experiment_folder_path, "data")))
         data_files = list(sorted(data_files, key=lambda v: int(v.split(".")[0].split("_")[-1])))
         n_data_files = len(data_files)
         data = []

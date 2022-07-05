@@ -26,7 +26,7 @@ class Experimenter(object):
         next_trial = {
             "reward_probability": [0.5, 0.5, 0.5],
             "relative_odor_vector": [0, 1, 2],
-            "time_needed_in_reward_zone": [np.inf, 0, 0],
+            "time_needed_in_reward_zone": ["inf", 0, 0],
             "reward_stimulus": [empty_stim, empty_stim, empty_stim],
             "timed": False,
             "odor_delay": 0,
@@ -39,4 +39,5 @@ class Experimenter(object):
         """
         Return the full state history of the experiment
         """
-        return self.states
+        list_of_states = [list(map(list, state.items())) for state in self.states]
+        return list_of_states

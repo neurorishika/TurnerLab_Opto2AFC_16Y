@@ -25,14 +25,15 @@ import queue
 frame_write_count = 0
 
 
-def async_video_writer(save_queue, gpu):
+def async_video_writer(save_queue, gpu, pre_acquired=False):
     """
     Save a frame queue to .png files asynchronously.
     """
     global frame_write_count
     while True:
         image, filename = save_queue.get()
-        image = image.get() if gpu else image
+        if not pre_acquired and gpu:
+            image = image.get()
         if image is None:
             break
         else:
@@ -393,7 +394,7 @@ if __name__ == "__main__":
             # create a new save queue
             save_queue = queue.Queue()
             save_thread = threading.Thread(
-                target=async_video_writer, args=(save_queue, rig_config["enable_gpu_processing"],)
+                target=async_video_writer, args=(save_queue, rig_config["enable_gpu_processing"],True)
             )
             save_thread.start()
 
@@ -512,7 +513,7 @@ if __name__ == "__main__":
 
                     # update the arena tracker
                     if debug_mode:
-                        print(str(arm) + "," + str(1 if in_reward_region else 0), end="\t")
+                        print(str(trackers[i].trial_count+1) + "," + str(arm) + "," + str(1 if in_reward_region else 0), end="\t")
 
                     reward = trackers[i].update(arm, (position_x, position_y), in_reward_region)
 
@@ -527,8 +528,8 @@ if __name__ == "__main__":
                 if rig_config["live_stream"] and len(detected) > 0:
                     save_queue.put(
                         (
-                            frame.copy(),
-                            # frame.get() if rig_config["enable_gpu_processing"] else frame, # might be very slow if using gpu
+                            # frame.copy(),
+                            frame.get() if rig_config["enable_gpu_processing"] else frame, # might be very slow if using gpu
                             project_directory + experiment_name + "/video/processed/" + current_time + ".png",
                         )
                     )
@@ -573,15 +574,15 @@ if __name__ == "__main__":
             odor.publish(i, [0, 0, 0])
         print("All odor valves flipped to air.")
 
-        # wait for save queue to empty
-        if rig_config["live_stream"]:
-            print("Waiting for save queue to empty...")
-            save_queue.join()
-            print("Saved all frames.")
+    # wait for save queue to empty
+    if rig_config["live_stream"]:
+        print("Waiting for save queue to empty...")
+        save_queue.join()
+        print("Saved all frames.")
 
-        # final message
-        print("Experiment complete. Thank you for using 16Y-Maze Rig for your experiment.")
+    # final message
+    print("Experiment complete. Thank you for using 16Y-Maze Rig for your experiment.")
 
-        # end python script
-        sys.exit()
+    # end python script
+    sys.exit()
 

@@ -345,7 +345,7 @@ class LEDController(object):
             or (len(color) == 7 and color[0] == 35)
             or (type(color) == tuple and len(color) == 3)
         ), "Invalid color"
-        print("Accumulating on arena:" + str(arena))
+        # print("Accumulating on arena:" + str(arena))
         conn = self.arena_specs[arena]["conn"]
         quadrant_count = self.arena_specs[arena]["quadrant_count"]
         # accumulate color to color state
@@ -457,14 +457,6 @@ class LEDController(object):
             conn.write(b"GRN 0\r")
             conn.write(b"BLU 0\r")
 
-        # stopgap solution for the issue where the LEDs aren't turning on unless the last RED command has non-zero intensity
-        # order = []
-        # for i in range(4):
-        #     red_intensities = [self.color_state[i][j][0] for j in range(4)]
-        #     descending_order = sorted(range(4), key=lambda k: red_intensities[k], reverse=False)
-        #     order += [4 * i + j for j in descending_order]
-        
-        # ideal solution
         order = range(16)
 
         for i in order:
@@ -526,12 +518,12 @@ class LEDController(object):
             conn.write(b"RED " + str(self.color_state[conn_id][quadrant_count][0]).encode() + b" 0 " + quadrant + b"\r")
             conn.write(b"GRN " + str(self.color_state[conn_id][quadrant_count][1]).encode() + b" 0 " + quadrant + b"\r")
             conn.write(b"BLU " + str(self.color_state[conn_id][quadrant_count][2]).encode() + b" 0 " + quadrant + b"\r")
-            if (
-                self.color_state[conn_id][quadrant_count][0] > 0
-                or self.color_state[conn_id][quadrant_count][1] > 0
-                or self.color_state[conn_id][quadrant_count][2] > 0
-            ):
-                print("Flash on arena " + str(i) + " quadrant " + quadrant.decode() + " conn " + str(conn_id))
+            # if (
+            #     self.color_state[conn_id][quadrant_count][0] > 0
+            #     or self.color_state[conn_id][quadrant_count][1] > 0
+            #     or self.color_state[conn_id][quadrant_count][2] > 0
+            # ):
+            #     print("Flash on arena " + str(i) + " quadrant " + quadrant.decode() + " conn " + str(conn_id))
 
         for conn in self.conns:
             conn.write(b"RUN\r")
