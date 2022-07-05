@@ -24,7 +24,7 @@ def parse_filename(filename):
     day = int(filename.split("-")[2].split("_")[0])
     hour = int(filename.split("-")[2].split("_")[1])
     minute = int(filename.split("-")[3])
-    second = int(filename.split("-")[4])  # needs to be fixed!
+    second = int(filename.split("-")[4])
     millisecond = int(filename.split("-")[5])
     return datetime.datetime(year, month, day, hour, minute, second, millisecond).timestamp()
 
