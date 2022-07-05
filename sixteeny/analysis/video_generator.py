@@ -24,9 +24,9 @@ def parse_filename(filename):
     day = int(filename.split("-")[2].split("_")[0])
     hour = int(filename.split("-")[2].split("_")[1])
     minute = int(filename.split("-")[3])
-    second = int(filename.split("-")[4].split("_")[0])  # needs to be fixed!
-    # millisecond = int(filename.split("-")[5])
-    return datetime.datetime(year, month, day, hour, minute, second).timestamp()
+    second = int(filename.split("-")[4])  # needs to be fixed!
+    millisecond = int(filename.split("-")[5])
+    return datetime.datetime(year, month, day, hour, minute, second, millisecond).timestamp()
 
 
 def get_timestamped_image(frame, duration):
