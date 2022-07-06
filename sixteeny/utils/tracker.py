@@ -34,13 +34,16 @@ class ArenaTracker(object):
 
         # initialize tracker matrices
         self.n_trials = experimenter.n_trials
-        self.max_frames = experimenter.n_trials * 60 * 120
+        self.max_frames = experimenter.n_trials * 50 * 180
 
         self.fly_positions = np.zeros((self.max_frames, 2)) * np.nan
         self.frame_times = np.zeros(self.max_frames) * np.nan
         self.current_arms = np.zeros(self.max_frames) * np.nan
+        self.current_trials = np.zeros(self.max_frames) * np.nan
 
         self.trial_start_times = np.zeros(self.n_trials) * np.nan
+        self.trial_end_times = np.zeros(self.n_trials) * np.nan
+
         self.time_spent_in_reward_zone = np.zeros(self.n_trials)
         self.odor_vectors = np.zeros((self.n_trials, 3)) * np.nan
         self.start_arms = np.zeros(self.n_trials)
@@ -113,6 +116,7 @@ class ArenaTracker(object):
         self.fly_positions[self.frame_count, :] = current_position
         self.frame_times[self.frame_count] = time.time()
         self.current_arms[self.frame_count] = current_arm
+        self.current_trials[self.frame_count] = self.trial_count
 
         self.fly_position = current_position
         self.current_arm = current_arm
@@ -192,15 +196,16 @@ class ArenaTracker(object):
 
     def start_new_trial(self):
 
+        if self.trial_count >= 0:
+            self.trial_end_times[self.trial_count] = time.time()
+            self.lengths_of_trials[self.trial_count] = self.trial_end_times[self.trial_count] - self.trial_start_time
+
         # check if all trials have been completed
         if self.trial_count == self.n_trials - 1:
             print("All trials completed")
             self.trial_count += 1
             self.completed = True
             return
-
-        if self.trial_count >= 0:
-            self.lengths_of_trials[self.trial_count] = time.time() - self.trial_start_time
 
         # increment trial count
         self.trial_count += 1
@@ -254,6 +259,7 @@ class ArenaTracker(object):
         self.fly_positions = self.fly_positions[: self.frame_count + 1, :]
         self.frame_times = self.frame_times[: self.frame_count + 1]
         self.current_arms = self.current_arms[: self.frame_count + 1]
+        self.current_trials = self.current_trials[: self.frame_count + 1]
         # remove the data for the unused trials
         self.chosen_arms = self.chosen_arms[: self.trial_count]
         self.chosen_odor = self.chosen_odor[: self.trial_count]
@@ -265,10 +271,12 @@ class ArenaTracker(object):
             "fly_positions": self.fly_positions.tolist(),
             "frame_times": self.frame_times.tolist(),
             "current_arms": self.current_arms.tolist(),
+            "current_trial": self.current_trials.tolist(),
             "chosen_arms": self.chosen_arms.tolist(),
             "chosen_odor": self.chosen_odor.tolist(),
             "reward_delivered": self.reward_delivered.tolist(),
             "trial_start_times": self.trial_start_times.tolist(),
+            "trial_end_times": self.trial_end_times.tolist(),
             "time_spent_in_reward_zone": self.time_spent_in_reward_zone.tolist(),
             "lengths_of_trials": self.lengths_of_trials.tolist(),
             "odor_vectors": self.odor_vectors.tolist(),
@@ -278,7 +286,7 @@ class ArenaTracker(object):
             "n_trials": self.n_trials,
             "max_frame_count": self.frame_count,
             "trial_count": self.trial_count,
-            # "experiment_states": self.experimenter.get_all_states(),
+            "experiment_states": self.experimenter.get_all_states(),
         }
         with open(directory + "fly_{}.ydata".format(self.arena_index), "w") as f:
             json.dump(data, f)

@@ -9,7 +9,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("2AFC Designer")
-        self.setGeometry(100, 100, 480, 400)
+        self.setGeometry(100, 100, 960, 400)
 
         # create a main layout
         self.main_layout = QtWidgets.QGridLayout()

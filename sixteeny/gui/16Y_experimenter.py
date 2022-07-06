@@ -19,7 +19,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("16-Y Experimenter")
 
         # set the window size
-        self.setFixedSize(1500, 700)
+        self.setFixedSize(1800, 700)
 
         # create a the main layout
         layout = QtWidgets.QGridLayout()
@@ -37,7 +37,12 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(QtWidgets.QLabel("Experiment Name"), 1, 0)
         self.experiment_name = QtWidgets.QLineEdit()
         self.experiment_name.setText("")
-        layout.addWidget(self.experiment_name, 1, 1, 1, 2)
+        layout.addWidget(self.experiment_name, 1, 1)
+
+        # add a button to append timestamp to the experiment name
+        self.append_timestamp_button = QtWidgets.QPushButton("Add Timestamp")
+        layout.addWidget(self.append_timestamp_button, 1, 2)
+        self.append_timestamp_button.clicked.connect(self.append_timestamp)
 
         # add a text box for entering the fly genotype
         layout.addWidget(QtWidgets.QLabel("Fly Genotype"), 2, 0)
@@ -87,6 +92,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 dropbox.addItems(self.experiments)
                 dropbox.setCurrentIndex(0)
                 dropbox.setEnabled(False)
+                # increase the size of the dropbox
+                dropbox.setMinimumSize(300, 0)
 
                 # add a textbox for the genotype
                 textbox = QtWidgets.QLineEdit()
@@ -131,6 +138,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # show the window
         self.show()
+
+    def append_timestamp(self):
+        """
+        Append a timestamp to the experiment name
+        """
+        self.experiment_name.setText(
+            self.experiment_name.text() + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+        )
 
     def browse_directory(self):
         """

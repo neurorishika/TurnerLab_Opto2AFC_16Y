@@ -125,6 +125,16 @@ if __name__ == "__main__":
     print("Video folder created.")
     print()
 
+    # ask the user if they have turned on the air supply
+    while True:
+        air_supply = input("Have you turned on the air supply? (y/n) ")
+        if air_supply == "y" or air_supply == "Y":
+            break
+        elif air_supply == "n" or air_supply == "N":
+            print("Please turn on the air supply and try again.")
+        else:
+            print("Please enter either 'y' or 'n'.")
+
     # import the skimage module
     if rig_config["enable_gpu_processing"]:
         import cupy as cp
@@ -394,11 +404,12 @@ if __name__ == "__main__":
             # create a new save queue
             save_queue = queue.Queue()
             save_thread = threading.Thread(
-                target=async_video_writer, args=(save_queue, rig_config["enable_gpu_processing"],True)
+                target=async_video_writer, args=(save_queue, rig_config["enable_gpu_processing"], True)
             )
             save_thread.start()
 
         camera.start()
+        frame_number = 0
         while experiment_ongoing:
             try:
                 # get the current time
@@ -513,7 +524,10 @@ if __name__ == "__main__":
 
                     # update the arena tracker
                     if debug_mode:
-                        print(str(trackers[i].trial_count+1) + "," + str(arm) + "," + str(1 if in_reward_region else 0), end="\t")
+                        print(
+                            str(trackers[i].trial_count + 1) + "," + str(arm) + "," + str(1 if in_reward_region else 0),
+                            end="\t",
+                        )
 
                     reward = trackers[i].update(arm, (position_x, position_y), in_reward_region)
 
@@ -525,20 +539,18 @@ if __name__ == "__main__":
                     print("")
 
                 # if live stream is enabled and any fly was detected, save the frame
-                if rig_config["live_stream"] and len(detected) > 0:
+                if rig_config["live_stream"] and len(detected) > 0 and frame_number % 10 == 0:
                     save_queue.put(
                         (
                             # frame.copy(),
-                            frame.get() if rig_config["enable_gpu_processing"] else frame, # might be very slow if using gpu
+                            frame.get()
+                            if rig_config["enable_gpu_processing"]
+                            else frame,  # might be very slow if using gpu
                             project_directory + experiment_name + "/video/processed/" + current_time + ".png",
                         )
                     )
-                    # # save image to file
-                    # plt.imsave(
-                    #     project_directory + experiment_name + "/video/" + current_time + ".png",
-                    #     frame.get() if rig_config["enable_gpu_processing"] else frame,
-                    #     cmap="gray",
-                    # )
+
+                frame_number += 1
 
                 # run all LED stimuli if any of the arenas were rewarded
                 if len(rewarded) > 0:
@@ -553,6 +565,9 @@ if __name__ == "__main__":
                     experiment_ongoing = False
             except KeyboardInterrupt:
                 print("Experiment interrupted.")
+                experiment_ongoing = False
+            except Exception as e:
+                print("Error: " + str(e))
                 experiment_ongoing = False
 
         # create data directory
@@ -579,6 +594,17 @@ if __name__ == "__main__":
         print("Waiting for save queue to empty...")
         save_queue.join()
         print("Saved all frames.")
+
+    # ask the user if they turned off the air supply
+    print("Please turn off the air supply.")
+    while True:
+        air_supply = input("Did you turn off the air supply? (y/n) ")
+        if air_supply == "y" or air_supply == "Y":
+            break
+        elif air_supply == "n" or air_supply == "N":
+            print("Please turn off the air supply and try again.")
+        else:
+            print("Please enter either 'y' or 'n'.")
 
     # final message
     print("Experiment complete. Thank you for using 16Y-Maze Rig for your experiment.")

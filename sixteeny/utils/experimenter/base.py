@@ -1,3 +1,4 @@
+from csv import list_dialects
 import numpy as np
 
 
@@ -39,5 +40,17 @@ class Experimenter(object):
         """
         Return the full state history of the experiment
         """
-        list_of_states = [list(map(list, state.items())) for state in self.states]
+        list_of_states = []
+        for state in self.states:
+            state_dict = {}
+            for key, value in state.items():
+                if isinstance(value, list):
+                    values = []
+                    for item in value:
+                        values.append(str(item))
+                    state_dict[key] = values
+                else:
+                    state_dict[key] = str(value)
+            list_of_states.append(state_dict)
+        # list_of_states = [list(map(list, state.items())) for state in self.states]
         return list_of_states
