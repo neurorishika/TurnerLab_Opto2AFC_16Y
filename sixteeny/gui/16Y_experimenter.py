@@ -70,15 +70,12 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.copy_experiment_button, 3, 2)
         self.copy_experiment_button.clicked.connect(self.copy_experiment)
 
-
         # add a centre-aligned label at the top of the grid
         layout.addWidget(
             QtWidgets.QLabel("Assign Experiment for each Y-Arena below:"), 4, 0, 1, 3, QtCore.Qt.AlignCenter
         )
         # set fixed size for the label
         layout.setRowMinimumHeight(3, 30)
-
-        
 
         # add a sub-layout for the dropboxes
         dropbox_layout = QtWidgets.QGridLayout()
@@ -220,7 +217,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         for i in range(16):
             self.textboxes[i].setText(self.fly_genotype.text())
-    
+
     def copy_experiment(self):
         """
         A method to copy the experiment to all the arenas.
@@ -242,7 +239,7 @@ class MainWindow(QtWidgets.QMainWindow):
             experiments = os.listdir(directory + "/experiment_zoo")
             # filter out the non-experiment files
             experiments = [
-                experiment for experiment in experiments if experiment.endswith(".csv") or experiment.endswith(".py")
+                experiment for experiment in experiments if experiment.endswith(".csv") or experiment.endswith(".yfse")
             ]
 
         # if there are no experiments, send an alert dialog
@@ -335,7 +332,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     # run the rig configurator script
                     os.system(
-                        "python sixteeny/gui/rig_configurator.py "
+                        "python sixteeny/gui/16Y_rig_configurator.py "
                         + os.path.join(self.project_directory.text(), experiment_name)
                     )
             else:

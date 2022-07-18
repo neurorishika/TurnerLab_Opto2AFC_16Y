@@ -1,18 +1,23 @@
+from email.policy import default
 from PyQt5 import QtWidgets, QtCore, QtGui
 import pandas as pd
 import numpy as np
 from scipy import stats
 import json
+import sys
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, start_folder=None, *args, **kwargs):
         super().__init__()
         self.setWindowTitle("2AFC Designer")
         self.setGeometry(100, 100, 960, 400)
 
         # create a main layout
         self.main_layout = QtWidgets.QGridLayout()
+
+        # store the start folder
+        self.start_folder = start_folder
 
         # create a table widget
         self.table = QtWidgets.QTableWidget()
@@ -214,7 +219,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     "empty.stim",
                 ]
         # save the dataframe to a csv file
-        file_name = QtWidgets.QFileDialog.getSaveFileName(self, "Save Experiment", ".", "*.csv")
+        if self.start_folder != "":
+            default_folder = self.start_folder
+        else:
+            default_folder = "."
+        file_name = QtWidgets.QFileDialog.getSaveFileName(self, "Save Experiment", default_folder, "*.csv")
         if file_name[0] != "":
             df.to_csv(file_name[0], index=False)
             # show a message box indicating that the experiment was saved
@@ -227,6 +236,17 @@ class MainWindow(QtWidgets.QMainWindow):
         file_name = file_name[0].split(".")[0] + ".meta"
         with open(file_name, "w") as f:
             json.dump(stimuli, f)
+
+        # ask the user if they want to close the window
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Close",
+            "Do you want to close the 2AFC Designer?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No,
+        )
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.close()
 
     def load(self):
         """
@@ -337,6 +357,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication([])
-    window = MainWindow()
+    app = QtWidgets.QApplication(sys.argv)
+    if len(sys.argv) > 1:
+        window = MainWindow(sys.argv[1])
+    else:
+        window = MainWindow()
     app.exec_()

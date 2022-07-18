@@ -285,7 +285,7 @@ if __name__ == "__main__":
                 subprocess.call(
                     [
                         "python",
-                        "sixteeny/gui/mask_designer.py",
+                        "sixteeny/gui/16Y_mask_designer.py",
                         project_directory + experiment_name + "/background.png",
                     ]
                 )

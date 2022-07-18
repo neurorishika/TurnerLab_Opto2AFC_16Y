@@ -412,7 +412,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 file_name,
                 arm_masks=self.arm_masks,
                 arm_reward_masks=self.arm_reward_masks,
-                arm_keypoints=np.array(self.labelled_points).reshape(-1,6,2),
+                arm_keypoints=np.array(self.labelled_points).reshape(-1, 6, 2),
                 combined_mask=self.combined_mask,
                 allow_pickle=True,
             )
@@ -430,7 +430,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setWindowTitle("Tutorial")
 
         # draw image from file called marker_tutorial.png
-        tutorial_image = QtGui.QPixmap("sixteeny/gui/marker_tutorial.png")
+        tutorial_image = QtGui.QPixmap("sixteeny/gui/resources/marker_tutorial.png")
         image_label = QtWidgets.QLabel()
         image_label.setPixmap(tutorial_image)
         image_label.setAlignment(QtCore.Qt.AlignCenter)
