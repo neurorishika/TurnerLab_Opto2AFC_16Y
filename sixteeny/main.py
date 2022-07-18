@@ -173,7 +173,7 @@ if __name__ == "__main__":
         controllers["led"] = led
         controllers["mfc"] = mfc
 
-        print("All controllers initialized.")
+        print("All controllers initialized.\n")
 
         # Start IR backlight
         led.turn_on_backlight(rig_config["ir_intensity"])

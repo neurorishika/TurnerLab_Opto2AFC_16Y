@@ -55,15 +55,30 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.copy_genotype_button, 2, 2)
         self.copy_genotype_button.clicked.connect(self.copy_genotype)
 
+        # Get the experiments from the directory
+        self.experiments = []
+
+        # add a dropdown for selecting the experiment
+        layout.addWidget(QtWidgets.QLabel("Experiment"), 3, 0)
+        self.experiment_dropdown = QtWidgets.QComboBox()
+        self.experiment_dropdown.addItems(self.experiments)
+        self.experiment_dropdown.setCurrentIndex(0)
+        layout.addWidget(self.experiment_dropdown, 3, 1)
+
+        # add a button to copy the experiment to all the arenas
+        self.copy_experiment_button = QtWidgets.QPushButton("Copy to all Arenas")
+        layout.addWidget(self.copy_experiment_button, 3, 2)
+        self.copy_experiment_button.clicked.connect(self.copy_experiment)
+
+
         # add a centre-aligned label at the top of the grid
         layout.addWidget(
-            QtWidgets.QLabel("Assign Experiment for each Y-Arena below:"), 3, 0, 1, 3, QtCore.Qt.AlignCenter
+            QtWidgets.QLabel("Assign Experiment for each Y-Arena below:"), 4, 0, 1, 3, QtCore.Qt.AlignCenter
         )
         # set fixed size for the label
         layout.setRowMinimumHeight(3, 30)
 
-        # Get the experiments from the directory
-        self.experiments = []
+        
 
         # add a sub-layout for the dropboxes
         dropbox_layout = QtWidgets.QGridLayout()
@@ -110,24 +125,24 @@ class MainWindow(QtWidgets.QMainWindow):
                 dropbox_layout.addWidget(textbox, 2 * i + 1, 3 * j, 1, 3)
 
         # add the dropbox layout to the grid
-        layout.addLayout(dropbox_layout, 4, 0, 1, 3)
+        layout.addLayout(dropbox_layout, 5, 0, 1, 3)
 
         self.browse_button.clicked.connect(self.browse_directory)
 
         # add a text box for inputting any comments
-        layout.addWidget(QtWidgets.QLabel("Comments"), 5, 0)
+        layout.addWidget(QtWidgets.QLabel("Comments"), 6, 0)
         self.comments = QtWidgets.QTextEdit()
         self.comments.setFixedHeight(50)
-        layout.addWidget(self.comments, 5, 1, 1, 2)
+        layout.addWidget(self.comments, 6, 1, 1, 2)
 
         # add buttons to toggle all arenas and start experiment
         self.toggle_all_arenas_button = QtWidgets.QPushButton("Toggle All Arenas")
         self.toggle_all_arenas_button.clicked.connect(self.toggle_all_arenas)
-        layout.addWidget(self.toggle_all_arenas_button, 6, 0)
+        layout.addWidget(self.toggle_all_arenas_button, 7, 0)
 
         button = QtWidgets.QPushButton("Start Experiment")
         button.clicked.connect(self.start_experiment)
-        layout.addWidget(button, 6, 1, 1, 2)
+        layout.addWidget(button, 7, 1, 1, 2)
 
         # create the main widget
         widget = QtWidgets.QWidget()
@@ -162,6 +177,9 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A method to update the dropboxes.
         """
+        self.experiment_dropdown.clear()
+        self.experiment_dropdown.addItems(self.experiments)
+        self.experiment_dropdown.setCurrentIndex(0)
         for i in range(16):
             self.dropboxes[i].clear()
             self.dropboxes[i].addItems(self.experiments)
@@ -202,6 +220,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         for i in range(16):
             self.textboxes[i].setText(self.fly_genotype.text())
+    
+    def copy_experiment(self):
+        """
+        A method to copy the experiment to all the arenas.
+        """
+        for i in range(16):
+            self.dropboxes[i].setCurrentText(self.experiment_dropdown.currentText())
 
     def get_experiments_from_directory(self, directory):
         """

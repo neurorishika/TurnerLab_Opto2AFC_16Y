@@ -1,9 +1,11 @@
 from re import A
 import sys
 import os
+from turtle import color
 
 from matplotlib.backends.qt_compat import QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvas
+import matplotlib.pyplot as plt
 
 from sixteeny.controller.mfc import MFCController
 
@@ -64,7 +66,7 @@ class FlowCanvas(FigureCanvas):
         self._ax_.set_ylim(ymin=self._y_range_[0], ymax=self._y_range_[1])
         self._line_ = []
         for i in range(self.n_controllers):
-            _line_, = self._ax_.plot(self._x_, self._y_[:,i], label=str(i))
+            _line_, = self._ax_.plot(self._x_, self._y_[:,i], label=chr(65+i), color=plt.cm.rainbow(i/self.n_controllers))
             self._line_.append(_line_)
         self._ax_.legend()
         self.draw()
@@ -131,6 +133,6 @@ def start_gui(MFCController=None,save_directory=''):
 with MFCController(
         com_port='COM8', 
         device_ids=[chr(i) for i in range(ord('A'), ord('A') + 16)], 
-        default_flow_rate=900
+        default_flow_rate=300
     ) as mfc:
     start_gui(mfc, save_directory='Z:/Rishika/4Y-Maze/TurnerLab_Opto2AFC_16Y/sixteeny')

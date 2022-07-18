@@ -1,9 +1,14 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import json
 import sys
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+from sixteeny.controller.camera import SpinnakerCamera
+from sixteeny.controller.led import LEDController
+
+from sixteeny.utils.camera import record_background
 
 class MainWindow(QtWidgets.QMainWindow):
     """
@@ -81,7 +86,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a text box to set IR intensity
         layout.addWidget(QtWidgets.QLabel("IR Intensity"), 4, 0)
         self.ir_intensity = QtWidgets.QLineEdit()
-        self.ir_intensity.setText("25")
+        self.ir_intensity.setText("100")
         self.ir_intensity.setValidator(QtGui.QIntValidator(10, 100))
         layout.addWidget(self.ir_intensity, 4, 1)
 
@@ -93,10 +98,11 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.baud_rates_dropbox, 4, 3)
 
         # add a button to test the IR intensity and RGB LEDs
-        self.test_ir_intensity_button = QtWidgets.QPushButton("Test IR Intensity")
         self.test_rgb_leds_button = QtWidgets.QPushButton("Test RGB LEDs")
-        layout.addWidget(self.test_ir_intensity_button, 5, 0, 1, 2)
-        layout.addWidget(self.test_rgb_leds_button, 5, 2, 1, 2)
+        layout.addWidget(self.test_rgb_leds_button, 5, 0, 1, 4)
+
+        # connect the buttons to their functions
+        self.test_rgb_leds_button.clicked.connect(self.test_rgb_leds)
 
         # add a centre-aligned label at the top of the next row
         layout.addWidget(QtWidgets.QLabel("Camera Configuration:"), 6, 0, 1, 4, QtCore.Qt.AlignCenter)
@@ -125,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a textbox to set the camera exposure time in us
         layout.addWidget(QtWidgets.QLabel("Exposure Time (us)"), 9, 2)
         self.exposure_time = QtWidgets.QLineEdit()
-        self.exposure_time.setText("{}".format(20000))
+        self.exposure_time.setText("{}".format(30000))
         self.exposure_time.setValidator(QtGui.QIntValidator(1, 100000))
         layout.addWidget(self.exposure_time, 9, 3)
 
@@ -173,8 +179,9 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.binarization_threshold_absolute, 12, 3)
 
         # add a button to test the video stream
-        self.test_video_stream_button = QtWidgets.QPushButton("Test Video Stream")
-        layout.addWidget(self.test_video_stream_button, 13, 0, 1, 4)
+        self.capture_background_button = QtWidgets.QPushButton("Capture Background")
+        layout.addWidget(self.capture_background_button, 13, 0, 1, 4)
+        self.capture_background_button.clicked.connect(self.capture_background)
 
         # Add a centre-aligned label at the top of the next row
         layout.addWidget(QtWidgets.QLabel("MFC Configuration:"), 14, 0, 1, 4, QtCore.Qt.AlignCenter)
@@ -282,7 +289,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # set the values of the widgets
         # general
-        self.experiment_directory.setText(configuration["experiment_directory"])
+        # ask the user if they want to change the experiment directory
+        if configuration["experiment_directory"] != self.experiment_directory.text():
+            if QtWidgets.QMessageBox.question(self, "Change Experiment Directory", "Do you want to change the experiment directory?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
+                self.experiment_directory.setText(configuration["experiment_directory"])
         self.mask_file.setText(configuration["mask_file"])
 
         # led
@@ -485,6 +495,77 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # set the file name
         self.ros_environment_batch_file.setText(file_name)
+    
+    def capture_background(self):
+        """
+        A function to setup a camera and capture a background
+        """
+        with SpinnakerCamera(
+            index=int(self.camera_index.text()),
+            gpu_enabled=False,
+            CAMERA_FORMAT=self.pixel_formats_dropbox.currentText(),
+            EXPOSURE_TIME=int(self.exposure_time.text()),
+            GAIN=int(self.gain.text()),
+            GAMMA=int(self.gamma.text()),
+            record_video=False,
+            show_video=False
+        ) as camera:
+            background, _, _, _ = record_background(
+                time_to_record=int(self.background_calculation_time.text()),
+                camera=camera,
+                gpu_enabled=False
+            )
+            plt.imshow(background)
+            plt.show()
+            # ask the user if they want to save the background
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Save Background",
+                "Do you want to save the background?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No,
+            )
+            if reply == QtWidgets.QMessageBox.Yes:
+                # get the file name
+                file_name = QtWidgets.QFileDialog.getSaveFileName(self, "Save Background", "", "*.png")[0]
+                # save the background
+                plt.imsave(file_name, background, cmap="gray")
+                # show a message box saying that the background has been saved
+                QtWidgets.QMessageBox.information(
+                    self, "Background Saved", "The background has been saved to " + file_name
+                )
+
+    def test_rgb_leds(self):
+        """
+        A function to test the RGB LEDs
+        """
+        com_ports = []
+        quadrant_ids = []
+        for i in range(4):
+            com_ports.append(self.com_ports_dropboxes[i].currentText())
+            quadrant_ids.append(self.quadrant_ids_dropboxes[i].currentText())
+
+        PULSE_WIDTH = 150
+        PULSE_PERIOD = 250
+        PULSE_COUNT = 2
+        PULSE_DEADTIME = 0
+        PULSE_DELAY = 0
+        PULSE_REPEAT = 1
+
+        with LEDController(
+            ports = com_ports,
+            baudrate = self.baud_rates_dropbox.currentText(),
+            arena_panel_ids = quadrant_ids
+        ) as led:
+            led.turn_on_backlight(100)
+            led.reset_accumulated_led_stimulus()
+            time.sleep(1)
+            for color in [b'R', b'G', b'B']:
+                for arena in range(16):
+                    led.accumulate_led_stimulus(arena,color,100,PULSE_WIDTH,PULSE_PERIOD,PULSE_COUNT,PULSE_DEADTIME,PULSE_DELAY,PULSE_REPEAT,debug_mode=False)
+                    led.run_accumulated_led_stimulus()
+                    time.sleep(0.5)
+                time.sleep(1)
 
 
 if __name__ == "__main__":

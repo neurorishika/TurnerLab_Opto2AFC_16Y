@@ -2,7 +2,7 @@ import numpy as np
 import skimage.morphology as skm
 import cupy as cp
 import cucim.skimage.morphology as cskm
-from controller.camera import SpinnakerCamera
+from sixteeny.controller.camera import SpinnakerCamera
 import time
 
 

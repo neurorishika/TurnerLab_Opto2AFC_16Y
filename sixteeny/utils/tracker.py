@@ -40,6 +40,7 @@ class ArenaTracker(object):
         self.frame_times = np.zeros(self.max_frames) * np.nan
         self.current_arms = np.zeros(self.max_frames) * np.nan
         self.current_trials = np.zeros(self.max_frames) * np.nan
+        self.current_reward_zone_status = np.zeros(self.max_frames) * np.nan
 
         self.trial_start_times = np.zeros(self.n_trials) * np.nan
         self.trial_end_times = np.zeros(self.n_trials) * np.nan
@@ -117,6 +118,7 @@ class ArenaTracker(object):
         self.frame_times[self.frame_count] = time.time()
         self.current_arms[self.frame_count] = current_arm
         self.current_trials[self.frame_count] = self.trial_count
+        self.current_reward_zone_status[self.frame_count] = in_reward_zone
 
         self.fly_position = current_position
         self.current_arm = current_arm
@@ -204,6 +206,8 @@ class ArenaTracker(object):
         if self.trial_count == self.n_trials - 1:
             print("All trials completed")
             self.trial_count += 1
+            # flip all valves to air
+            self.controllers["odor"].publish(self.arena_index, [0,0,0])
             self.completed = True
             return
 
@@ -260,6 +264,7 @@ class ArenaTracker(object):
         self.frame_times = self.frame_times[: self.frame_count + 1]
         self.current_arms = self.current_arms[: self.frame_count + 1]
         self.current_trials = self.current_trials[: self.frame_count + 1]
+        self.current_reward_zone_status = self.current_reward_zone_status[: self.frame_count + 1]
         # remove the data for the unused trials
         self.chosen_arms = self.chosen_arms[: self.trial_count]
         self.chosen_odor = self.chosen_odor[: self.trial_count]
@@ -272,6 +277,7 @@ class ArenaTracker(object):
             "frame_times": self.frame_times.tolist(),
             "current_arms": self.current_arms.tolist(),
             "current_trial": self.current_trials.tolist(),
+            "current_reward_zone_status": self.current_reward_zone_status.tolist(),
             "chosen_arms": self.chosen_arms.tolist(),
             "chosen_odor": self.chosen_odor.tolist(),
             "reward_delivered": self.reward_delivered.tolist(),
