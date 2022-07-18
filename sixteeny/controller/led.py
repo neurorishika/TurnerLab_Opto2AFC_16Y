@@ -515,6 +515,7 @@ class LEDController(object):
                 + quadrant
                 + b"\r"
             )
+            
             conn.write(b"RED " + str(self.color_state[conn_id][quadrant_count][0]).encode() + b" 0 " + quadrant + b"\r")
             conn.write(b"GRN " + str(self.color_state[conn_id][quadrant_count][1]).encode() + b" 0 " + quadrant + b"\r")
             conn.write(b"BLU " + str(self.color_state[conn_id][quadrant_count][2]).encode() + b" 0 " + quadrant + b"\r")
@@ -524,6 +525,40 @@ class LEDController(object):
             #     or self.color_state[conn_id][quadrant_count][2] > 0
             # ):
             #     print("Flash on arena " + str(i) + " quadrant " + quadrant.decode() + " conn " + str(conn_id))
+            #     if self.color_state[conn_id][quadrant_count][0] > 0:
+            #         print(
+            #             'R:{} {} {} {} {} {}'.format(
+            #                 str(self.pulse_state[conn_id][quadrant_count][0][0]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][0][1]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][0][2]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][0][3]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][0][4]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][0][5])
+            #             )
+            #         )
+            #     if self.color_state[conn_id][quadrant_count][1] > 0:
+            #         print(
+            #             'G:{} {} {} {} {} {}'.format(
+            #                 str(self.pulse_state[conn_id][quadrant_count][1][0]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][1][1]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][1][2]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][1][3]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][1][4]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][1][5])
+            #             )
+            #         )
+            #     if self.color_state[conn_id][quadrant_count][2] > 0:
+            #         print(
+            #             'B:{} {} {} {} {} {}'.format(
+            #                 str(self.pulse_state[conn_id][quadrant_count][2][0]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][2][1]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][2][2]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][2][3]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][2][4]),
+            #                 str(self.pulse_state[conn_id][quadrant_count][2][5])
+            #             )
+            #         )
+
 
         for conn in self.conns:
             conn.write(b"RUN\r")

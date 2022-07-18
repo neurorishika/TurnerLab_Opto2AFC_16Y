@@ -545,8 +545,8 @@ class MainWindow(QtWidgets.QMainWindow):
             com_ports.append(self.com_ports_dropboxes[i].currentText())
             quadrant_ids.append(self.quadrant_ids_dropboxes[i].currentText())
 
-        PULSE_WIDTH = 150
-        PULSE_PERIOD = 250
+        PULSE_WIDTH = 100
+        PULSE_PERIOD = 125
         PULSE_COUNT = 2
         PULSE_DEADTIME = 0
         PULSE_DELAY = 0
@@ -562,8 +562,9 @@ class MainWindow(QtWidgets.QMainWindow):
             time.sleep(1)
             for color in [b'R', b'G', b'B']:
                 for arena in range(16):
-                    led.accumulate_led_stimulus(arena,color,100,PULSE_WIDTH,PULSE_PERIOD,PULSE_COUNT,PULSE_DEADTIME,PULSE_DELAY,PULSE_REPEAT,debug_mode=False)
-                    led.run_accumulated_led_stimulus()
+                    led.accumulate_led_stimulus(arena,color,100,PULSE_WIDTH,PULSE_PERIOD,(arena%4)+1,PULSE_DEADTIME,PULSE_DELAY,PULSE_REPEAT,debug_mode=False)
+                    if arena%4 == 3:
+                        led.run_accumulated_led_stimulus()
                     time.sleep(0.5)
                 time.sleep(1)
 
