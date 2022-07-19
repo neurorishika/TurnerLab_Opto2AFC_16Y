@@ -1,0 +1,2 @@
+,Trial#,P(R|Air),P(R|O1),P(R|O2),Odor(Start),Odor(Left),Odor(Right),CStim(Air),CStim(O1),CStim(O2),StayTime(Air),StayTime(O1),StayTime(O2),Baited,Timed,OdorDelay,UStim
+,N,"[0,1]","[0,1]","[0,1]","{0,1,2}","{0,1,2}","{0,1,2}",empty.stim,empty.stim,empty.stim,"[0,inf)","[0,inf)","[0,inf)","{True,False}","{True,False}","[0,inf)",empty.stim
