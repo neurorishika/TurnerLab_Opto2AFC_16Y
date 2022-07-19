@@ -5,10 +5,11 @@ import numpy as np
 from scipy import stats
 import json
 import sys
+import os
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, start_folder=None, *args, **kwargs):
+    def __init__(self, start_folder=None, load_file=None, *args, **kwargs):
         super().__init__()
         self.setWindowTitle("2AFC Designer")
         self.setGeometry(100, 100, 960, 400)
@@ -16,8 +17,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # create a main layout
         self.main_layout = QtWidgets.QGridLayout()
 
-        # store the start folder
+        # store the start folder and load file
         self.start_folder = start_folder
+        self.load_file = load_file
 
         # create a table widget
         self.table = QtWidgets.QTableWidget()
@@ -93,27 +95,31 @@ class MainWindow(QtWidgets.QMainWindow):
         # show the window
         self.show()
 
+        # if a load file was specified, load it
+        if self.load_file is not None:
+            self.load(self.load_file)
+
     def load_odor1(self):
         """
         Load the stimulus for odor 1.
         """
         # open a file dialog
-        file_name = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", ".", "*.stim")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", ".", "*.stim")
         # if a file was selected
-        if file_name[0] != "":
+        if filename:
             # set the textbox to the file name (without the path)
-            self.odor1_textbox.setText(file_name[0].split("/")[-1])
+            self.odor1_textbox.setText(filename.split("/")[-1])
 
     def load_odor2(self):
         """
         Load the stimulus for odor 2.
         """
         # open a file dialog
-        file_name = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", ".", "*.stim")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", ".", "*.stim")
         # if a file was selected
-        if file_name[0] != "":
+        if filename:
             # set the textbox to the file name (without the path)
-            self.odor2_textbox.setText(file_name[0].split("/")[-1])
+            self.odor2_textbox.setText(filename.split("/")[-1])
 
     def add_row(self):
         """
@@ -223,18 +229,23 @@ class MainWindow(QtWidgets.QMainWindow):
             default_folder = self.start_folder
         else:
             default_folder = "."
-        file_name = QtWidgets.QFileDialog.getSaveFileName(self, "Save Experiment", default_folder, "*.csv")
-        if file_name[0] != "":
-            df.to_csv(file_name[0], index=False)
+
+        if self.load_file is not None:
+            filename = self.load_file
+        else:
+            filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Experiment", default_folder, "*.csv")
+
+        if filename:
+            df.to_csv(filename, index=False)
             # show a message box indicating that the experiment was saved
             QtWidgets.QMessageBox.information(
-                self, "Success", "The experiment was saved to {}".format(file_name[0]),
+                self, "Success", "The experiment was saved to {}".format(filename),
             )
         # create a dictionary of the used stimuli
         stimuli = {"used_stimuli": [self.odor1_textbox.text(), self.odor2_textbox.text(),]}
         # save the stimuli dictionary to a json file with .meta extension with the same name as the experiment file
-        file_name = file_name[0].split(".")[0] + ".meta"
-        with open(file_name, "w") as f:
+        filename = filename.split(".")[0] + ".meta"
+        with open(filename, "w") as f:
             json.dump(stimuli, f)
 
         # ask the user if they want to close the window
@@ -248,16 +259,19 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QtWidgets.QMessageBox.Yes:
             self.close()
 
-    def load(self):
+    def load(self, load_file=None):
         """
         Load an experiment from a csv file.
         """
-        # open a file dialog
-        file_name = QtWidgets.QFileDialog.getOpenFileName(self, "Open Experiment", ".", "*.csv")
-        # if a file was selected
-        if file_name[0] != "":
+        if load_file is not None:
+            filename = load_file
+        else:
+            # open a file dialog
+            filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Experiment", ".", "*.csv")
+            # if a file was selected
+        if filename:
             # load the dataframe from the csv file
-            df = pd.read_csv(file_name[0])
+            df = pd.read_csv(filename)
             # check if the dataframe has the correct columns
             if not df.columns.tolist() == [
                 "Trial#",
@@ -359,7 +373,11 @@ class MainWindow(QtWidgets.QMainWindow):
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     if len(sys.argv) > 1:
-        window = MainWindow(sys.argv[1])
+        # if a file was passed as an argument, create a new window with the load file
+        if os.path.isfile(sys.argv[1]):
+            window = MainWindow(start_folder=None, load_file=sys.argv[1])
+        else:
+            window = MainWindow(start_folder=sys.argv[1], load_file=None)
     else:
         window = MainWindow()
     app.exec_()

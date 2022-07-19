@@ -80,6 +80,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.create_new_experiment_button.clicked.connect(self.create_new_experiment)
         self.delete_experiment_button.clicked.connect(self.delete_experiment)
 
+        # add buttons for opening the experimental data, editing the stimulus and experiment
+        self.open_experimental_data_button = QtWidgets.QPushButton("Open Experimental Data")
+        self.edit_stimulus_button = QtWidgets.QPushButton("Edit Stimulus")
+        self.edit_experiment_button = QtWidgets.QPushButton("Edit Experiment")
+
+        # connect the buttons to their respective functions
+        self.open_experimental_data_button.clicked.connect(self.open_experimental_data)
+        self.edit_stimulus_button.clicked.connect(self.edit_stimulus)
+        self.edit_experiment_button.clicked.connect(self.edit_experiment)
+
+        # add the start experiment button
+        self.start_experiment_button = QtWidgets.QPushButton("Start Experiments")
+
+        # connect the button to its respective function
+        self.start_experiment_button.clicked.connect(self.start_experiments)
+
         # add the buttons to the main layout
         self.main_layout.addWidget(self.process_experimental_data_button, 3, 0)
         self.main_layout.addWidget(self.generate_video_button, 3, 1)
@@ -87,6 +103,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main_layout.addWidget(self.delete_stimulus_button, 3, 3)
         self.main_layout.addWidget(self.create_new_experiment_button, 3, 4)
         self.main_layout.addWidget(self.delete_experiment_button, 3, 5)
+        self.main_layout.addWidget(self.open_experimental_data_button, 4, 0, 1, 2)
+        self.main_layout.addWidget(self.edit_stimulus_button, 4, 2, 1, 2)
+        self.main_layout.addWidget(self.edit_experiment_button, 4, 4, 1, 2)
+        self.main_layout.addWidget(self.start_experiment_button, 5, 0, 1, 6)
 
         # create the central widget
         self.central_widget = QtWidgets.QWidget()
@@ -284,6 +304,20 @@ class MainWindow(QtWidgets.QMainWindow):
     def generate_video(self):
         pass
 
+    def open_experimental_data(self):
+        # check is the project directory is not empty
+        if self.project_directory_textbox.text() == "":
+            return
+        # get the selected data folder
+        selected_data_folder = self.experimental_data_table.item(self.experimental_data_table.currentRow(), 0).text()
+        # open the data folder in the file explorer (platform independent)
+        if sys.platform == "win32":
+            os.startfile(self.project_directory_textbox.text() + "/data/" + selected_data_folder)
+        elif sys.platform == "darwin":
+            call(["open", self.project_directory_textbox.text() + "/data/" + selected_data_folder])
+        else:
+            call(["xdg-open", self.project_directory_textbox.text() + "/data/" + selected_data_folder])
+
     def create_new_stimulus(self):
         # check is the project directory is not empty
         if self.project_directory_textbox.text() == "":
@@ -303,6 +337,23 @@ class MainWindow(QtWidgets.QMainWindow):
         selected_stimulus_file = self.stimulus_zoo_table.selectedItems()[0].text()
         # delete the stimulus file
         os.remove(self.project_directory_textbox.text() + "/stimulus_zoo/" + selected_stimulus_file)
+        # refresh the project details
+        self.refresh_project_details()
+
+    def edit_stimulus(self):
+        # check is the project directory is not empty
+        if self.project_directory_textbox.text() == "":
+            return
+        # get the selected stimulus file
+        selected_stimulus_file = self.stimulus_zoo_table.selectedItems()[0].text()
+        # call the 16Y_stimulus_designer script and wait for it to finish
+        call(
+            [
+                "python",
+                "sixteeny/gui/16Y_stimulus_designer.py",
+                self.project_directory_textbox.text() + "/stimulus_zoo" + "/" + selected_stimulus_file,
+            ]
+        )
         # refresh the project details
         self.refresh_project_details()
 
@@ -385,7 +436,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.information(
             self,
             "Ensure Correct Stimulus Files Are Used",
-            "Ensure that the correct stimulus files are used in the experiment.",
+            "Ensure that the correct stimulus files are used in the experiment and a meta file is generated manually.",
         )
         # refresh the project details
         self.refresh_project_details()
@@ -407,6 +458,65 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         # refresh the project details
         self.refresh_project_details()
+
+    def edit_experiment(self):
+        # check is the project directory is not empty
+        if self.project_directory_textbox.text() == "":
+            return
+        # get the selected experiment file
+        selected_experiment_file = self.experiment_zoo_table.selectedItems()[0].text()
+        # ask the user to select an experiment type between 2AFC and Finite World Dynamics
+        types = ["2AFC", "Finite World Dynamics", "Custom CSV"]
+        type_dialog = QtWidgets.QInputDialog()
+        type_dialog.setInputMode(QtWidgets.QInputDialog.TextInput)
+        type_dialog.setComboBoxItems(types)
+        type_dialog.setLabelText("Select an experiment type:")
+        type_dialog.setWindowTitle("Select Experiment Type")
+        type_dialog.setOkButtonText("Select")
+        type_dialog.setCancelButtonText("Cancel")
+        type_dialog.exec_()
+        if type_dialog.result() == QtWidgets.QDialog.Accepted:
+            type = type_dialog.textValue()
+        else:
+            # tell the user that no experiment was created
+            QtWidgets.QMessageBox.information(self, "No Experiment Created", "No experiment was created.")
+            return
+        if type == "2AFC":
+            # ensure the experiment file is a CSV file
+            if selected_experiment_file.split(".")[1] != "csv":
+                QtWidgets.QMessageBox.information(
+                    self, "Invalid Experiment File", "The selected experiment file is not a CSV file.",
+                )
+                return
+            # call the 2AFC_designer script and wait for it to finish
+            call(
+                [
+                    "python",
+                    "sixteeny/gui/16Y_2AFC_designer.py",
+                    self.project_directory_textbox.text() + "/experiment_zoo" + "/" + selected_experiment_file,
+                ]
+            )
+        elif type == "Finite World Dynamics":
+            # tell the user that the Finite World Dynamics experiment type is not yet implemented
+            QtWidgets.QMessageBox.information(
+                self,
+                "Finite World Dynamics Not Implemented",
+                "The Finite World Dynamics experiment type is not yet implemented.",
+            )
+        elif type == "Custom CSV":
+            # ensure the experiment file is a CSV file
+            if selected_experiment_file.split(".")[1] != "csv":
+                QtWidgets.QMessageBox.information(
+                    self, "Invalid Experiment File", "The selected experiment file is not a CSV file.",
+                )
+                return
+            # open the custom CSV file in the default csv editor and wait for it to finish
+            call(["open", self.project_directory_textbox.text() + "/experiment_zoo/" + selected_experiment_file])
+        # refresh the project details
+        self.refresh_project_details()
+
+    def start_experiments(self):
+        pass
 
 
 if __name__ == "__main__":

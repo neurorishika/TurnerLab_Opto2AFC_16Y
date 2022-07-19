@@ -1,4 +1,5 @@
 import sys
+import os
 
 import json
 import numpy as np
@@ -51,7 +52,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.intensity: QLineEdit object for the intensity
     """
 
-    def __init__(self, start_folder=None, *args, **kwargs):
+    def __init__(self, start_folder=None, load_file=None, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         # Create the grapher
@@ -64,8 +65,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # add the matplotlib canvas to the layout
         layout.addWidget(self.graph, 0, 0, 9, 1)
 
-        # store the start folder
+        # store the start folder and load file
         self.start_folder = start_folder
+        self.load_file = load_file
 
         # add a pulse width edit box with Integer validator
         layout.addWidget(QtWidgets.QLabel("Pulse Width (ms)"), 0, 1)
@@ -146,8 +148,12 @@ class MainWindow(QtWidgets.QMainWindow):
         w.setLayout(layout)
         self.setCentralWidget(w)
 
-        self.setWindowTitle("Stimulus Designer")
+        self.setWindowTitle("16Y Stimulus Designer")
         self.show()
+
+        # if load_file is not None, load the file
+        if self.load_file is not None:
+            self.load_stimulus(self.load_file)
 
     def generate_waveform(self):
         """
@@ -198,11 +204,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graph.fig.tight_layout()
         self.graph.draw()
 
-    def load_stimulus(self):
+    def load_stimulus(self, load_file=None):
         """
         Load the stimulus waveform from a .stim file.
         """
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Load Stimulus", ".", "*.stim")
+        if load_file is None:
+            filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Load Stimulus", ".", "*.stim")
+        else:
+            filename = load_file
+
         if filename:
             with open(filename, "r") as f:
                 data = json.load(f)
@@ -252,7 +262,11 @@ class MainWindow(QtWidgets.QMainWindow):
             default_filename = self.start_folder + "/" + default_filename
         else:
             default_filename = "./" + default_filename
-        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Stimulus", default_filename, "*.stim")
+
+        if self.load_file is not None:
+            filename = self.load_file
+        else:
+            filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Stimulus", default_filename, "*.stim")
         if filename:
             data = {
                 "pulse_width": int(self.pulse_width.text()),
@@ -318,7 +332,12 @@ class MainWindow(QtWidgets.QMainWindow):
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     if len(sys.argv) > 1:
-        window = MainWindow(sys.argv[1])
+        # check if a file is passed as an argument
+        if os.path.isfile(sys.argv[1]):
+            # if so, pass as load file else pass as start folder
+            window = MainWindow(start_folder=None, load_file=sys.argv[1])
+        else:
+            window = MainWindow(start_folder=sys.argv[1], load_file=None)
     else:
         window = MainWindow()
     sys.exit(app.exec_())
