@@ -4,3 +4,4 @@ from .camera import record_background, binarize, change_in_image, combine_binari
 from .experimenter.base import Experimenter
 from .experimenter.openloop import CSVExperimenter
 from .tracker import ArenaTracker
+from .emailer import Emailer

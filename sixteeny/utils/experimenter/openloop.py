@@ -1,5 +1,6 @@
 from sixteeny.utils.experimenter.base import Experimenter
 import pandas as pd
+import random
 
 
 class CSVExperimenter(Experimenter):
@@ -33,9 +34,20 @@ class CSVExperimenter(Experimenter):
         next_trial["reward_probability"] = list(
             self.experiment_config.iloc[self.trial_number][["P(R|Air)", "P(R|O1)", "P(R|O2)"]]
         )
-        next_trial["relative_odor_vector"] = list(
+        # process relative odor vector
+        relative_odor_vector = list(
             self.experiment_config.iloc[self.trial_number][["Odor(Start)", "Odor(Left)", "Odor(Right)"]]
         )
+        # check if both left and right are 1.5, if so randomly choose one as 1 and the other as 2
+        if float(relative_odor_vector[1]) == 1.5 and float(relative_odor_vector[2]) == 1.5:
+            random_flip = random.choice([0, 1])
+            if random_flip == 0:
+                relative_odor_vector[1] = 2
+                relative_odor_vector[2] = 1
+            else:
+                relative_odor_vector[1] = 1
+                relative_odor_vector[2] = 2
+        next_trial["relative_odor_vector"] = [int(x) for x in relative_odor_vector]
         next_trial["time_needed_in_reward_zone"] = list(
             self.experiment_config.iloc[self.trial_number][["StayTime(Air)", "StayTime(O1)", "StayTime(O2)"]]
         )

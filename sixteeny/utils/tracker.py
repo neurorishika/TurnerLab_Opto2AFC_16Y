@@ -45,6 +45,8 @@ class ArenaTracker(object):
         self.trial_start_times = np.zeros(self.n_trials) * np.nan
         self.trial_end_times = np.zeros(self.n_trials) * np.nan
 
+        self.trial_odor_start_delay = np.zeros(self.n_trials) * np.nan
+
         self.time_spent_in_reward_zone = np.zeros(self.n_trials)
         self.odor_vectors = np.zeros((self.n_trials, 3)) * np.nan
         self.start_arms = np.zeros(self.n_trials)
@@ -146,11 +148,25 @@ class ArenaTracker(object):
             else:
                 time_needed_in_reward_zone = float(time_needed_in_reward_zone)
 
-            if in_reward_zone:
-                if time_needed_in_reward_zone == 0 or (
-                    time_needed_in_reward_zone > 0
-                    and (time.time() - self.time_enter_reward_zone) > time_needed_in_reward_zone
-                ):
+            if self.timed == 0.0:
+                # check if in reward zone for the required time
+                if in_reward_zone:
+                    if time_needed_in_reward_zone == 0 or (
+                        time_needed_in_reward_zone > 0
+                        and (time.time() - self.time_enter_reward_zone) > time_needed_in_reward_zone
+                    ):
+                        rewarded = True
+                        self.administer_reward()
+                        self.start_new_trial()
+            else:
+
+                # process odor delays
+                if self.odor_delay > 0.0 and time.time() - self.trial_start_time > self.odor_delay:
+                    self.controllers["odor"].publish(self.arena_index, self.odor_vector)
+                    self.trial_odor_start_delay[self.trial_count] = time.time() - self.trial_start_time
+
+                # process timed reward
+                if time.time() - self.trial_start_time > self.timed:
                     rewarded = True
                     self.administer_reward()
                     self.start_new_trial()
@@ -163,24 +179,38 @@ class ArenaTracker(object):
 
     def administer_reward(self):
         # update tracker matrices
-        self.time_spent_in_reward_zone[self.trial_count] = time.time() - self.time_enter_reward_zone
+        if self.timed == 0.0:
+            self.time_spent_in_reward_zone[self.trial_count] = time.time() - self.time_enter_reward_zone
+        else:
+            self.time_spent_in_reward_zone[self.trial_count] = (
+                time.time() - self.trial_start_time
+            )  # the entire area is the reward zone
+
         self.chosen_arms[self.trial_count] = self.absolute_to_relative_arm(
             self.current_arm, self.start_arm, self.arena_index
         )
         self.chosen_odor[self.trial_count] = self.odor_vector[self.current_arm]
 
         # sample reward state
-        reward_state = [np.random.choice(2, p=[1 - i, i]) for i in self.reward_probability]
+        if self.timed == 0.0:
+            reward_state = [np.random.choice(2, p=[1 - i, i]) for i in self.reward_probability]
 
-        # check if trial is baited, if so, get the logical OR of past reward states
-        if self.trial_baited[self.trial_count] == 1:
-            reward_state = (
-                np.int32(np.logical_or(reward_state, self.reward_states[self.trial_count - 1, :]))
-                if self.trial_count > 0
-                else reward_state
+            # check if trial is baited, if so, get the logical OR of past reward states
+            if self.trial_baited[self.trial_count] == 1:
+                reward_state = (
+                    np.int32(np.logical_or(reward_state, self.reward_states[self.trial_count - 1, :]))
+                    if self.trial_count > 0
+                    else reward_state
+                )
+        else:
+            reward_state = [1 for i in range(len(self.reward_probability))]
+
+        if self.timed == 0.0:
+            reward_stimulus = (
+                self.experiment_folder + "stimuli/" + self.reward_stimulus[self.odor_vector[self.current_arm]]
             )
-
-        reward_stimulus = self.experiment_folder + "stimuli/" + self.reward_stimulus[self.odor_vector[self.current_arm]]
+        else:
+            reward_stimulus = self.experiment_folder + "stimuli/" + self.unconditioned_stimulus
 
         # sample reward
         if reward_state[self.odor_vector[self.current_arm]] == 1:
@@ -207,7 +237,7 @@ class ArenaTracker(object):
             print("All trials completed")
             self.trial_count += 1
             # flip all valves to air
-            self.controllers["odor"].publish(self.arena_index, [0,0,0])
+            self.controllers["odor"].publish(self.arena_index, [0, 0, 0])
             self.completed = True
             return
 
@@ -246,14 +276,22 @@ class ArenaTracker(object):
 
         self.odor_vectors[self.trial_count, :] = self.odor_vector
 
-        # flip the valves to the new odor vector
-        self.controllers["odor"].publish(self.arena_index, self.odor_vector)
-
         self.time_needed_in_reward_zone = next_trial["time_needed_in_reward_zone"]  # indexed wrt odors
         self.reward_stimulus = next_trial["reward_stimulus"]  # indexed wrt odors
         self.reward_probability = next_trial["reward_probability"]  # indexed wrt odors
 
         self.trial_baited[self.trial_count] = next_trial["baited"]  # 0 or 1 depending on if trial was baited
+
+        self.timed = float(next_trial["timed"])  # 0 or positive number in seconds if timed
+        self.odor_delay = float(next_trial["odor_delay"])  # seconds
+        self.unconditioned_stimulus = next_trial["unconditioned_stimulus"]  # json file
+
+        # flip the valves to the new odor vector
+        if self.odor_delay == 0.0:
+            self.controllers["odor"].publish(self.arena_index, self.odor_vector)
+            self.trial_odor_start_delay[self.trial_count] = time.time() - self.trial_start_time
+        else:
+            self.controllers["odor"].publish(self.arena_index, [0, 0, 0])
 
     def save_data(self, directory):
         """
@@ -283,6 +321,7 @@ class ArenaTracker(object):
             "reward_delivered": self.reward_delivered.tolist(),
             "trial_start_times": self.trial_start_times.tolist(),
             "trial_end_times": self.trial_end_times.tolist(),
+            "trial_odor_start_delay": self.trial_odor_start_delay.tolist(),
             "time_spent_in_reward_zone": self.time_spent_in_reward_zone.tolist(),
             "lengths_of_trials": self.lengths_of_trials.tolist(),
             "odor_vectors": self.odor_vectors.tolist(),

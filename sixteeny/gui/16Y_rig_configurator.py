@@ -10,6 +10,7 @@ from sixteeny.controller.led import LEDController
 
 from sixteeny.utils.camera import record_background
 
+
 class MainWindow(QtWidgets.QMainWindow):
     """
     A class to create the main window for the Rig Configurator interface
@@ -57,7 +58,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add a dropbox for selecting the COM port for the 4 LED Modules in a 1x4 grid
         self.com_ports_dropboxes = []
-        default_indices = [12,4,11,3]
+        default_indices = [12, 4, 11, 3]
         led_array_layout.addWidget(QtWidgets.QLabel("COM Port:"), 0, 0)
         for i in range(4):
             led_array_layout.addWidget(QtWidgets.QLabel("Module {}".format(i + 1)), 0, 2 * i + 1, QtCore.Qt.AlignRight)
@@ -131,7 +132,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a textbox to set the camera exposure time in us
         layout.addWidget(QtWidgets.QLabel("Exposure Time (us)"), 9, 2)
         self.exposure_time = QtWidgets.QLineEdit()
-        self.exposure_time.setText("{}".format(30000))
+        self.exposure_time.setText("{}".format(10000))
         self.exposure_time.setValidator(QtGui.QIntValidator(1, 100000))
         layout.addWidget(self.exposure_time, 9, 3)
 
@@ -229,7 +230,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a button to set minimum message delay
         layout.addWidget(QtWidgets.QLabel("Minimum Message Delay (ms)"), 20, 0)
         self.minimum_message_delay = QtWidgets.QLineEdit()
-        self.minimum_message_delay.setText("1")
+        self.minimum_message_delay.setText("50")
         self.minimum_message_delay.setValidator(QtGui.QIntValidator(1, 10000))
         layout.addWidget(self.minimum_message_delay, 20, 1)
 
@@ -243,26 +244,37 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a text box to set the odor 1 name
         layout.addWidget(QtWidgets.QLabel("Odor 1"), 22, 0)
         self.odor_1_name = QtWidgets.QLineEdit()
-        self.odor_1_name.setText("PA")
+        self.odor_1_name.setText("OCT")
         layout.addWidget(self.odor_1_name, 22, 1)
 
         # add a text box to set the odor 2 name
         layout.addWidget(QtWidgets.QLabel("Odor 2"), 22, 2)
         self.odor_2_name = QtWidgets.QLineEdit()
-        self.odor_2_name.setText("EL")
+        self.odor_2_name.setText("MCH")
         layout.addWidget(self.odor_2_name, 22, 3)
+
+        # add a checkbox to enable email notifications
+        self.email_notifications_checkbox = QtWidgets.QCheckBox("Enable Email Notifications")
+        self.email_notifications_checkbox.setChecked(True)
+        layout.addWidget(self.email_notifications_checkbox, 23, 0)
+
+        # add a text box to set the email addresses
+        layout.addWidget(QtWidgets.QLabel("Send to (comma-separated):"), 23, 1)
+        self.email_addresses = QtWidgets.QLineEdit()
+        self.email_addresses.setText("mohantas@janelia.hhmi.org")
+        layout.addWidget(self.email_addresses, 23, 2, 1, 2)
 
         # Add a button to enable the GPU processing
         self.enable_gpu_processing_checkbox = QtWidgets.QCheckBox("Enable GPU Processing")
-        layout.addWidget(self.enable_gpu_processing_checkbox, 23, 0)
+        layout.addWidget(self.enable_gpu_processing_checkbox, 24, 0)
 
         # Add a button to load and save the configuration
         self.load_configuration_button = QtWidgets.QPushButton("Load Configuration")
-        layout.addWidget(self.load_configuration_button, 23, 1)
+        layout.addWidget(self.load_configuration_button, 24, 1)
         self.load_configuration_button.clicked.connect(self.load_configuration)
 
         self.save_configuration_button = QtWidgets.QPushButton("Save Configuration")
-        layout.addWidget(self.save_configuration_button, 23, 2, 1, 2)
+        layout.addWidget(self.save_configuration_button, 24, 2, 1, 2)
         self.save_configuration_button.clicked.connect(self.save_configuration)
 
         # create the main widget
@@ -291,7 +303,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # general
         # ask the user if they want to change the experiment directory
         if configuration["experiment_directory"] != self.experiment_directory.text():
-            if QtWidgets.QMessageBox.question(self, "Change Experiment Directory", "Do you want to change the experiment directory?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
+            if (
+                QtWidgets.QMessageBox.question(
+                    self,
+                    "Change Experiment Directory",
+                    "Do you want to change the experiment directory?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                )
+                == QtWidgets.QMessageBox.Yes
+            ):
                 self.experiment_directory.setText(configuration["experiment_directory"])
         self.mask_file.setText(configuration["mask_file"])
 
@@ -333,6 +353,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # odor
         self.odor_1_name.setText(configuration["odor_1"])
         self.odor_2_name.setText(configuration["odor_2"])
+
+        # email (allow legacy configuration support)
+        try:
+            self.email_notifications_checkbox.setChecked(configuration["email_notifications"])
+            self.email_addresses.setText(", ".join(configuration["email_addresses"]))
+        except:
+            pass
 
         # gpu processing
         self.enable_gpu_processing_checkbox.setChecked(configuration["enable_gpu_processing"])
@@ -396,7 +423,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # odor
         configuration["odor_1"] = self.odor_1_name.text()
         configuration["odor_2"] = self.odor_2_name.text()
-
+        # email
+        configuration["email_notifications"] = self.email_notifications_checkbox.isChecked()
+        configuration["email_addresses"] = [str(i).strip().lower() for i in self.email_addresses.text().split(",")]
         # save the configuration as a json object
         with open(file_name, "w") as f:
             json.dump(configuration, f)
@@ -495,7 +524,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # set the file name
         self.ros_environment_batch_file.setText(file_name)
-    
+
     def capture_background(self):
         """
         A function to setup a camera and capture a background
@@ -508,12 +537,10 @@ class MainWindow(QtWidgets.QMainWindow):
             GAIN=int(self.gain.text()),
             GAMMA=int(self.gamma.text()),
             record_video=False,
-            show_video=False
+            show_video=False,
         ) as camera:
             background, _, _, _ = record_background(
-                time_to_record=int(self.background_calculation_time.text()),
-                camera=camera,
-                gpu_enabled=False
+                time_to_record=int(self.background_calculation_time.text()), camera=camera, gpu_enabled=False
             )
             plt.imshow(background)
             plt.show()
@@ -553,17 +580,26 @@ class MainWindow(QtWidgets.QMainWindow):
         PULSE_REPEAT = 1
 
         with LEDController(
-            ports = com_ports,
-            baudrate = self.baud_rates_dropbox.currentText(),
-            arena_panel_ids = quadrant_ids
+            ports=com_ports, baudrate=self.baud_rates_dropbox.currentText(), arena_panel_ids=quadrant_ids
         ) as led:
             led.turn_on_backlight(100)
             led.reset_accumulated_led_stimulus()
             time.sleep(1)
-            for color in [b'R', b'G', b'B']:
+            for color in [b"R", b"G", b"B"]:
                 for arena in range(16):
-                    led.accumulate_led_stimulus(arena,color,100,PULSE_WIDTH,PULSE_PERIOD,(arena%4)+1,PULSE_DEADTIME,PULSE_DELAY,PULSE_REPEAT,debug_mode=False)
-                    if arena%4 == 3:
+                    led.accumulate_led_stimulus(
+                        arena,
+                        color,
+                        100,
+                        PULSE_WIDTH,
+                        PULSE_PERIOD,
+                        (arena % 4) + 1,
+                        PULSE_DEADTIME,
+                        PULSE_DELAY,
+                        PULSE_REPEAT,
+                        debug_mode=False,
+                    )
+                    if arena % 4 == 3:
                         led.run_accumulated_led_stimulus()
                     time.sleep(0.5)
                 time.sleep(1)

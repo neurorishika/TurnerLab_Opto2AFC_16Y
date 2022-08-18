@@ -20,3 +20,14 @@ pip install spinnaker_python_*.whl
 
 ## Get FFMPEG from https://www.gyan.dev/ffmpeg/builds/ and add to Path
 
+# install google client and oathclient
+pip install --upgrade google-api-python-client oauth2client
+
+# setup email client
+
+EMAIL: turnerlab.yuser@gmail.com
+PASSWORD: cupcake2020
+
+## download client secret from: https://console.developers.google.com/apis/credentials and save to sixteeny/utils/client_secret.json
+# run the test email script in the main directory and login to the yuser account and approve authentication flow
+

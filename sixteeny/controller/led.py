@@ -184,10 +184,13 @@ class LEDController(object):
             ir_intensity: intensity of IR LEDs (int)
         """
         assert ir_intensity >= 0 and ir_intensity <= 100, "Invalid intensity"
-        conn = self.conns[self.arena_specs[arena]["conn"]]
-        quadrant = self.arena_specs[arena]["quadrant"]
-        conn.write(b"IR " + str(ir_intensity).encode() + b" " + quadrant + b"\r")
-
+        try:
+            conn = self.conns[self.arena_specs[arena]["conn"]]
+            quadrant = self.arena_specs[arena]["quadrant"]
+            conn.write(b"IR " + str(ir_intensity).encode() + b" " + quadrant + b"\r")
+        except:
+            print("Could not initialize IR for arena " + str(arena))
+        
     def turn_on_backlight(self, backlight_intensity):
         """
         Initialize the backlight for all arenas
@@ -460,65 +463,70 @@ class LEDController(object):
         order = range(16)
 
         for i in order:
-            conn_id = self.arena_specs[i]["conn"]
-            conn = self.conns[conn_id]
-            quadrant = self.arena_specs[i]["quadrant"]
-            quadrant_count = self.arena_specs[i]["quadrant_count"]
-            conn.write(
-                b"PULSE "
-                + str(self.pulse_state[conn_id][quadrant_count][0][0]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][0][1]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][0][2]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][0][3]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][0][4]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][0][5]).encode()
-                + b" R "
-                + quadrant
-                + b"\r"
-            )
-            conn.write(
-                b"PULSE "
-                + str(self.pulse_state[conn_id][quadrant_count][1][0]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][1][1]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][1][2]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][1][3]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][1][4]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][1][5]).encode()
-                + b" G "
-                + quadrant
-                + b"\r"
-            )
-            conn.write(
-                b"PULSE "
-                + str(self.pulse_state[conn_id][quadrant_count][2][0]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][2][1]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][2][2]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][2][3]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][2][4]).encode()
-                + b" "
-                + str(self.pulse_state[conn_id][quadrant_count][2][5]).encode()
-                + b" B "
-                + quadrant
-                + b"\r"
-            )
-            
-            conn.write(b"RED " + str(self.color_state[conn_id][quadrant_count][0]).encode() + b" 0 " + quadrant + b"\r")
-            conn.write(b"GRN " + str(self.color_state[conn_id][quadrant_count][1]).encode() + b" 0 " + quadrant + b"\r")
-            conn.write(b"BLU " + str(self.color_state[conn_id][quadrant_count][2]).encode() + b" 0 " + quadrant + b"\r")
+            try:
+                conn_id = self.arena_specs[i]["conn"]
+                
+                conn = self.conns[conn_id]
+                quadrant = self.arena_specs[i]["quadrant"]
+                quadrant_count = self.arena_specs[i]["quadrant_count"]
+                conn.write(
+                    b"PULSE "
+                    + str(self.pulse_state[conn_id][quadrant_count][0][0]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][0][1]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][0][2]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][0][3]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][0][4]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][0][5]).encode()
+                    + b" R "
+                    + quadrant
+                    + b"\r"
+                )
+                conn.write(
+                    b"PULSE "
+                    + str(self.pulse_state[conn_id][quadrant_count][1][0]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][1][1]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][1][2]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][1][3]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][1][4]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][1][5]).encode()
+                    + b" G "
+                    + quadrant
+                    + b"\r"
+                )
+                conn.write(
+                    b"PULSE "
+                    + str(self.pulse_state[conn_id][quadrant_count][2][0]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][2][1]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][2][2]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][2][3]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][2][4]).encode()
+                    + b" "
+                    + str(self.pulse_state[conn_id][quadrant_count][2][5]).encode()
+                    + b" B "
+                    + quadrant
+                    + b"\r"
+                )
+                
+                conn.write(b"RED " + str(self.color_state[conn_id][quadrant_count][0]).encode() + b" 0 " + quadrant + b"\r")
+                conn.write(b"GRN " + str(self.color_state[conn_id][quadrant_count][1]).encode() + b" 0 " + quadrant + b"\r")
+                conn.write(b"BLU " + str(self.color_state[conn_id][quadrant_count][2]).encode() + b" 0 " + quadrant + b"\r")
+            except:
+                print("Could not run LED stimulus for arena " + str(i))
+                
             # if (
             #     self.color_state[conn_id][quadrant_count][0] > 0
             #     or self.color_state[conn_id][quadrant_count][1] > 0

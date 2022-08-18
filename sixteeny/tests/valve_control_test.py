@@ -1,37 +1,39 @@
 from sixteeny.controller.odor import OdorValveController
 import time
 
+with OdorValveController(minimum_delay=0.05) as odor:
+    for i in range(16):
+        for z in [[0,0,0],[0,0,1],[0,1,0],[1,0,0],[0,0,2],[0,2,0],[2,0,0],[0,0,0]]:
+            odor.publish(i, z)
+            time.sleep(0.1)
+
+# # Diagnostic code
 # with OdorValveController(minimum_delay=0.001) as odor:
 #     for i in range(16):
-#         odor.publish(i, [0, 0 ,0])
-
-# Diagnostic code
-with OdorValveController(minimum_delay=0.001) as odor:
-    for i in range(16):
-        odor.publish(i, [1, 0, 0])
-        time.sleep(10)
-        odor.publish(i, [0, 0, 0])
-        time.sleep(10)
-        odor.publish(i, [2, 0, 0])
-        time.sleep(10)
-        odor.publish(i, [0, 0, 0])
-        time.sleep(10)
-        odor.publish(i, [0, 1, 0])
-        time.sleep(10)
-        odor.publish(i, [0, 0, 0])
-        time.sleep(10)
-        odor.publish(i, [0, 2, 0])
-        time.sleep(10)
-        odor.publish(i, [0, 0, 0])
-        time.sleep(10)
-        odor.publish(i, [0, 0, 1])
-        time.sleep(10)
-        odor.publish(i, [0, 0, 0])
-        time.sleep(10)
-        odor.publish(i, [0, 0, 2])
-        time.sleep(10)
-        odor.publish(i, [0, 0, 0])
-        time.sleep(10)
+#         odor.publish(i, [1, 0, 0])
+#         time.sleep(10)
+#         odor.publish(i, [0, 0, 0])
+#         time.sleep(10)
+#         odor.publish(i, [2, 0, 0])
+#         time.sleep(10)
+#         odor.publish(i, [0, 0, 0])
+#         time.sleep(10)
+#         odor.publish(i, [0, 1, 0])
+#         time.sleep(10)
+#         odor.publish(i, [0, 0, 0])
+#         time.sleep(10)
+#         odor.publish(i, [0, 2, 0])
+#         time.sleep(10)
+#         odor.publish(i, [0, 0, 0])
+#         time.sleep(10)
+#         odor.publish(i, [0, 0, 1])
+#         time.sleep(10)
+#         odor.publish(i, [0, 0, 0])
+#         time.sleep(10)
+#         odor.publish(i, [0, 0, 2])
+#         time.sleep(10)
+#         odor.publish(i, [0, 0, 0])
+#         time.sleep(10)
         
 
 
@@ -43,7 +45,7 @@ with OdorValveController(minimum_delay=0.001) as odor:
 
 # rclpy.init()
 # node = rclpy.create_node('arena_odors_publisher')
-# publisher = node.create_publisher(ArenaOdors, 'arena_odors', 10)
+# publisher = node.create_publisher(ArenaOdors, 'arena_odors', 1)
 
 # odors = [0,1,2]
 # arena = 0
@@ -62,7 +64,7 @@ with OdorValveController(minimum_delay=0.001) as odor:
 #         if arena > 15:
 #             arena = 0
 #         print(msg.arena,msg.odors,current_time-last_time)
-#         time.sleep(1)
+#         time.sleep(10)
 #         last_time = current_time
 #     except KeyboardInterrupt:
 #         break

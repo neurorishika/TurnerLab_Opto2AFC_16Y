@@ -1,0 +1,1 @@
+conda activate sixteeny && call C:\yarena_ws\install\setup.bat && python sixteeny\tests\valve_control_test.py && pause

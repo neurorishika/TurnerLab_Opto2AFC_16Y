@@ -12,7 +12,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, start_folder=None, load_file=None, *args, **kwargs):
         super().__init__()
         self.setWindowTitle("2AFC Designer")
-        self.setGeometry(100, 100, 960, 400)
+        self.setGeometry(100, 100, 960, 800)
 
         # create a main layout
         self.main_layout = QtWidgets.QGridLayout()
@@ -38,12 +38,22 @@ class MainWindow(QtWidgets.QMainWindow):
         # create a checkbox for L/R Randomization
         self.randomize_lr = QtWidgets.QCheckBox("Randomize L/R?")
         self.randomize_lr.setChecked(True)
-        self.main_layout.addWidget(self.randomize_lr, 1, 0, 1, 2)
+        self.main_layout.addWidget(self.randomize_lr, 1, 0)
+
+        # create a checkbox for presampled L/R
+        self.presampled_lr = QtWidgets.QCheckBox("Presampled L/R?")
+        self.presampled_lr.setChecked(False)
+        self.main_layout.addWidget(self.presampled_lr, 1, 1)
 
         # create a checkbox for Reward Hold/Baiting
         self.reward_hold_bait = QtWidgets.QCheckBox("Hold/Bait Rewards?")
         self.reward_hold_bait.setChecked(False)
-        self.main_layout.addWidget(self.reward_hold_bait, 1, 2, 1, 2)
+        self.main_layout.addWidget(self.reward_hold_bait, 1, 2)
+
+        # create a checkbox for Reciprocal Task
+        self.reciprocal_task = QtWidgets.QCheckBox("Reciprocal Task?")
+        self.reciprocal_task.setChecked(True)
+        self.main_layout.addWidget(self.reciprocal_task, 1, 3)
 
         # create a button to add a row
         self.add_row_button = QtWidgets.QPushButton("Add new block")
@@ -75,15 +85,73 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main_layout.addWidget(self.odor2_textbox, 4, 1, 1, 2)
         self.main_layout.addWidget(self.odor2_button, 4, 3, 1, 1)
 
+        # add a box with random generator settings
+        self.random_generator_box = QtWidgets.QGroupBox("Random 2AFC Task Generator (Separate by spaces)")
+
+        regex = r"^(\s*(-|\+)?\d+(?:\.\d+)?\s*,\s*)+(-|\+)?\d+(?:\.\d+)?\s*$"
+        validator = QtGui.QRegExpValidator(QtCore.QRegExp(regex), self)
+
+        # create a text label, text box to enter Reward Gain values
+        self.reward_gain_label = QtWidgets.QLabel("Reward Gain [0, 1]")
+        self.reward_gain_textbox = QtWidgets.QLineEdit()
+        self.reward_gain_textbox.setText("0.125 0.25 0.5")
+        self.reward_gain_textbox.setValidator(validator)
+
+        # create a text label, text box to enter Reward Contrast values
+        self.reward_contrast_label = QtWidgets.QLabel("Reward Contrast [0.5, 1]")
+        self.reward_contrast_textbox = QtWidgets.QLineEdit()
+        self.reward_contrast_textbox.setText("0.6 0.8 1")
+        self.reward_contrast_textbox.setValidator(validator)
+
+        # create a text label, text box to enter Hazard Rate values
+        self.hazard_rate_label = QtWidgets.QLabel("Hazard Rate [0, 1]")
+        self.hazard_rate_textbox = QtWidgets.QLineEdit()
+        self.hazard_rate_textbox.setText("0.05 0.02 0.01")
+        self.hazard_rate_textbox.setValidator(validator)
+
+        # create a text label, text box to enter number of naive trials
+        self.naive_trials_label = QtWidgets.QLabel("Naive Trials")
+        self.naive_trials_textbox = QtWidgets.QLineEdit()
+        self.naive_trials_textbox.setText("40")
+        self.naive_trials_textbox.setValidator(QtGui.QIntValidator())
+
+        # create a text label, text box to enter number of maximum testing trials
+        self.max_trials_label = QtWidgets.QLabel("Max Trials")
+        self.max_trials_textbox = QtWidgets.QLineEdit()
+        self.max_trials_textbox.setText("200")
+        self.max_trials_textbox.setValidator(QtGui.QIntValidator())
+
+        # create a button to generate the random task
+        self.generate_button = QtWidgets.QPushButton("Generate")
+        self.generate_button.clicked.connect(self.generate_task)
+
+        # create a layout for the random generator box
+        self.random_generator_layout = QtWidgets.QGridLayout()
+        self.random_generator_layout.addWidget(self.reward_gain_label, 0, 0)
+        self.random_generator_layout.addWidget(self.reward_gain_textbox, 0, 1)
+        self.random_generator_layout.addWidget(self.reward_contrast_label, 1, 0)
+        self.random_generator_layout.addWidget(self.reward_contrast_textbox, 1, 1)
+        self.random_generator_layout.addWidget(self.hazard_rate_label, 2, 0)
+        self.random_generator_layout.addWidget(self.hazard_rate_textbox, 2, 1)
+        self.random_generator_layout.addWidget(self.naive_trials_label, 3, 0)
+        self.random_generator_layout.addWidget(self.naive_trials_textbox, 3, 1)
+        self.random_generator_layout.addWidget(self.max_trials_label, 4, 0)
+        self.random_generator_layout.addWidget(self.max_trials_textbox, 4, 1)
+        self.random_generator_layout.addWidget(self.generate_button, 5, 0, 1, 2)
+        self.random_generator_box.setLayout(self.random_generator_layout)
+
+        # add the random generator box to the main layout
+        self.main_layout.addWidget(self.random_generator_box, 5, 0, 1, 4)
+
         # create a button to save the table
         self.save_button = QtWidgets.QPushButton("Save")
         self.save_button.clicked.connect(self.save)
-        self.main_layout.addWidget(self.save_button, 5, 0, 1, 2)
+        self.main_layout.addWidget(self.save_button, 6, 0, 1, 2)
 
         # create a button to load the table
         self.load_button = QtWidgets.QPushButton("Load")
         self.load_button.clicked.connect(self.load)
-        self.main_layout.addWidget(self.load_button, 5, 2, 1, 2)
+        self.main_layout.addWidget(self.load_button, 6, 2, 1, 2)
 
         # create the central widget
         self.central_widget = QtWidgets.QWidget()
@@ -104,7 +172,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Load the stimulus for odor 1.
         """
         # open a file dialog
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", ".", "*.stim")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", self.start_folder, "*.stim")
         # if a file was selected
         if filename:
             # set the textbox to the file name (without the path)
@@ -115,7 +183,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Load the stimulus for odor 2.
         """
         # open a file dialog
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", ".", "*.stim")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", self.start_folder, "*.stim")
         # if a file was selected
         if filename:
             # set the textbox to the file name (without the path)
@@ -203,7 +271,11 @@ class MainWindow(QtWidgets.QMainWindow):
             # add a row to the dataframe for each trial
             for trial in range(num_trials):
                 # if the randomize L/R checkbox is checked, randomly assign L/R
-                left = np.random.choice([1, 2]) if self.randomize_lr.isChecked() else 1
+                left = (
+                    (np.random.choice([1, 2]) if self.presampled_lr.isChecked() else 1.5)
+                    if self.randomize_lr.isChecked()
+                    else 1
+                )
                 # add a row to the dataframe
                 df.loc[len(df)] = [
                     1,
@@ -224,6 +296,14 @@ class MainWindow(QtWidgets.QMainWindow):
                     0,
                     "empty.stim",
                 ]
+
+        # generate reciprocal by switching the values in P(R|O1) and P(R|O2) and Odor(Left) and Odor(Right)
+        reciprocal = df.copy()
+        reciprocal["P(R|O1)"] = df["P(R|O2)"]
+        reciprocal["P(R|O2)"] = df["P(R|O1)"]
+        reciprocal["Odor(Left)"] = df["Odor(Right)"]
+        reciprocal["Odor(Right)"] = df["Odor(Left)"]
+
         # save the dataframe to a csv file
         if self.start_folder != "":
             default_folder = self.start_folder
@@ -237,16 +317,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if filename:
             df.to_csv(filename, index=False)
+            if self.reciprocal_task.isChecked():
+                reciprocal.to_csv(filename.replace(".csv", "_reciprocal.csv"), index=False)
             # show a message box indicating that the experiment was saved
             QtWidgets.QMessageBox.information(
                 self, "Success", "The experiment was saved to {}".format(filename),
             )
+
         # create a dictionary of the used stimuli
         stimuli = {"used_stimuli": [self.odor1_textbox.text(), self.odor2_textbox.text(),]}
         # save the stimuli dictionary to a json file with .meta extension with the same name as the experiment file
         filename = filename.split(".")[0] + ".meta"
         with open(filename, "w") as f:
             json.dump(stimuli, f)
+        if self.reciprocal_task.isChecked():
+            with open(filename.replace(".meta", "_reciprocal.meta"), "w") as f:
+                json.dump(stimuli, f)
 
         # ask the user if they want to close the window
         reply = QtWidgets.QMessageBox.question(
@@ -263,12 +349,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Load an experiment from a csv file.
         """
-        if load_file is not None:
+        if load_file is not None and load_file != False:
             filename = load_file
         else:
             # open a file dialog
             filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Experiment", ".", "*.csv")
             # if a file was selected
+
         if filename:
             # load the dataframe from the csv file
             df = pd.read_csv(filename)
@@ -301,6 +388,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
             # delete all rows from the table
             self.table.setRowCount(0)
+        else:
+            return
+
         # create an empty dictionary to store all blocks of trials
         all_blocks = {}
         block_no = 1
@@ -364,6 +454,68 @@ class MainWindow(QtWidgets.QMainWindow):
         self.odor2_textbox.setText(odor2_stim)
         # set the baiting status
         self.reward_hold_bait.setChecked(baited)
+
+        # resize the table to fit the new data
+        self.table.resizeColumnsToContents()
+        self.table.resizeRowsToContents()
+
+    def generate_task(self):
+        # convert textbox values to a list of floats
+        reward_contrasts = [float(x) for x in self.reward_contrast_textbox.text().split(" ")]
+        reward_gains = [float(x) for x in self.reward_gain_textbox.text().split(" ")]
+        hazard_rates = [float(x) for x in self.hazard_rate_textbox.text().split(" ")]
+
+        # get naive trial number
+        naive_trials = int(self.naive_trials_textbox.text())
+        # get maximum trial number
+        max_trials = int(self.max_trials_textbox.text())
+
+        # choose random hazard rate
+        random_hazard_rate = np.random.choice(hazard_rates)
+        experiments = []
+        if naive_trials > 0:
+            experiments.append([naive_trials, 0, 0])
+
+        n_trials = 0
+        max_state = 0
+
+        while n_trials < max_trials:
+
+            while True:
+                # sample block size as geometric distribution using hazard rate
+                block_size = np.random.geometric(random_hazard_rate)
+                # round block size to nearest five
+                block_size = int(np.round(block_size / 5) * 5)
+                # check if block size is more than zero
+                if block_size > 0:
+                    break
+
+            # sample reward gain and contrast
+            reward_gain = np.random.choice(reward_gains)
+            reward_contrast = np.random.choice(reward_contrasts)
+
+            # calculate reward probability
+            pr1 = round(reward_gain * 2 * reward_contrast, 2)
+            pr2 = round(reward_gain * 2 * (1 - reward_contrast), 2)
+
+            if n_trials + block_size > max_trials:
+                block_size = max_trials - n_trials
+            if max_state == 0:
+                experiments.append([block_size, pr1, pr2])
+                max_state = 1
+            else:
+                experiments.append([block_size, pr2, pr1])
+                max_state = 0
+
+            n_trials += block_size
+
+        # add experiments to table
+        self.table.setRowCount(0)
+        for experiment in experiments:
+            self.table.insertRow(self.table.rowCount())
+            self.table.setItem(self.table.rowCount() - 1, 0, QtWidgets.QTableWidgetItem(str(experiment[0])))
+            self.table.setItem(self.table.rowCount() - 1, 1, QtWidgets.QTableWidgetItem(str(experiment[1])))
+            self.table.setItem(self.table.rowCount() - 1, 2, QtWidgets.QTableWidgetItem(str(experiment[2])))
 
         # resize the table to fit the new data
         self.table.resizeColumnsToContents()

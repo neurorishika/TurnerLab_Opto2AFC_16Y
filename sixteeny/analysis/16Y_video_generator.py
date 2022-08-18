@@ -111,12 +111,15 @@ def process_image(
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, data_folder=None, *args, **kwargs):
         """
         Creates the Video Generator Application
         """
         super().__init__()
         self.setWindowTitle("Video Generator")
+        
+        # store the data folder
+        self.data_folder = data_folder
 
         # create the main layout
         self.main_layout = QtWidgets.QGridLayout()
@@ -170,6 +173,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         self.show()
+
+        # if a data folder was passed in, set it
+        if data_folder is not None:
+            self.experiment_folder_textbox.setText(data_folder)
 
     def browse_for_experiment_folder(self):
         """
@@ -429,6 +436,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow()
+    if len(sys.argv) > 1:
+        window = MainWindow(sys.argv[1])
+    else:
+        window = MainWindow()
     sys.exit(app.exec_())
 

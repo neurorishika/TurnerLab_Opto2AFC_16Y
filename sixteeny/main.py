@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from sixteeny.utils.tracker import ArenaTracker
 from sixteeny.utils.experimenter import CSVExperimenter, FiniteStateExperimenter
 from sixteeny.utils.camera import record_background, change_in_image, binarize, combine_binarized_images
+from sixteeny.utils.emailer import Emailer
 
 from sixteeny.controller.camera import SpinnakerCamera
 from sixteeny.controller.odor import OdorValveController
@@ -23,7 +24,6 @@ import threading
 import queue
 
 frame_write_count = 0
-
 
 def async_video_writer(save_queue, gpu, pre_acquired=False):
     """
@@ -44,6 +44,29 @@ def async_video_writer(save_queue, gpu, pre_acquired=False):
                 print("Saved {} frames. {} frames left in queue.".format(frame_write_count, save_queue.qsize() - 1))
             save_queue.task_done()
 
+
+def async_email_sender(email_queue, emailer):
+    """
+    Send an email queue asynchronously.
+    """
+    while True:
+        email_text, email_subject = email_queue.get()
+        if email_text is None:
+            break
+        else:
+            # send email
+            emailer.SendMessage(email_subject, email_text, email_text)
+            email_queue.task_done()
+
+def async_reminder(frequency, email_queue):
+    while True:
+        time.sleep(frequency)
+        email_queue.put(
+            (
+                "Warning: The experiment is still complete but the air valves are still on. Please turn them off and proceed to the next experiment to prevent damage to the arena.",
+                "URGENT: AIR SUPPLY IS ON AFTER EXPERIMENT HAS ENDED",
+            )
+        )
 
 if __name__ == "__main__":
 
@@ -127,7 +150,7 @@ if __name__ == "__main__":
 
     # ask the user if they have turned on the air supply
     while True:
-        air_supply = input("Have you turned on the air supply? (y/n) ")
+        air_supply = input("Have you turned on the MFCs and air supply? (y/n) ")
         if air_supply == "y" or air_supply == "Y":
             break
         elif air_supply == "n" or air_supply == "N":
@@ -165,8 +188,10 @@ if __name__ == "__main__":
         ports=rig_config["com_ports"], baudrate=rig_config["baud_rate"], arena_panel_ids=rig_config["quadrant_ids"]
     ) as led, MFCController(
         com_port=rig_config["mfc_com_port"],
-        device_ids=rig_config["mfc_device_ids"],
-        default_flow_rate=rig_config["mfc_flow_rate"],
+        device_ids=rig_config[
+            "mfc_device_ids"
+        ],  # [i for n,i in enumerate(rig_config["mfc_device_ids"]) if n in fly_arenas],
+        default_flow_rate=0.0,
     ) as mfc:
         controllers["camera"] = camera
         controllers["odor"] = odor
@@ -174,6 +199,11 @@ if __name__ == "__main__":
         controllers["mfc"] = mfc
 
         print("All controllers initialized.\n")
+
+        # turn on MFCs
+        for i in fly_arenas:
+            controllers["mfc"].set_flow_rate(i, rig_config["mfc_flow_rate"])
+        print("MFCs turned on.\n")
 
         # Start IR backlight
         led.turn_on_backlight(rig_config["ir_intensity"])
@@ -185,12 +215,12 @@ if __name__ == "__main__":
         keep_trying = True
         while keep_trying:
             n_observations = 10
-            mfc_observations = np.zeros((n_observations, len(rig_config["mfc_device_ids"])))
+            mfc_observations = np.zeros((n_observations, len(fly_arenas)))
             for i in range(n_observations):
                 observed = False
                 while not observed:
                     try:
-                        for j in range(len(rig_config["mfc_device_ids"])):
+                        for j in fly_arenas:
                             mfc_observations[i, j] = mfc.get_flow_rate(j)
                         observed = True
                     except:
@@ -203,13 +233,13 @@ if __name__ == "__main__":
             average_flow_rates = np.mean(mfc_observations, axis=0)
 
             # check that the flow rates are within the expected range
-            for i in range(len(rig_config["mfc_device_ids"])):
+            for i, n in enumerate(fly_arenas):
                 if average_flow_rates[i] < rig_config["mfc_flow_rate"] * (1 - error_margin) or average_flow_rates[
                     i
                 ] > rig_config["mfc_flow_rate"] * (1 + error_margin):
                     print(
                         "Flow rate for MFC "
-                        + str(i)
+                        + str(n)
                         + " is out of range. Expected "
                         + str(rig_config["mfc_flow_rate"])
                         + " mL/min, got "
@@ -241,36 +271,48 @@ if __name__ == "__main__":
             odor.publish(i, [0, 0, 0])
         print("All odor valves flipped to air.")
 
-        # record the background image
-        print("Recording background image for {} seconds...".format(rig_config["background_calculation_time"]))
-        background, eff_fps, eff_duration, timestamp = record_background(
-            time_to_record=rig_config["background_calculation_time"],
-            camera=camera,
-            gpu_enabled=rig_config["enable_gpu_processing"],
-        )
-        print("Background image recorded at {} fps for {} seconds".format(eff_fps, eff_duration))
+        retry = True
+        while retry:
+            # record the background image
+            print("Recording background image for {} seconds...".format(rig_config["background_calculation_time"]))
+            background, eff_fps, eff_duration, timestamp = record_background(
+                time_to_record=rig_config["background_calculation_time"],
+                camera=camera,
+                gpu_enabled=rig_config["enable_gpu_processing"],
+            )
+            print("Background image recorded at {} fps for {} seconds".format(eff_fps, eff_duration))
 
-        # show the background image
-        if rig_config["enable_gpu_processing"]:
-            plt.imshow(background.get())
-            plt.imsave(project_directory + experiment_name + "/background.png", background.get(), cmap="gray")
-        else:
-            plt.imshow(background)
-            plt.imsave(project_directory + experiment_name + "/background.png", background, cmap="gray")
-        plt.show()
-
-        # Ask user to confirm background image and wait for correct input
-        while True:
-            background_confirmed = input("Is this the background image? (y/n) ")
-            if background_confirmed == "y" or background_confirmed == "Y":
-                print("Background image verified.")
-                break
-            elif background_confirmed == "n" or background_confirmed == "N":
-                print("Background image capture failed. Exiting.")
-                sys.exit(1)
+            # show the background image
+            if rig_config["enable_gpu_processing"]:
+                plt.imshow(background.get())
+                plt.imsave(project_directory + experiment_name + "/background.png", background.get(), cmap="gray")
             else:
-                print("Invalid input. Enter 'y' or 'n'.")
-                continue
+                plt.imshow(background)
+                plt.imsave(project_directory + experiment_name + "/background.png", background, cmap="gray")
+            plt.show()
+
+            # Ask user to confirm background image and wait for correct input
+            while True:
+                background_confirmed = input("Is this the background image? (y/n) ")
+                if background_confirmed == "y" or background_confirmed == "Y":
+                    print("Background image verified.")
+                    retry = False
+                    break
+                elif background_confirmed == "n" or background_confirmed == "N":
+                    print("Background image capture failed. Retry?")
+                    while True:
+                        retry = input("Retry? (y/n) ")
+                        if retry == "y" or retry == "Y":
+                            retry = True
+                            break
+                        elif retry == "n" or retry == "N":
+                            print("Exiting.")
+                            sys.exit(1)
+                        else:
+                            print("Invalid input. Enter 'y' or 'n'.")
+                else:
+                    print("Invalid input. Enter 'y' or 'n'.")
+                    continue
 
         # load the mask
         if not os.path.isfile(rig_config["mask_file"]):
@@ -407,9 +449,41 @@ if __name__ == "__main__":
                 target=async_video_writer, args=(save_queue, rig_config["enable_gpu_processing"], True)
             )
             save_thread.start()
+        
+        # if email notification is enabled, create a new email queue and thread
+        if rig_config["email_notifications"]:
+            # create emailer
+            print("Creating emailer...")
+            emailer = Emailer(recipients=rig_config["email_addresses"])
+            print("Emailer created.")
 
+            # create an email queue
+            email_queue = queue.Queue()
+            email_thread = threading.Thread(target=async_email_sender, args=(email_queue, emailer))
+            email_thread.start()
+
+            # email verifiers
+            halfway_email_sent = False
+            last_fly_email_sent = False
+
+        # start camera
         camera.start()
         frame_number = 0
+
+        started = False
+        wait_period = 10  # seconds
+        maximum_time = 3 * 60 * 60  # seconds (3 hours)
+        tracking_start_time = time.time()
+
+        # send email
+        if rig_config["email_notifications"]:
+            email_queue.put(
+                            (
+                                "The experiment has started successfully. You will be notified when the experiment is complete.",
+                                "Experiment Started Successfully at " + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f"),
+                            )
+                        )
+
         while experiment_ongoing:
             try:
                 # get the current time
@@ -452,12 +526,6 @@ if __name__ == "__main__":
 
                 n_objects = len(regions)
 
-                # if n_objects == 0:
-                #     print("T: " + str(current_time) + " - No objects detected.")
-                #     continue
-                # else:
-                #     print("T: " + str(current_time) + " - " + str(n_objects) + " objects detected.")
-
                 # enumerate all objects
                 object_summary = np.ones((n_objects, 6)) * np.nan
 
@@ -484,15 +552,10 @@ if __name__ == "__main__":
                         area = area.get() if rig_config["enable_gpu_processing"] else area
                         object_summary[i, :] = [position_x, position_y, arena, arm, area, float(in_reward_region)]
 
-                    # print details
-                    #     print("T: " + str(current_time) + " - Object found in Arena " + str(arena) + ": Arm " + str(arm) + " in reward region: " + str(in_reward_region))
-                    # else:
-                    #     print("T: " + str(current_time) + " - Object not in Arena.")
-
                 # remove all rows with NaN values
                 object_summary = object_summary[~np.isnan(object_summary).any(axis=1)]
 
-                if debug_mode:
+                if debug_mode and started:
                     print("T: " + str(current_time), end="\t")
 
                 # loop over active arenas and find the largest object in each arena
@@ -502,7 +565,7 @@ if __name__ == "__main__":
 
                     # see if any objects are in the arena
                     if not np.any(object_summary[:, 2] == i):
-                        if debug_mode:
+                        if debug_mode and started:
                             print("NA", end="\t")
                         continue
                     else:
@@ -522,24 +585,31 @@ if __name__ == "__main__":
                     # get the reward region status of the largest object
                     in_reward_region = bool(object_summary[object_summary[:, 2] == i, 5][largest_object])
 
-                    # update the arena tracker
-                    if debug_mode:
-                        print(
-                            str(trackers[i].trial_count + 1) + "," + str(arm) + "," + str(1 if in_reward_region else 0),
-                            end="\t",
-                        )
+                    # update the arena tracker if wait period has passed
 
-                    reward = trackers[i].update(arm, (position_x, position_y), in_reward_region)
+                    if started:
 
-                    # if the frame was rewarded, add the arena to the list of rewarded arenas
-                    if reward:
-                        rewarded.append(i)
+                        if debug_mode:
+                            print(
+                                str(trackers[i].trial_count + 1)
+                                + ","
+                                + str(arm)
+                                + ","
+                                + str(1 if in_reward_region else 0),
+                                end="\t",
+                            )
 
-                if debug_mode:
+                        reward = trackers[i].update(arm, (position_x, position_y), in_reward_region)
+
+                        # if the frame was rewarded, add the arena to the list of rewarded arenas
+                        if reward:
+                            rewarded.append(i)
+
+                if debug_mode and started:
                     print("")
 
                 # if live stream is enabled and any fly was detected, save the frame
-                if rig_config["live_stream"] and len(detected) > 0 and frame_number % 10 == 0:
+                if rig_config["live_stream"] and len(detected) > 0 and frame_number % 10 == 0 and started:
                     save_queue.put(
                         (
                             # frame.copy(),
@@ -556,18 +626,85 @@ if __name__ == "__main__":
                 if len(rewarded) > 0:
                     led.run_accumulated_led_stimulus()
 
-                # find all imcomplete arenas
+                # process wait period
+                if not started and time.time() - tracking_start_time > wait_period:
+                    started = True
+                    print("Wait Period Over. Started Tracking.")
+                elif not started:
+                    print(
+                        "\rWait Period is active for allocating space in memory. Please wait for {:0.1f} seconds.".format(
+                            wait_period - (time.time() - tracking_start_time)
+                        )
+                    )
+                    time.sleep(1)
+
+                # find all incomplete arenas
                 incomplete_arenas = [i for i in fly_arenas if not trackers[i].completed]
 
-                if len(incomplete_arenas) == 0:
+                if rig_config["email_notifications"]:
+                    # send email when 50% of the arenas are complete
+                    if len(incomplete_arenas) <= len(fly_arenas) // 2 and len(incomplete_arenas) > 0 and not halfway_email_sent:
+                        # send email
+                        email_queue.put(
+                            (
+                                "Halfway through experiment. Currently trial numbers are: "
+                                + ", ".join([str(trackers[i].trial_count+1) for i in fly_arenas])
+                                + ". Please determine if the experiment should be prematurely terminated.",
+                                "Experiment Halfway Through at " + current_time,
+                            )
+                        )
+                        halfway_email_sent = True
+
+                    # send email when all but one arena is complete
+                    if len(incomplete_arenas) == 1 and not last_fly_email_sent:
+                        # send email
+                        email_queue.put(
+                            (
+                                "Experiment is almost complete. Currently trial numbers are: "
+                                + ", ".join([str(trackers[i].trial_count+1) for i in fly_arenas])
+                                + ". Please determine if the experiment should be prematurely terminated.",
+                                "Experiment Almost Complete at " + current_time,
+                            )
+                        )
+                        last_fly_email_sent = True
+
+                if len(incomplete_arenas) == 0 or time.time() - tracking_start_time > maximum_time + wait_period:
                     # all arenas are complete
                     print("All arenas complete.")
+                    # send email
+                    if rig_config["email_notifications"]:
+                        email_queue.put(
+                            (
+                                "All arenas completed successfully. Please turn off the air valves and proceed to the next experiment.",
+                                "Experiment Complete at " + current_time,
+                            )
+                        )
                     experiment_ongoing = False
+
             except KeyboardInterrupt:
                 print("Experiment interrupted.")
+                # send email
+                if rig_config["email_notifications"]:
+                    email_queue.put(
+                        (
+                            "Experiment interrupted on purpose. Please turn off the air valves and proceed to the next experiment.",
+                            "Experiment Interrupted at " + current_time,
+                        )
+                    )
                 experiment_ongoing = False
+
             except Exception as e:
                 print("Error: " + str(e))
+                # send email
+                if rig_config["email_notifications"]:
+                    email_queue.put(
+                        (
+                            "Experiment failed due to Error: "
+                            + str(e)
+                            + ". Please turn off the air valves and proceed to the next experiment.",
+                            "Experiment Failed at " + current_time,
+                        )
+                    )
                 experiment_ongoing = False
 
         # create data directory
@@ -589,22 +726,33 @@ if __name__ == "__main__":
             odor.publish(i, [0, 0, 0])
         print("All odor valves flipped to air.")
 
-    # wait for save queue to empty
-    if rig_config["live_stream"]:
-        print("Waiting for save queue to empty...")
-        save_queue.join()
-        print("Saved all frames.")
+        # wait for save queue to empty
+        if rig_config["live_stream"]:
+            print("Waiting for save queue to empty...")
+            save_queue.join()
+            print("Saved all frames.")
+
+    # add a parallel thread to send emails every 5 minutes
+    if rig_config["email_notifications"]:
+        reminder_thread = threading.Thread(target=async_reminder, args=(300, email_queue))
+        reminder_thread.start()
 
     # ask the user if they turned off the air supply
-    print("Please turn off the air supply.")
+    print("Please turn off the air supply and MFCs.")
     while True:
-        air_supply = input("Did you turn off the air supply? (y/n) ")
+        air_supply = input("Did you turn off the air supply and MFCs? (y/n) ")
         if air_supply == "y" or air_supply == "Y":
             break
         elif air_supply == "n" or air_supply == "N":
-            print("Please turn off the air supply and try again.")
+            print("Please turn off the air supply and MFCs and try again.")
         else:
             print("Please enter either 'y' or 'n'.")
+
+    # wait for email queue to empty
+    if rig_config["email_notifications"]:
+        print("Waiting for email queue to empty...")
+        email_queue.join()
+        print("Sent all emails.")
 
     # final message
     print("Experiment complete. Thank you for using 16Y-Maze Rig for your experiment.")

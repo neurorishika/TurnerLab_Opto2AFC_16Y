@@ -2,7 +2,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
 import os
 import shutil
-from subprocess import call
+import subprocess
+from subprocess import call, Popen
 import pandas as pd
 
 
@@ -90,11 +91,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.edit_stimulus_button.clicked.connect(self.edit_stimulus)
         self.edit_experiment_button.clicked.connect(self.edit_experiment)
 
-        # add the start experiment button
-        self.start_experiment_button = QtWidgets.QPushButton("Start Experiments")
+        # add button to start the experiment
+        self.start_experiment_button = QtWidgets.QPushButton("Start Experimenter")
 
         # connect the button to its respective function
-        self.start_experiment_button.clicked.connect(self.start_experiments)
+        self.start_experiment_button.clicked.connect(self.start_experiment)
 
         # add the buttons to the main layout
         self.main_layout.addWidget(self.process_experimental_data_button, 3, 0)
@@ -117,6 +118,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # show the window
         self.show()
+    
+    def start_experiment(self):
+        # start the batch file
+        Popen('run_experiment.bat',creationflags=subprocess.CREATE_NEW_CONSOLE)
 
     def browse_project_directory(self):
         # get the directory
@@ -169,7 +174,7 @@ class MainWindow(QtWidgets.QMainWindow):
         os.makedirs(stimulus_zoo_directory)
 
         # copy empty stimulus file to the stimulus_zoo folder
-        shutil.copy("sixteeny/gui/resources/empty.stim", stimulus_zoo_directory)
+        shutil.copy("./sixteeny/gui/resources/empty.stim", stimulus_zoo_directory)
 
         # create the experiment_zoo folder
         experiment_zoo_directory = project_directory + "/experiment_zoo"
@@ -299,10 +304,28 @@ class MainWindow(QtWidgets.QMainWindow):
             self.experiment_zoo_table.resizeRowsToContents()
 
     def process_experimental_data(self):
-        pass
+        # get the selected data folder
+        selected_data_folder = self.experimental_data_table.selectedItems()[0].text()
+        # call the 16y_data_processor.py script to process the data
+        call(
+            [
+                "python",
+                "./sixteeny/analysis/16y_data_processor.py",
+                self.project_directory_textbox.text() + "/data/" + selected_data_folder,
+            ]
+        )
 
     def generate_video(self):
-        pass
+        # get the selected data folder
+        selected_data_folder = self.experimental_data_table.selectedItems()[0].text()
+        # call the 16y_video_generator.py script to generate the video
+        call(
+            [
+                "python",
+                "./sixteeny/analysis/16y_video_generator.py",
+                self.project_directory_textbox.text() + "/data/" + selected_data_folder,
+            ]
+        )
 
     def open_experimental_data(self):
         # check is the project directory is not empty
@@ -324,7 +347,11 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         # call the 16Y_stimulus_designer script and wait for it to finish
         call(
-            ["python", "sixteeny/gui/16Y_stimulus_designer.py", self.project_directory_textbox.text() + "/stimulus_zoo"]
+            [
+                "python",
+                "./sixteeny/gui/16Y_stimulus_designer.py",
+                self.project_directory_textbox.text() + "/stimulus_zoo",
+            ]
         )
         # refresh the project details
         self.refresh_project_details()
@@ -350,7 +377,7 @@ class MainWindow(QtWidgets.QMainWindow):
         call(
             [
                 "python",
-                "sixteeny/gui/16Y_stimulus_designer.py",
+                "./sixteeny/gui/16Y_stimulus_designer.py",
                 self.project_directory_textbox.text() + "/stimulus_zoo" + "/" + selected_stimulus_file,
             ]
         )
@@ -382,7 +409,7 @@ class MainWindow(QtWidgets.QMainWindow):
             call(
                 [
                     "python",
-                    "sixteeny/gui/16Y_2AFC_designer.py",
+                    "./sixteeny/gui/16Y_2AFC_designer.py",
                     self.project_directory_textbox.text() + "/experiment_zoo",
                 ]
             )
@@ -492,7 +519,7 @@ class MainWindow(QtWidgets.QMainWindow):
             call(
                 [
                     "python",
-                    "sixteeny/gui/16Y_2AFC_designer.py",
+                    "./sixteeny/gui/16Y_2AFC_designer.py",
                     self.project_directory_textbox.text() + "/experiment_zoo" + "/" + selected_experiment_file,
                 ]
             )
@@ -514,9 +541,6 @@ class MainWindow(QtWidgets.QMainWindow):
             call(["open", self.project_directory_textbox.text() + "/experiment_zoo/" + selected_experiment_file])
         # refresh the project details
         self.refresh_project_details()
-
-    def start_experiments(self):
-        pass
 
 
 if __name__ == "__main__":

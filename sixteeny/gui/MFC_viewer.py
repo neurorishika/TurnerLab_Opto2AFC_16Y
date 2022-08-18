@@ -104,7 +104,13 @@ class FlowCanvas(FigureCanvas):
         # if self.i > 499:
         #     self.i = 0
         # return self.d[self.i]
-        next_datapoint = np.array([self.controller.get_flow_rate(i) for i in range(self.n_controllers)])
+        running = True
+        while running:
+            try:
+                next_datapoint = np.array([self.controller.get_flow_rate(i) for i in range(self.n_controllers)])
+                running = False
+            except:
+                pass
         timepoint = datetime.datetime.now()
 
         if self.save_directory != '':
