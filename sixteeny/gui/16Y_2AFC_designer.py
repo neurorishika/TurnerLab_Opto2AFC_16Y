@@ -95,30 +95,30 @@ class MainWindow(QtWidgets.QMainWindow):
         self.reward_gain_label = QtWidgets.QLabel("Reward Gain [0, 1]")
         self.reward_gain_textbox = QtWidgets.QLineEdit()
         self.reward_gain_textbox.setText("0.125 0.25 0.5")
-        self.reward_gain_textbox.setValidator(validator)
+        # self.reward_gain_textbox.setValidator(validator)
 
         # create a text label, text box to enter Reward Contrast values
         self.reward_contrast_label = QtWidgets.QLabel("Reward Contrast [0.5, 1]")
         self.reward_contrast_textbox = QtWidgets.QLineEdit()
         self.reward_contrast_textbox.setText("0.6 0.8 1")
-        self.reward_contrast_textbox.setValidator(validator)
+        # self.reward_contrast_textbox.setValidator(validator)
 
         # create a text label, text box to enter Hazard Rate values
         self.hazard_rate_label = QtWidgets.QLabel("Hazard Rate [0, 1]")
         self.hazard_rate_textbox = QtWidgets.QLineEdit()
-        self.hazard_rate_textbox.setText("0.05 0.02 0.01")
-        self.hazard_rate_textbox.setValidator(validator)
+        self.hazard_rate_textbox.setText("0.05 0.035 0.02")
+        # self.hazard_rate_textbox.setValidator(validator)
 
         # create a text label, text box to enter number of naive trials
         self.naive_trials_label = QtWidgets.QLabel("Naive Trials")
         self.naive_trials_textbox = QtWidgets.QLineEdit()
-        self.naive_trials_textbox.setText("40")
+        self.naive_trials_textbox.setText("10")
         self.naive_trials_textbox.setValidator(QtGui.QIntValidator())
 
         # create a text label, text box to enter number of maximum testing trials
         self.max_trials_label = QtWidgets.QLabel("Max Trials")
         self.max_trials_textbox = QtWidgets.QLineEdit()
-        self.max_trials_textbox.setText("200")
+        self.max_trials_textbox.setText("150")
         self.max_trials_textbox.setValidator(QtGui.QIntValidator())
 
         # create a button to generate the random task

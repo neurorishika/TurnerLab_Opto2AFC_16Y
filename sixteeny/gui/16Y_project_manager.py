@@ -118,10 +118,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # show the window
         self.show()
-    
+
     def start_experiment(self):
         # start the batch file
-        Popen('run_experiment.bat',creationflags=subprocess.CREATE_NEW_CONSOLE)
+        Popen("run_experiment.bat", creationflags=subprocess.CREATE_NEW_CONSOLE)
 
     def browse_project_directory(self):
         # get the directory
@@ -222,6 +222,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     os.listdir(self.project_directory_textbox.text() + "/data/" + folder + "/processed_data")
                 ) == len(os.listdir(self.project_directory_textbox.text() + "/data/" + folder + "/data")):
                     processed.append(True)
+                else:
+                    processed.append(False)
             else:
                 processed.append(False)
             if os.path.exists(self.project_directory_textbox.text() + "/data/" + folder + "/processed_video.mp4"):

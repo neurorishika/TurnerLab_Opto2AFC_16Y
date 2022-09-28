@@ -1,5 +1,6 @@
 # a script to clean up the ymaze data
 
+from msilib.schema import Error
 from PyQt5 import QtWidgets, QtCore, QtGui
 import sys
 import os
@@ -107,6 +108,16 @@ def process_file(file_path, output_path, estimated_transforms, origin):
         print("Calculating transformed fly position for Fly {}".format(index))
         reference_fly_positions = transform(fly_position)
 
+        # interpolate the missing data
+        def interpolate(y):
+            nans, x = np.isnan(y), lambda z: z.nonzero()[0]
+            y[nans] = np.interp(x(nans), x(~nans), y[~nans])
+            return y
+
+        print("Interpolating missing data for Fly {}".format(index))
+        reference_fly_positions[:, 0] = interpolate(reference_fly_positions[:, 0])
+        reference_fly_positions[:, 1] = interpolate(reference_fly_positions[:, 1])
+
         # calculate instantaneous speed (norm of change in position / delta time)
         print("Calculating instantaneous speed for Fly {}".format(index))
         instantaneous_speed = np.linalg.norm(np.diff(reference_fly_positions, axis=0), axis=1) / np.diff(
@@ -152,12 +163,6 @@ def process_file(file_path, output_path, estimated_transforms, origin):
 
         # calculate current odor
         print("Calculating current odor for Fly {}".format(index))
-        # current_odor = np.array(
-        #     [
-        #         current_odor_vectors[i][np.int32(np.array(data["current_arms"])[i])]
-        #         for i in range(len(current_odor_vectors))
-        #     ]
-        # )
         current_odor = np.take_along_axis(current_odor_vectors, np.repeat(current_arms, 3).reshape(-1, 3), axis=1)[:, 0]
 
         current_odor_ = np.insert(current_odor, 0, 0)
@@ -197,8 +202,11 @@ def process_file(file_path, output_path, estimated_transforms, origin):
 
         # calculate encounter rewards
         print("Calculating encounter rewards for Fly {}".format(index))
+        # print(len(data["reward_delivered"]), encounter_trial_number)
         encounter_rewards = np.int32(
-            np.logical_and(np.array(data["reward_delivered"])[encounter_trial_number], encounter_decisions)
+            np.logical_and(
+                np.array(data["reward_delivered"] + [0])[encounter_trial_number], encounter_decisions
+            )  # add a zero for unfinished encounters
         )
 
         # calculate encounter start time
@@ -214,6 +222,7 @@ def process_file(file_path, output_path, estimated_transforms, origin):
         trial_odor_residence_times = np.zeros((len(trials), len(odors)))
 
         for trial_number in trials:
+
             trial_current_odor = current_odor[np.array(data["current_trial"]) == trial_number]
             trial_frame_times = np.array(data["frame_times"])[np.array(data["current_trial"]) == trial_number]
             # append a new arm to the start and end of the trial
@@ -229,7 +238,10 @@ def process_file(file_path, output_path, estimated_transforms, origin):
             odor_durations = np.diff(time_of_odor_encounter)
             # calculate residence time of each odor
             for odor in odors:
-                trial_odor_residence_times[trial_number, odor] = np.sum(odor_durations[odor_at_encounter == odor])
+                try:
+                    trial_odor_residence_times[trial_number, odor] = np.sum(odor_durations[odor_at_encounter == odor])
+                except IndexError:
+                    pass
 
         # calculate rewarded frames
         print("Calculating rewarded frames for Fly {}".format(index))
@@ -294,6 +306,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # create the main layout
         self.main_layout = QtWidgets.QGridLayout()
 
+        # add a checkbox for Batch Mode
+        self.batch_mode_checkbox = QtWidgets.QCheckBox("Batch Mode")
+        self.batch_mode_checkbox.setChecked(False)
+        self.main_layout.addWidget(self.batch_mode_checkbox, 0, 0, 1, 4)
+
         # add a label and an empty text box to enter the experiment folder along with a browse button
         self.experiment_folder_label = QtWidgets.QLabel("Experiment Folder:")
         self.experiment_folder_textbox = QtWidgets.QLineEdit()
@@ -301,9 +318,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.experiment_folder_browse_button = QtWidgets.QPushButton("Browse")
         self.experiment_folder_browse_button.clicked.connect(self.browse_for_experiment_folder)
 
-        self.main_layout.addWidget(self.experiment_folder_label, 0, 0)
-        self.main_layout.addWidget(self.experiment_folder_textbox, 0, 1, 1, 3)
-        self.main_layout.addWidget(self.experiment_folder_browse_button, 0, 4)
+        self.main_layout.addWidget(self.experiment_folder_label, 1, 0)
+        self.main_layout.addWidget(self.experiment_folder_textbox, 1, 1, 1, 3)
+        self.main_layout.addWidget(self.experiment_folder_browse_button, 1, 4)
 
         # add a checkbox to enable/disable parallel processing and a label and a text box to enter the number of threads
         self.parallel_processing_checkbox = QtWidgets.QCheckBox("Parallelize(?)")
@@ -314,18 +331,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.parallel_processing_textbox.setText(str(multiprocessing.cpu_count()))
         self.parallel_processing_textbox.setValidator(QtGui.QIntValidator(1, multiprocessing.cpu_count()))
 
-        self.main_layout.addWidget(self.parallel_processing_checkbox, 1, 0)
-        self.main_layout.addWidget(self.parallel_processing_label, 1, 1, 1, 3)
-        self.main_layout.addWidget(self.parallel_processing_textbox, 1, 4)
+        self.main_layout.addWidget(self.parallel_processing_checkbox, 2, 0)
+        self.main_layout.addWidget(self.parallel_processing_label, 2, 1, 1, 3)
+        self.main_layout.addWidget(self.parallel_processing_textbox, 2, 4)
 
         # add a start button
         self.start_button = QtWidgets.QPushButton("Start")
         self.start_button.clicked.connect(self.start_data_processor)
-        self.main_layout.addWidget(self.start_button, 2, 0, 1, 5)
+        self.main_layout.addWidget(self.start_button, 3, 0, 1, 5)
 
         # add a label to show progress
         self.progress_label = QtWidgets.QLabel("Waiting to start...")
-        self.main_layout.addWidget(self.progress_label, 3, 0, 1, 5)
+        self.main_layout.addWidget(self.progress_label, 4, 0, 1, 5)
 
         # create the central widget
         self.central_widget = QtWidgets.QWidget()
@@ -344,52 +361,50 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Opens a folder dialog and sets the experiment folder text box to the selected folder
         """
-        folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Experiment Folder")
-        if folder_path != "":
-            # check if the folder is valid
-            if self.check_experiment_folder(folder_path):
-                self.experiment_folder_textbox.setText(folder_path)
-                QtWidgets.QMessageBox.information(self, "Success", "Valid experiment folder found and selected")
-            else:
-                QtWidgets.QMessageBox.warning(
-                    self, "Invalid Folder", "The selected folder does not contain a valid experiment"
-                )
+        if self.batch_mode_checkbox.isChecked():
+            dialog = QtWidgets.QFileDialog(self)
+            dialog.setWindowTitle("Choose Directories")
+            dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
+            dialog.setFileMode(QtWidgets.QFileDialog.DirectoryOnly)
+            for view in dialog.findChildren((QtWidgets.QListView, QtWidgets.QTreeView)):
+                if isinstance(view.model(), QtWidgets.QFileSystemModel):
+                    view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                folder_paths = dialog.selectedFiles()
+                for folder_path in folder_paths:
+                    if self.check_experiment_folder(folder_path):
+                        continue
+                    else:
+                        QtWidgets.QMessageBox.warning(
+                            self,
+                            "Invalid Folder",
+                            "The folder {} is not a valid experiment folder.".format(folder_path),
+                        )
+
+                self.experiment_folder_textbox.setText(";".join(folder_paths))
+        else:
+            folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Experiment Folder")
+            if folder_path != "":
+                # check if the folder is valid
+                if self.check_experiment_folder(folder_path):
+                    self.experiment_folder_textbox.setText(folder_path)
+                    QtWidgets.QMessageBox.information(self, "Success", "Valid experiment folder found and selected")
+                else:
+                    QtWidgets.QMessageBox.warning(
+                        self, "Invalid Folder", "The selected folder does not contain a valid experiment"
+                    )
 
     def check_experiment_folder(self, folder_path):
         """
         Checks if the selected folder contains a valid experiment
         """
         # check if the folder contains a config file
+        print(folder_path)
         config_file_path = os.path.join(folder_path, "config.yarena")
         if not os.path.isfile(config_file_path):
             # tell the user that the folder is not valid
             QtWidgets.QMessageBox.warning(
                 self, "Invalid Folder", "The selected folder does not contain a valid configuration file"
-            )
-            return False
-        # check if the folder contains a video folder
-        video_folder_path = os.path.join(folder_path, "video")
-        if not os.path.isdir(video_folder_path):
-            # tell the user that the folder is not valid
-            QtWidgets.QMessageBox.warning(
-                self, "Invalid Folder", "The selected folder does not contain a valid video folder"
-            )
-            return False
-        # check if the video folder contains a processed folder
-        processed_folder_path = os.path.join(video_folder_path, "processed")
-        if not os.path.isdir(processed_folder_path):
-            # tell the user that the folder is not valid
-            QtWidgets.QMessageBox.warning(
-                self, "Invalid Folder", "The selected folder does not contain a valid processed folder"
-            )
-            return False
-        # check if the processed video folder contains .png files
-        video_folder_contents = os.listdir(processed_folder_path)
-        video_images = [file for file in video_folder_contents if file.endswith(".png")]
-        if len(video_images) == 0:
-            # tell the user that the folder is not valid
-            QtWidgets.QMessageBox.warning(
-                self, "Invalid Folder", "The selected folder does not contain any saved images"
             )
             return False
         return True
@@ -399,120 +414,129 @@ class MainWindow(QtWidgets.QMainWindow):
         Starts the data processor
         """
         # get the experiment folder path
-        experiment_folder_path = self.experiment_folder_textbox.text()
+        experiment_folder_paths = self.experiment_folder_textbox.text()
 
-        # load mask labelled points
-        self.progress_label.setText("Loading mask labelled points...")
-        labelled_points = np.load(os.path.join(experiment_folder_path, "mask.npz"))["arm_keypoints"]
-
-        # generate reference points
-        self.progress_label.setText("Generating reference points...")
-        reward_distance = 0.8
-
-        origin = np.array([0.0, 0.0])
-        arm_length = 1.0
-
-        arm_width = arm_length * np.mean(
-            [
-                np.mean(
-                    [
-                        euclidean_distance(labelled_points[i][0], labelled_points[i][1]),
-                        euclidean_distance(labelled_points[i][1], labelled_points[i][2]),
-                        euclidean_distance(labelled_points[i][2], labelled_points[i][0]),
-                    ]
-                )
-                / np.mean(
-                    [
-                        euclidean_distance(
-                            labelled_points[i][3],
-                            (labelled_points[i][0] + labelled_points[i][1] + labelled_points[i][2]) / 3,
-                        ),
-                        euclidean_distance(
-                            labelled_points[i][4],
-                            (labelled_points[i][0] + labelled_points[i][1] + labelled_points[i][2]) / 3,
-                        ),
-                        euclidean_distance(
-                            labelled_points[i][5],
-                            (labelled_points[i][0] + labelled_points[i][1] + labelled_points[i][2]) / 3,
-                        ),
-                    ]
-                )
-                for i in range(len(labelled_points))
-            ]
-        )
-
-        # get three corners of the central triangle
-        k1 = origin + arm_width / np.sqrt(3) * np.array(
-            [np.cos(np.pi / 2 + 2 * np.pi / 3), np.sin(np.pi / 2 + 2 * np.pi / 3)]
-        )
-        k2 = origin + arm_width / np.sqrt(3) * np.array(
-            [np.cos(np.pi / 2 + 4 * np.pi / 3), np.sin(np.pi / 2 + 4 * np.pi / 3)]
-        )
-        k3 = origin + arm_width / np.sqrt(3) * np.array([np.cos(np.pi / 2), np.sin(np.pi / 2)])
-
-        # get the endpoints of the arm
-        k4 = origin + arm_length * np.array([np.cos(np.pi / 6 + 2 * np.pi / 3), np.sin(np.pi / 6 + 2 * np.pi / 3)])
-        k5 = origin + arm_length * np.array([np.cos(np.pi / 6 + 4 * np.pi / 3), np.sin(np.pi / 6 + 4 * np.pi / 3)])
-        k6 = origin + arm_length * np.array([np.cos(np.pi / 6), np.sin(np.pi / 6)])
-
-        reference_points = np.array([k1, k2, k3, k4, k5, k6])
-
-        # estimate the affine transformation between the reference points and the labelled points
-        self.progress_label.setText("Estimating affine transformation...")
-        estimated_transforms = []
-        for i in range(len(labelled_points)):
-            # get the points
-            points = labelled_points[i]
-            # get the affine transform
-            transform = estimate_transform("affine", points, reference_points)
-            # add to the list
-            estimated_transforms.append(transform)
-
-        # create the processed_data directory if it doesn't exist
-        processed_folder_path = os.path.join(experiment_folder_path, "processed_data")
-        if not os.path.isdir(processed_folder_path):
-            os.mkdir(processed_folder_path)
+        # split the paths if batch mode is enabled
+        if self.batch_mode_checkbox.isChecked():
+            experiment_folder_paths = experiment_folder_paths.split(";")
         else:
-            # delete the contents of the directory
-            for file in os.listdir(processed_folder_path):
-                os.remove(os.path.join(processed_folder_path, file))
+            experiment_folder_paths = [experiment_folder_paths]
 
-        # get data files and filter only the .ydata files
-        data_files = os.listdir(os.path.join(experiment_folder_path, "data"))
-        data_files = [file for file in data_files if file.endswith(".ydata")]
+        for experiment_folder_path in experiment_folder_paths:
+            print("Processing experiment folder: {}".format(experiment_folder_path))
 
-        # generate input and output file paths
-        input_files = [os.path.join(experiment_folder_path, "data", file) for file in data_files]
-        output_files = [os.path.join(processed_folder_path, file) for file in data_files]
+            # load mask labelled points
+            self.progress_label.setText("Loading mask labelled points...")
+            labelled_points = np.load(os.path.join(experiment_folder_path, "mask.npz"))["arm_keypoints"]
 
-        if not self.parallel_processing_checkbox.isChecked():
-            # loop over the data and generate processed values
-            for i in range(len(input_files)):
-                # get the input file path
-                input_file_path = input_files[i]
+            # generate reference points
+            self.progress_label.setText("Generating reference points...")
+            reward_distance = 0.8
 
-                # get the output file path
-                output_file_path = output_files[i]
+            origin = np.array([0.0, 0.0])
+            arm_length = 1.0
 
-                # process the data
-                self.progress_label.setText("Processing data...{}/{}".format(i + 1, len(input_files)))
-                QtCore.QCoreApplication.processEvents()
-                process_file(input_file_path, output_file_path, estimated_transforms, origin)
-        else:
-            self.progress_label.setText("Processing data...")
-            QtCore.QCoreApplication.processEvents()
-
-            # get the number of threads to use as the minimum of the thread count and the number of data files
-            thread_count = min(int(self.parallel_processing_textbox.text()), len(input_files))
-
-            # parallelize the processing
-            Parallel(n_jobs=thread_count)(
-                delayed(process_file)(input_file_path, output_file_path, estimated_transforms, origin)
-                for input_file_path, output_file_path in zip(input_files, output_files)
+            arm_width = arm_length * np.mean(
+                [
+                    np.mean(
+                        [
+                            euclidean_distance(labelled_points[i][0], labelled_points[i][1]),
+                            euclidean_distance(labelled_points[i][1], labelled_points[i][2]),
+                            euclidean_distance(labelled_points[i][2], labelled_points[i][0]),
+                        ]
+                    )
+                    / np.mean(
+                        [
+                            euclidean_distance(
+                                labelled_points[i][3],
+                                (labelled_points[i][0] + labelled_points[i][1] + labelled_points[i][2]) / 3,
+                            ),
+                            euclidean_distance(
+                                labelled_points[i][4],
+                                (labelled_points[i][0] + labelled_points[i][1] + labelled_points[i][2]) / 3,
+                            ),
+                            euclidean_distance(
+                                labelled_points[i][5],
+                                (labelled_points[i][0] + labelled_points[i][1] + labelled_points[i][2]) / 3,
+                            ),
+                        ]
+                    )
+                    for i in range(len(labelled_points))
+                ]
             )
 
-        # update the progress label
-        self.progress_label.setText("Finished processing data!")
+            # get three corners of the central triangle
+            k1 = origin + arm_width / np.sqrt(3) * np.array(
+                [np.cos(np.pi / 2 + 2 * np.pi / 3), np.sin(np.pi / 2 + 2 * np.pi / 3)]
+            )
+            k2 = origin + arm_width / np.sqrt(3) * np.array(
+                [np.cos(np.pi / 2 + 4 * np.pi / 3), np.sin(np.pi / 2 + 4 * np.pi / 3)]
+            )
+            k3 = origin + arm_width / np.sqrt(3) * np.array([np.cos(np.pi / 2), np.sin(np.pi / 2)])
+
+            # get the endpoints of the arm
+            k4 = origin + arm_length * np.array([np.cos(np.pi / 6 + 2 * np.pi / 3), np.sin(np.pi / 6 + 2 * np.pi / 3)])
+            k5 = origin + arm_length * np.array([np.cos(np.pi / 6 + 4 * np.pi / 3), np.sin(np.pi / 6 + 4 * np.pi / 3)])
+            k6 = origin + arm_length * np.array([np.cos(np.pi / 6), np.sin(np.pi / 6)])
+
+            reference_points = np.array([k1, k2, k3, k4, k5, k6])
+
+            # estimate the affine transformation between the reference points and the labelled points
+            self.progress_label.setText("Estimating affine transformation...")
+            estimated_transforms = []
+            for i in range(len(labelled_points)):
+                # get the points
+                points = labelled_points[i]
+                # get the affine transform
+                transform = estimate_transform("affine", points, reference_points)
+                # add to the list
+                estimated_transforms.append(transform)
+
+            # create the processed_data directory if it doesn't exist
+            processed_folder_path = os.path.join(experiment_folder_path, "processed_data")
+            if not os.path.isdir(processed_folder_path):
+                os.mkdir(processed_folder_path)
+            else:
+                # delete the contents of the directory
+                for file in os.listdir(processed_folder_path):
+                    os.remove(os.path.join(processed_folder_path, file))
+
+            # get data files and filter only the .ydata files
+            data_files = os.listdir(os.path.join(experiment_folder_path, "data"))
+            data_files = [file for file in data_files if file.endswith(".ydata")]
+
+            # generate input and output file paths
+            input_files = [os.path.join(experiment_folder_path, "data", file) for file in data_files]
+            output_files = [os.path.join(processed_folder_path, file) for file in data_files]
+
+            if not self.parallel_processing_checkbox.isChecked():
+                # loop over the data and generate processed values
+                for i in range(len(input_files)):
+                    # get the input file path
+                    input_file_path = input_files[i]
+
+                    # get the output file path
+                    output_file_path = output_files[i]
+
+                    # process the data
+                    self.progress_label.setText("Processing data...{}/{}".format(i + 1, len(input_files)))
+                    QtCore.QCoreApplication.processEvents()
+                    process_file(input_file_path, output_file_path, estimated_transforms, origin)
+            else:
+                self.progress_label.setText("Processing data...")
+                QtCore.QCoreApplication.processEvents()
+
+                # get the number of threads to use as the minimum of the thread count and the number of data files
+                thread_count = min(int(self.parallel_processing_textbox.text()), len(input_files))
+
+                # parallelize the processing
+                Parallel(n_jobs=thread_count)(
+                    delayed(process_file)(input_file_path, output_file_path, estimated_transforms, origin)
+                    for input_file_path, output_file_path in zip(input_files, output_files)
+                )
+
+            # update the progress label
+            self.progress_label.setText("Finished processing data!")
 
 
 if __name__ == "__main__":

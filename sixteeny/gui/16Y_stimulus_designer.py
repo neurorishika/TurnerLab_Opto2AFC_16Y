@@ -208,7 +208,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Load the stimulus waveform from a .stim file.
         """
-        if load_file is None:
+        if load_file is None or load_file == False:
             filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Load Stimulus", ".", "*.stim")
         else:
             filename = load_file

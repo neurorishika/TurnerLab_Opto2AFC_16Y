@@ -752,6 +752,7 @@ if __name__ == "__main__":
     if rig_config["email_notifications"]:
         print("Waiting for email queue to empty...")
         email_queue.join()
+        # reminder_thread.join()
         print("Sent all emails.")
 
     # final message

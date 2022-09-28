@@ -203,10 +203,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add a series of dropboxes to set the MFC Device IDs
         self.mfc_device_id_droboxes = []
+        indices = [12,13,14,15,4,5,6,7,0,1,2,3,8,9,10,11]
         for i in range(16):
             self.mfc_device_id_droboxes.append(QtWidgets.QComboBox())
             self.mfc_device_id_droboxes[i].addItems([chr(i) for i in range(ord("A"), ord("Z") + 1)])
-            self.mfc_device_id_droboxes[i].setCurrentIndex(i)
+            self.mfc_device_id_droboxes[i].setCurrentIndex(indices[i])
             self.mfc_device_id_droboxes[i].setFixedWidth(50)
             self.mfc_configuration_layout.addWidget(self.mfc_device_id_droboxes[i], 0, i + 1)
 
@@ -572,9 +573,9 @@ class MainWindow(QtWidgets.QMainWindow):
             com_ports.append(self.com_ports_dropboxes[i].currentText())
             quadrant_ids.append(self.quadrant_ids_dropboxes[i].currentText())
 
-        PULSE_WIDTH = 100
-        PULSE_PERIOD = 125
-        PULSE_COUNT = 2
+        PULSE_WIDTH = 250
+        PULSE_PERIOD = 500
+        PULSE_COUNT = 1
         PULSE_DEADTIME = 0
         PULSE_DELAY = 0
         PULSE_REPEAT = 1
@@ -585,24 +586,24 @@ class MainWindow(QtWidgets.QMainWindow):
             led.turn_on_backlight(100)
             led.reset_accumulated_led_stimulus()
             time.sleep(1)
-            for color in [b"R", b"G", b"B"]:
-                for arena in range(16):
-                    led.accumulate_led_stimulus(
-                        arena,
-                        color,
-                        100,
-                        PULSE_WIDTH,
-                        PULSE_PERIOD,
-                        (arena % 4) + 1,
-                        PULSE_DEADTIME,
-                        PULSE_DELAY,
-                        PULSE_REPEAT,
-                        debug_mode=False,
-                    )
-                    if arena % 4 == 3:
-                        led.run_accumulated_led_stimulus()
-                    time.sleep(0.5)
-                time.sleep(1)
+            for color in [b"R"]:
+                for i in range(4):
+                    for arena in range(16):
+                        led.accumulate_led_stimulus(
+                            arena,
+                            color,
+                            25,
+                            PULSE_WIDTH,
+                            PULSE_PERIOD,
+                            PULSE_COUNT,
+                            PULSE_DEADTIME,
+                            PULSE_DELAY,
+                            PULSE_REPEAT,
+                            debug_mode=False,
+                        )
+                    led.run_accumulated_led_stimulus()
+                    print("Running accumulated LED stimulus")
+                    time.sleep(1)
 
 
 if __name__ == "__main__":

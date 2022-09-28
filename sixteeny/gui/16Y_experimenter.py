@@ -371,6 +371,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 experiment_details["fly_genotype"] = self.textboxes[i].text()
                 experiment_details["fly_experiment"] = self.dropboxes[i].currentText()
                 experiment_details["fly_arena"] = self.fly_numbers[i]
+                # experiment_details["fly_comments"] = self.comments.text()
                 # save the experiment details for each fly
                 with open(
                     os.path.join(
@@ -399,22 +400,13 @@ class MainWindow(QtWidgets.QMainWindow):
             )
         # create the experiments folder
         os.mkdir(os.path.join(self.project_directory.text(), "data/" + self.experiment_name.text(), "experiments"))
-        
 
         # check if the stimuli folder already exists
-        if os.path.isdir(
-            os.path.join(self.project_directory.text(), "data/" + self.experiment_name.text(), "stimuli")
-        ):
+        if os.path.isdir(os.path.join(self.project_directory.text(), "data/" + self.experiment_name.text(), "stimuli")):
             # remove the stimuli folder
-            shutil.rmtree(
-                os.path.join(
-                    self.project_directory.text(), "data/" + self.experiment_name.text(), "stimuli"
-                )
-            )
+            shutil.rmtree(os.path.join(self.project_directory.text(), "data/" + self.experiment_name.text(), "stimuli"))
         # create the stimuli folder
-        os.mkdir(
-            os.path.join(self.project_directory.text(), "data/" + self.experiment_name.text(), "stimuli")
-        )
+        os.mkdir(os.path.join(self.project_directory.text(), "data/" + self.experiment_name.text(), "stimuli"))
 
         # copy the used experiments from experiment_zoo to a new experiments folder in the experiment directory
         for experiment in used_experiments:
@@ -459,14 +451,19 @@ class MainWindow(QtWidgets.QMainWindow):
                     )
                     return False
                 else:
-                    
+
                     # copy the used stimuli from the stimulus_zoo to a new stimuli folder in the experiment directory
                     for stimulus in metadata["used_stimuli"]:
                         # check if the stimulus_zoo has the stimulus file
                         if os.path.isfile(os.path.join(self.project_directory.text(), "stimulus_zoo", stimulus)):
                             # check if the stimuli folder doesn't already has the stimulus file
                             if not os.path.isfile(
-                                os.path.join(self.project_directory.text(), "data/" + self.experiment_name.text(), "stimuli", stimulus)
+                                os.path.join(
+                                    self.project_directory.text(),
+                                    "data/" + self.experiment_name.text(),
+                                    "stimuli",
+                                    stimulus,
+                                )
                             ):
                                 # copy the stimulus file from the stimulus_zoo to the stimuli folder
                                 shutil.copy(
