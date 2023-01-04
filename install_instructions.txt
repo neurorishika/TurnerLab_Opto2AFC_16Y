@@ -1,9 +1,15 @@
 ===========SETUP===========
 
 ## install python 3.8 using Anaconda Distribution
+# create new environment
+conda create -n <env-name> python=3.8
+conda activate <env-name>
+# install ipykernel and register
+conda install -c anaconda ipykernel
+python -m ipykernel install --user --name=<env-name>
 
 ## install packages
-pip install pyserial numpy matplotlib cupy scikit-image scikit-video PyQt5 alicat
+pip install pyserial numpy matplotlib scikit-image scikit-video PyQt5 alicat
 
 ## install cucim on Windows
 # clone the cucim repo from https://github.com/rapidsai/cucim
@@ -11,12 +17,16 @@ pip install pyserial numpy matplotlib cupy scikit-image scikit-video PyQt5 alica
 # run:
 pip install . -v
 
-## install same CUDA Toolkit as the version for cupy from https://developer.nvidia.com/cuda-toolkit-archive
+## install same CUDA Toolkit as the version for cupy from https://developer.nvidia.com/cuda-toolkit-archive (Tested on CUDA 11.6)
 # Ensure CUDA_PATH is defined
+
+## install cupy and other packages
+conda install -c conda-forge cupy cudatoolkit=11.0
+conda install pandas seaborn
 
 ## From https://flir.app.boxcn.net/v/SpinnakerSDK, install latest Spinnaker Full SDK and unzip latest Python Spinnaker SDK
 cd <download_directory>
-pip install spinnaker_python_*.whl
+pip install spinnaker_python-*.whl --force-reinstall --user
 
 ## Get FFMPEG from https://www.gyan.dev/ffmpeg/builds/ and add to Path
 
@@ -31,3 +41,4 @@ PASSWORD: cupcake2020
 ## download client secret from: https://console.developers.google.com/apis/credentials and save to sixteeny/utils/client_secret.json
 # run the test email script in the main directory and login to the yuser account and approve authentication flow
 
+## install sixteeny on Windows

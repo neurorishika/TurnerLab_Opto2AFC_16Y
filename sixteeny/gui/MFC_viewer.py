@@ -110,6 +110,7 @@ class FlowCanvas(FigureCanvas):
                 next_datapoint = np.array([self.controller.get_flow_rate(i) for i in range(self.n_controllers)])
                 running = False
             except:
+                print('Error getting flow rate. Retrying...')
                 pass
         timepoint = datetime.datetime.now()
 
@@ -138,7 +139,7 @@ def start_gui(MFCController=None,save_directory=''):
 
 with MFCController(
         com_port='COM8', 
-        device_ids=['M','N','O','P'],#chr(i) for i in range(ord('A'), ord('A') + 16)], 
-        default_flow_rate=300
+        device_ids=[chr(i) for i in range(ord('A'), ord('A') + 16)], 
+        default_flow_rate=500
     ) as mfc:
     start_gui(mfc, save_directory='Z:/Rishika/4Y-Maze/TurnerLab_Opto2AFC_16Y/sixteeny')

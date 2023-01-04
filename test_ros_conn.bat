@@ -1,0 +1,1 @@
+conda activate yarena && call C:\yarena_ws\install\setup.bat && python sixteeny\tests\ros_conn_test.py && pause

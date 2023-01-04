@@ -108,6 +108,10 @@ def process_file(file_path, output_path, estimated_transforms, origin):
         print("Calculating transformed fly position for Fly {}".format(index))
         reference_fly_positions = transform(fly_position)
 
+        # get trial information
+        current_trials = np.int32(np.array(data["current_trial"]))
+        current_arms = np.int32(np.array(data["current_arms"]))
+
         # interpolate the missing data
         def interpolate(y):
             nans, x = np.isnan(y), lambda z: z.nonzero()[0]
@@ -125,27 +129,33 @@ def process_file(file_path, output_path, estimated_transforms, origin):
         )
         instantaneous_speed = np.append(instantaneous_speed, np.nan)
 
-        # calculate instantaneous motion heading (wrt to reference frame)
-        print("Calculating instantaneous motion heading for Fly {}".format(index))
-        instantaneous_heading = np.arctan2(
+        # calculate instantaneous motion angle (wrt to reference frame)
+        print("Calculating instantaneous motion motion_angle for Fly {}".format(index))
+        instantaneous_motion_angle = np.arctan2(
             np.diff(reference_fly_positions[:, 1], axis=0), np.diff(reference_fly_positions[:, 0], axis=0)
         )
-        instantaneous_heading = np.append(instantaneous_heading, np.nan)
+        instantaneous_motion_angle = np.append(instantaneous_motion_angle, np.nan)
 
-        # calculate upwind speed (change in radial distance / delta time)
+        # calculate upwind angle in all frames (150 if current arm is 0, 30 if current arm is 1, 270 if current arm is 2)
+        print("Calculating upwind angle for Fly {}".format(index))
+        upwind_angle = np.ones_like(current_arms) * np.nan
+        upwind_angle[current_arms == 0] = 150
+        upwind_angle[current_arms == 1] = 30
+        upwind_angle[current_arms == 2] = 270
+        # Convert to radians
+        upwind_angle = np.deg2rad(upwind_angle)
+
+        # calculate upwind motion_angle
+        print("Calculating upwind motion_angle for Fly {}".format(index))
+        instantaneous_upwind_motion_angle = (
+            np.arctan2(np.diff(reference_fly_positions[:, 1], axis=0), np.diff(reference_fly_positions[:, 0], axis=0))
+            - upwind_angle[:-1]
+        )
+        instantaneous_upwind_motion_angle = np.append(instantaneous_upwind_motion_angle, np.nan)
+
+        # calculate upwind speed (sin of upwind motion_angle * instantaneous speed)
         print("Calculating upwind speed for Fly {}".format(index))
-        instantaneous_radial_distance = np.linalg.norm(reference_fly_positions - origin, axis=1)
-        instantaneous_upwind_speed = np.diff(instantaneous_radial_distance, axis=0) / np.diff(
-            data["frame_times"], axis=0
-        )
-        instantaneous_upwind_speed = np.append(instantaneous_upwind_speed, np.nan)
-
-        # calculate upwind heading (instantaneous motion heading - angular position in reference frame)
-        print("Calculating upwind heading for Fly {}".format(index))
-        instantaneous_upwind_heading = np.arctan2(
-            np.diff(reference_fly_positions[:, 1], axis=0), np.diff(reference_fly_positions[:, 0], axis=0)
-        ) - np.arctan2(reference_fly_positions[:-1, 1] - origin[1], reference_fly_positions[:-1, 0] - origin[0])
-        instantaneous_upwind_heading = np.append(instantaneous_upwind_heading, np.nan)
+        instantaneous_upwind_speed = np.sin(instantaneous_upwind_motion_angle) * instantaneous_speed
 
         # calculate trial information
         print("Calculating trial information for Fly {}".format(index))
@@ -154,9 +164,6 @@ def process_file(file_path, output_path, estimated_transforms, origin):
 
         odor_vectors = data["odor_vectors"]
         odor_vectors.append([0.0, 0.0, 0.0])
-
-        current_trials = np.int32(np.array(data["current_trial"]))
-        current_arms = np.int32(np.array(data["current_arms"]))
 
         current_start_arms = np.array(start_arms)[current_trials]
         current_odor_vectors = np.array(odor_vectors)[current_trials]
@@ -175,6 +182,10 @@ def process_file(file_path, output_path, estimated_transforms, origin):
         odor_encounter = np.diff(odor_encounter) != 0
         odor_encounter_ = odor_encounter.copy()
         odor_encounter_[0] = True
+
+        # calculate current odor encounter
+        print("Calculating current odor encounter for Fly {}".format(index))
+        current_odor_encounter = np.cumsum(odor_encounter_)
 
         # calculate time of odor encounter
         print("Calculating time of odor encounter for Fly {}".format(index))
@@ -269,11 +280,12 @@ def process_file(file_path, output_path, estimated_transforms, origin):
         processed_data = data
         processed_data["reference_fly_positions"] = reference_fly_positions.tolist()
         processed_data["instantaneous_speed"] = instantaneous_speed.tolist()
-        processed_data["instantaneous_heading"] = instantaneous_heading.tolist()
+        processed_data["instantaneous_motion_angle"] = instantaneous_motion_angle.tolist()
         processed_data["instantaneous_upwind_speed"] = instantaneous_upwind_speed.tolist()
-        processed_data["instantaneous_upwind_heading"] = instantaneous_upwind_heading.tolist()
+        processed_data["instantaneous_upwind_motion_angle"] = instantaneous_upwind_motion_angle.tolist()
         processed_data["current_odor"] = current_odor.tolist()
         processed_data["encounter_trial_number"] = encounter_trial_number.tolist()
+        processed_data["current_encounter"] = current_odor_encounter.tolist()
         processed_data["encounter_odor"] = encounter_odor.tolist()
         processed_data["encounter_durations"] = encounter_durations.tolist()
         processed_data["encounter_decisions"] = encounter_decisions.tolist()

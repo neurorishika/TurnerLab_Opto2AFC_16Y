@@ -70,13 +70,7 @@ class LEDController(object):
     """
 
     def __init__(
-        self, ports=["COM3", "COM5", "COM6", "COM4"], baudrate=115200, arena_panel_ids=["0001", "0010", "1000", "0100"],
-        irgb_scaling_factors=[
-            [0.997,1.000,0.974,0.992,0.721,0.709,0.711,0.702,0.713,0.721,0.735,0.698,0.763,0.768,0.788,0.774],
-            [1.000,0.976,0.992,0.991,0.702,0.724,0.708,0.706,0.714,0.702,0.715,0.690,0.745,0.752,0.781,0.774],
-            [1.000,0.976,0.992,0.991,0.702,0.724,0.708,0.706,0.714,0.702,0.715,0.690,0.745,0.752,0.781,0.774],
-            [1.000,0.976,0.992,0.991,0.702,0.724,0.708,0.706,0.714,0.702,0.715,0.690,0.745,0.752,0.781,0.774]
-        ]
+        self, ports=["COM3", "COM5", "COM6", "COM4"], baudrate=115200, arena_panel_ids=["0001", "0010", "1000", "0100"]
     ):
         """
         Initialize the LED controller class
@@ -116,7 +110,6 @@ class LEDController(object):
                 [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
                 [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
             ]
-        self.irgb_scaling_factors = irgb_scaling_factors
 
     def setup_connections(self):
         """
@@ -194,7 +187,7 @@ class LEDController(object):
         try:
             conn = self.conns[self.arena_specs[arena]["conn"]]
             quadrant = self.arena_specs[arena]["quadrant"]
-            conn.write(b"IR " + str(int(ir_intensity*self.irgb_scaling_factors[0][arena])).encode() + b" " + quadrant + b"\r")
+            conn.write(b"IR " + str(ir_intensity).encode() + b" " + quadrant + b"\r")
         except:
             print("Could not initialize IR for arena " + str(arena))
         
@@ -528,9 +521,9 @@ class LEDController(object):
                     + b"\r"
                 )
                 
-                conn.write(b"RED " + str(int(self.color_state[conn_id][quadrant_count][0]*self.irgb_scaling_factors[1][i])).encode() + b" 0 " + quadrant + b"\r")
-                conn.write(b"GRN " + str(int(self.color_state[conn_id][quadrant_count][1]*self.irgb_scaling_factors[2][i])).encode() + b" 0 " + quadrant + b"\r")
-                conn.write(b"BLU " + str(int(self.color_state[conn_id][quadrant_count][2]*self.irgb_scaling_factors[3][i])).encode() + b" 0 " + quadrant + b"\r")
+                conn.write(b"RED " + str(self.color_state[conn_id][quadrant_count][0]).encode() + b" 0 " + quadrant + b"\r")
+                conn.write(b"GRN " + str(self.color_state[conn_id][quadrant_count][1]).encode() + b" 0 " + quadrant + b"\r")
+                conn.write(b"BLU " + str(self.color_state[conn_id][quadrant_count][2]).encode() + b" 0 " + quadrant + b"\r")
             except:
                 print("Could not run LED stimulus for arena " + str(i))
                 

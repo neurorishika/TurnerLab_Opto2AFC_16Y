@@ -62,6 +62,8 @@ class ArenaTracker(object):
 
         self.clockwise_arena_indices = [0, 2, 4, 6, 8, 10, 12, 14]
 
+        self.start_new_trial_next_frame = False
+
     def relative_to_absolute_arm(self, relative_position, start_arm, arena_index):
         """
         Converts a relative position to an absolute position.
@@ -112,6 +114,10 @@ class ArenaTracker(object):
 
     def update(self, current_arm, current_position, in_reward_zone):
 
+        if self.start_new_trial_next_frame:
+            self.start_new_trial_next_frame = False
+            self.start_new_trial()
+
         # increment frame count
         self.frame_count += 1
 
@@ -157,7 +163,8 @@ class ArenaTracker(object):
                     ):
                         rewarded = True
                         self.administer_reward()
-                        self.start_new_trial()
+                        # self.start_new_trial()
+                        self.start_new_trial_next_frame = True
             else:
 
                 # process odor delays
@@ -169,7 +176,8 @@ class ArenaTracker(object):
                 if time.time() - self.trial_start_time > self.timed:
                     rewarded = True
                     self.administer_reward()
-                    self.start_new_trial()
+                    # self.start_new_trial()
+                    self.start_new_trial_next_frame = True
 
         if not self.started:
             self.start_new_trial()

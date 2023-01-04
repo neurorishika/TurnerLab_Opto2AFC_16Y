@@ -1,1 +1,1 @@
-conda activate sixteeny && call C:\yarena_ws\install\setup.bat && python sixteeny\gui\16Y_Experimenter.py && pause
+conda activate yarena && call C:\yarena_ws\install\setup.bat && python sixteeny\gui\16Y_Experimenter.py && pause

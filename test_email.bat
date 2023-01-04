@@ -1,1 +1,1 @@
-conda activate sixteeny && python sixteeny\utils\emailer.py && pause
+conda activate yarena && python sixteeny\utils\emailer.py && pause

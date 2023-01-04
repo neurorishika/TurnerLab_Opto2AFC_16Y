@@ -1,1 +1,1 @@
-conda activate sixteeny && python sixteeny\gui\16Y_mask_designer.py && pause
+conda activate yarena && python sixteeny\gui\16Y_mask_designer.py && pause

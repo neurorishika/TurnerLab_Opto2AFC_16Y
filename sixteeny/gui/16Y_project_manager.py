@@ -176,6 +176,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # copy empty stimulus file to the stimulus_zoo folder
         shutil.copy("./sixteeny/gui/resources/empty.stim", stimulus_zoo_directory)
 
+        # copy genotypes log file to the experiment directory
+        shutil.copy("./sixteeny/gui/resources/genotypes.log", project_directory)
+
         # create the experiment_zoo folder
         experiment_zoo_directory = project_directory + "/experiment_zoo"
         os.makedirs(experiment_zoo_directory)

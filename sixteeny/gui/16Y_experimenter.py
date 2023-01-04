@@ -19,7 +19,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("16-Y Experimenter")
 
         # set the window size
-        self.setFixedSize(1800, 700)
+        self.setFixedSize(1800, 1200)
 
         # create a the main layout
         layout = QtWidgets.QGridLayout()
@@ -44,35 +44,114 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.append_timestamp_button, 1, 2)
         self.append_timestamp_button.clicked.connect(self.append_timestamp)
 
-        # add a text box for entering the fly genotype
+        # add a sub-layout for the fly genotypes
+        fly_genotype_layout = QtWidgets.QGridLayout()
+
+        # add a dropbox for entering the fly genotype
+        self.genotypes = ['custom']
         layout.addWidget(QtWidgets.QLabel("Fly Genotype"), 2, 0)
-        self.fly_genotype = QtWidgets.QLineEdit()
-        self.fly_genotype.setText("+/+")
-        layout.addWidget(self.fly_genotype, 2, 1)
+        self.fly_genotype = QtWidgets.QComboBox()
+        self.fly_genotype.setEditable(True)
+        self.fly_genotype.addItems(self.genotypes)
+        self.fly_genotype.setCurrentIndex(0)
+        self.fly_genotype.setMinimumWidth(400)
+        fly_genotype_layout.addWidget(self.fly_genotype, 0, 0)
+
+        # call function on change of fly genotype
+        self.fly_genotype.currentIndexChanged.connect(self.fly_genotype_changed)
+
+        # add a text box for entering custom fly genotype
+        self.custom_fly_genotype = QtWidgets.QLineEdit()
+        self.custom_fly_genotype.setText("")
+        fly_genotype_layout.addWidget(self.custom_fly_genotype, 0, 1)
+
+        layout.addLayout(fly_genotype_layout, 2, 1)
 
         # add a button to copy the fly genotype to all the arenas
-        self.copy_genotype_button = QtWidgets.QPushButton("Copy to all Arenas")
+        self.copy_genotype_button = QtWidgets.QPushButton("Copy Genotypes")
         layout.addWidget(self.copy_genotype_button, 2, 2)
         self.copy_genotype_button.clicked.connect(self.copy_genotype)
+
+        # add a widget for the starvation start date and time
+        layout.addWidget(QtWidgets.QLabel("Starvation Start"), 3, 0)
+
+        # create a sub-layout for the starvation start date and time, quick buttons, and copy button
+        starvation_start_layout = QtWidgets.QGridLayout()
+
+        self.starvation_period = QtWidgets.QLineEdit()
+        # put a float validator on the starvation period
+        self.starvation_period.setValidator(QtGui.QDoubleValidator())
+        self.starvation_period.setText("24.0")
+        starvation_start_layout.addWidget(self.starvation_period, 0, 0)
+
+        # add a button for 24 hours, 36 hours, 48 hours, 60 hours, 72 hours
+        self.starvation_24_button = QtWidgets.QPushButton("24 hours")
+        starvation_start_layout.addWidget(self.starvation_24_button, 0, 1)
+        self.starvation_24_button.clicked.connect(self.starvation_24)
+
+        self.starvation_36_button = QtWidgets.QPushButton("36 hours")
+        starvation_start_layout.addWidget(self.starvation_36_button, 0, 2)
+        self.starvation_36_button.clicked.connect(self.starvation_36)
+
+        self.starvation_48_button = QtWidgets.QPushButton("48 hours")
+        starvation_start_layout.addWidget(self.starvation_48_button, 0, 3)
+        self.starvation_48_button.clicked.connect(self.starvation_48)
+
+        self.starvation_60_button = QtWidgets.QPushButton("60 hours")
+        starvation_start_layout.addWidget(self.starvation_60_button, 0, 4)
+        self.starvation_60_button.clicked.connect(self.starvation_60)
+
+        self.starvation_72_button = QtWidgets.QPushButton("72 hours")
+        starvation_start_layout.addWidget(self.starvation_72_button, 0, 5)
+        self.starvation_72_button.clicked.connect(self.starvation_72)
+
+        self.starvation_start = QtWidgets.QDateTimeEdit()
+        self.starvation_start.setCalendarPopup(True)
+        self.starvation_start.setDateTime(self.round_to_30mins(QtCore.QDateTime.currentDateTime()))
+        starvation_start_layout.addWidget(self.starvation_start, 0, 6)
+
+        # add a button to update the starvation start to the current time - starvation period
+        self.starvation_start_now_button = QtWidgets.QPushButton("Update")
+        starvation_start_layout.addWidget(self.starvation_start_now_button, 0, 7)
+        self.starvation_start_now_button.clicked.connect(self.starvation_start_now)
+
+        # add a button to copy the starvation start to all the arenas
+        self.copy_starvation_start_button = QtWidgets.QPushButton("Copy Starvation Starts")
+        starvation_start_layout.addWidget(self.copy_starvation_start_button, 0, 8)
+        self.copy_starvation_start_button.clicked.connect(self.copy_starvation_start)
+
+        # add the sub-layout to the main layout
+        layout.addLayout(starvation_start_layout, 3, 1, 1, 2)
+
+        # add a text box for entering comments
+        layout.addWidget(QtWidgets.QLabel("Comments"), 4, 0)
+        self.comments = QtWidgets.QLineEdit()
+        self.comments.setText("")
+        layout.addWidget(self.comments, 4, 1)
+
+        # add a button to copy the comments to all the arenas
+        self.copy_comments_button = QtWidgets.QPushButton("Copy Comments")
+        layout.addWidget(self.copy_comments_button, 4, 2)
+        self.copy_comments_button.clicked.connect(self.copy_comments)
 
         # Get the experiments from the directory
         self.experiments = []
 
         # add a dropdown for selecting the experiment
-        layout.addWidget(QtWidgets.QLabel("Experiment"), 3, 0)
+        layout.addWidget(QtWidgets.QLabel("Experiment"), 5, 0)
         self.experiment_dropdown = QtWidgets.QComboBox()
         self.experiment_dropdown.addItems(self.experiments)
         self.experiment_dropdown.setCurrentIndex(0)
-        layout.addWidget(self.experiment_dropdown, 3, 1)
+        layout.addWidget(self.experiment_dropdown, 5, 1)
 
         # add a button to copy the experiment to all the arenas
-        self.copy_experiment_button = QtWidgets.QPushButton("Copy to all Arenas")
-        layout.addWidget(self.copy_experiment_button, 3, 2)
+        self.copy_experiment_button = QtWidgets.QPushButton("Copy Experiments")
+        layout.addWidget(self.copy_experiment_button, 5, 2)
         self.copy_experiment_button.clicked.connect(self.copy_experiment)
 
         # add a centre-aligned label at the top of the grid
         layout.addWidget(
-            QtWidgets.QLabel("Assign Experiment for each Y-Arena below:"), 4, 0, 1, 3, QtCore.Qt.AlignCenter
+            QtWidgets.QLabel("Assign Experiment for each Y-Arena below:"), 6, 0, 1, 3, QtCore.Qt.AlignCenter
         )
         # set fixed size for the label
         layout.setRowMinimumHeight(3, 30)
@@ -89,7 +168,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # add a checkbox and a dropbox side by side in each cell of the grid and a genotype box
         self.checkboxes = []
         self.dropboxes = []
-        self.textboxes = []
+        self.textboxes_1 = []
+        self.textboxes_2 = []
+        self.datetimes = []
         for i in range(4):
             for j in range(4):
                 # add a label for the fly identifier
@@ -108,38 +189,46 @@ class MainWindow(QtWidgets.QMainWindow):
                 dropbox.setMinimumSize(300, 0)
 
                 # add a textbox for the genotype
-                textbox = QtWidgets.QLineEdit()
-                textbox.setText("+/+")
-                textbox.setEnabled(False)
+                textbox1 = QtWidgets.QLineEdit()
+                textbox1.setText("+/+")
+                textbox1.setEnabled(False)
+
+                # add a textbox for the comments
+                textbox2 = QtWidgets.QLineEdit()
+                textbox2.setText("")
+                textbox2.setEnabled(False)
+
+                # add a datetime for the starvation start
+                datetime = QtWidgets.QDateTimeEdit()
+                datetime.setDateTime(self.round_to_30mins(QtCore.QDateTime.currentDateTime().addSecs(-3600)))
+                datetime.setEnabled(False)
 
                 self.checkboxes.append(checkbox)
                 self.dropboxes.append(dropbox)
-                self.textboxes.append(textbox)
+                self.textboxes_1.append(textbox1)
+                self.textboxes_2.append(textbox2)
+                self.datetimes.append(datetime)
 
-                dropbox_layout.addWidget(label, 2 * i, 3 * j)
-                dropbox_layout.addWidget(checkbox, 2 * i, 3 * j + 1)
-                dropbox_layout.addWidget(dropbox, 2 * i, 3 * j + 2)
-                dropbox_layout.addWidget(textbox, 2 * i + 1, 3 * j, 1, 3)
+                dropbox_layout.addWidget(label, 4 * i, 3 * j)
+                dropbox_layout.addWidget(checkbox, 4 * i, 3 * j + 1)
+                dropbox_layout.addWidget(dropbox, 4 * i, 3 * j + 2)
+                dropbox_layout.addWidget(textbox1, 4 * i + 1, 3 * j, 1, 3)
+                dropbox_layout.addWidget(textbox2, 4 * i + 2, 3 * j, 1, 3)
+                dropbox_layout.addWidget(datetime, 4 * i + 3, 3 * j, 1, 3)
 
         # add the dropbox layout to the grid
-        layout.addLayout(dropbox_layout, 5, 0, 1, 3)
+        layout.addLayout(dropbox_layout, 7, 0, 1, 3)
 
         self.browse_button.clicked.connect(self.browse_directory)
-
-        # add a text box for inputting any comments
-        layout.addWidget(QtWidgets.QLabel("Comments"), 6, 0)
-        self.comments = QtWidgets.QTextEdit()
-        self.comments.setFixedHeight(50)
-        layout.addWidget(self.comments, 6, 1, 1, 2)
 
         # add buttons to toggle all arenas and start experiment
         self.toggle_all_arenas_button = QtWidgets.QPushButton("Toggle All Arenas")
         self.toggle_all_arenas_button.clicked.connect(self.toggle_all_arenas)
-        layout.addWidget(self.toggle_all_arenas_button, 7, 0)
+        layout.addWidget(self.toggle_all_arenas_button, 8, 0)
 
         button = QtWidgets.QPushButton("Start Experiment")
         button.clicked.connect(self.start_experiment)
-        layout.addWidget(button, 7, 1, 1, 2)
+        layout.addWidget(button, 8, 1, 1, 2)
 
         # create the main widget
         widget = QtWidgets.QWidget()
@@ -167,6 +256,7 @@ class MainWindow(QtWidgets.QMainWindow):
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory")
         self.project_directory.setText(directory)
         self.experiments = self.get_experiments_from_directory(directory)
+        self.genotypes = self.get_genotypes_from_directory(directory)
         # update the dropboxes with the experiments
         self.update_dropboxes()
 
@@ -181,6 +271,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.dropboxes[i].clear()
             self.dropboxes[i].addItems(self.experiments)
             self.dropboxes[i].setCurrentIndex(0)
+        self.fly_genotype.clear()
+        self.fly_genotype.addItems(self.genotypes)
+        self.fly_genotype.setCurrentIndex(0)
 
     def toggle_checkbox(self, index):
         """
@@ -191,10 +284,14 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         if self.checkboxes[index].isChecked():
             self.dropboxes[index].setEnabled(True)
-            self.textboxes[index].setEnabled(True)
+            self.textboxes_1[index].setEnabled(True)
+            self.textboxes_2[index].setEnabled(True)
+            self.datetimes[index].setEnabled(True)
         else:
             self.dropboxes[index].setEnabled(False)
-            self.textboxes[index].setEnabled(False)
+            self.textboxes_1[index].setEnabled(False)
+            self.textboxes_2[index].setEnabled(False)
+            self.datetimes[index].setEnabled(False)
 
     def toggle_all_arenas(self):
         """
@@ -204,11 +301,15 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.toggle_state:
                 self.checkboxes[i].setChecked(False)
                 self.dropboxes[i].setEnabled(False)
-                self.textboxes[i].setEnabled(False)
+                self.textboxes_1[i].setEnabled(False)
+                self.textboxes_2[i].setEnabled(False)
+                self.datetimes[i].setEnabled(False)
             else:
                 self.checkboxes[i].setChecked(True)
                 self.dropboxes[i].setEnabled(True)
-                self.textboxes[i].setEnabled(True)
+                self.textboxes_1[i].setEnabled(True)
+                self.textboxes_2[i].setEnabled(True)
+                self.datetimes[i].setEnabled(True)
         self.toggle_state = not self.toggle_state
 
     def copy_genotype(self):
@@ -216,7 +317,21 @@ class MainWindow(QtWidgets.QMainWindow):
         A method to copy the genotype to all the arenas.
         """
         for i in range(16):
-            self.textboxes[i].setText(self.fly_genotype.text())
+            self.textboxes_1[i].setText(self.custom_fly_genotype.text())
+    
+    def copy_comments(self):
+        """
+        A method to copy the comments to all the arenas.
+        """
+        for i in range(16):
+            self.textboxes_2[i].setText(self.comments.text())
+    
+    def copy_starvation_start(self):
+        """
+        A method to copy the starvation start to all the arenas.
+        """
+        for i in range(16):
+            self.datetimes[i].setDateTime(self.starvation_start.dateTime())
 
     def copy_experiment(self):
         """
@@ -224,6 +339,70 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         for i in range(16):
             self.dropboxes[i].setCurrentText(self.experiment_dropdown.currentText())
+    
+    def round_to_30mins(self, qdatetime):
+        """
+        A method to round a QDateTime to the nearest 30 minutes.
+        """
+        if qdatetime.time().minute() < 15:
+            qdatetime.setTime(QtCore.QTime(qdatetime.time().hour(), 0, 0))
+        elif qdatetime.time().minute() < 45:
+            qdatetime.setTime(QtCore.QTime(qdatetime.time().hour(), 30, 0))
+        else:
+            qdatetime.setTime(QtCore.QTime(qdatetime.time().hour() + 1, 0, 0))
+        return qdatetime
+    
+    def starvation_start_now(self):
+        """
+        A method to update the starvation start to now - time set in the text box.
+        """
+        current_time = QtCore.QDateTime.currentDateTime()
+        current_time = self.round_to_30mins(current_time)
+        starvation_period = float(self.starvation_period.text())*60*60
+        starvation_time = current_time.addSecs(-int(starvation_period))
+        self.starvation_start.setDateTime(starvation_time)
+    
+    def starvation_24(self):
+        """
+        A method to update the starvation start to 24 hours before now.
+        """
+        self.starvation_period.setText("24.0")
+    
+    def starvation_36(self):
+        """
+        A method to update the starvation start to 36 hours before now.
+        """
+        self.starvation_period.setText("36.0")
+
+    def starvation_48(self):
+        """
+        A method to update the starvation start to 48 hours before now.
+        """
+        self.starvation_period.setText("48.0")
+    
+    def starvation_60(self):
+        """
+        A method to update the starvation start to 60 hours before now.
+        """
+        self.starvation_period.setText("60.0")
+    
+    def starvation_72(self):
+        """
+        A method to update the starvation start to 72 hours before now.
+        """
+        self.starvation_period.setText("72.0")
+
+    def fly_genotype_changed(self):
+        """
+        A method to update the fly genotype.
+        """
+        # check if its custom
+        if self.fly_genotype.currentText() == "custom":
+            self.custom_fly_genotype.setEnabled(True)
+            self.custom_fly_genotype.setText("")
+        else:
+            self.custom_fly_genotype.setEnabled(False)
+            self.custom_fly_genotype.setText(self.fly_genotype.currentText())
 
     def get_experiments_from_directory(self, directory):
         """
@@ -247,6 +426,43 @@ class MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.about(self, "No Experiments", "There are no experiments in the directory.")
 
         return experiments
+    
+    def get_genotypes_from_directory(self, directory):
+        """
+        A method to get the genotypes from the directory.
+
+        Variables:
+            directory (str): The directory to get the genotypes from.
+        """
+        # check if the directory exists
+        if not os.path.exists(directory + "/genotypes.log"):
+            genotypes = ["custom"]
+        else:
+            # read the genotypes from the file
+            with open(directory + "/genotypes.log", "r") as file:
+                genotypes = file.read().splitlines()
+            # add custom to the list
+            genotypes.append("custom")
+        # remove empty genotypes
+        genotypes = [genotype for genotype in genotypes if genotype != ""]
+        # remove duplicates
+        genotypes = list(dict.fromkeys(genotypes))
+        return genotypes
+    
+    def save_genotypes_to_directory(self, directory):
+        """
+        A method to save the genotypes to the directory.
+
+        Variables:
+            directory (str): The directory to save the genotypes to.
+        """
+        # write the genotypes to the file
+        with open(directory + "/genotypes.log", "w") as file:
+            for genotype in self.genotypes:
+                if genotype != "custom":
+                    file.write(genotype + "\n")
+            if self.fly_genotype.currentText() == "custom":
+                file.write(self.custom_fly_genotype.text() + "\n")
 
     def verify_start_experiment(self):
         """
@@ -268,6 +484,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(self.active_arenas) == 0:
             # show an warning message box to inform the user to activate at least one arena
             QtWidgets.QMessageBox.warning(self, "Error", "Please activate at least one arena.")
+            return False
+
+        # check that experiment name is not empty
+        if self.experiment_name.text() == "":
+            # show a warning message that the experiment name is empty
+            QtWidgets.QMessageBox.warning(self, "Error", "Please enter an experiment name.")
             return False
 
         # check if the project directory already has a folder for the experiment name
@@ -368,10 +590,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 experiment_details["fly_project_directory"] = self.project_directory.text()
                 experiment_details["fly_config_file"] = self.config_file
                 experiment_details["fly_experiment_start_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                experiment_details["fly_genotype"] = self.textboxes[i].text()
+                experiment_details["fly_genotype"] = self.textboxes_1[i].text()
+                experiment_details["fly_comments"] = self.textboxes_2[i].text()
+                experiment_details["fly_starvation_time"] = self.datetimes[i].dateTime().toString("yyyy-MM-dd hh:mm:ss")
                 experiment_details["fly_experiment"] = self.dropboxes[i].currentText()
                 experiment_details["fly_arena"] = self.fly_numbers[i]
-                # experiment_details["fly_comments"] = self.comments.text()
                 # save the experiment details for each fly
                 with open(
                     os.path.join(
@@ -382,6 +605,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     "w",
                 ) as f:
                     json.dump(experiment_details, f)
+        self.save_genotypes_to_directory(self.project_directory.text())
 
     def prepare_directory(self):
         """

@@ -42,13 +42,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mask_file.setText("")
         self.mask_file.setReadOnly(True)
         self.browse_mask_button = QtWidgets.QPushButton("Browse")
-        self.show_mask_button = QtWidgets.QPushButton("Show Mask")
         layout.addWidget(self.mask_file, 1, 1)
-        layout.addWidget(self.browse_mask_button, 1, 2)
-        layout.addWidget(self.show_mask_button, 1, 3)
+        layout.addWidget(self.browse_mask_button, 1, 2, 1, 2)
 
         self.browse_mask_button.clicked.connect(self.browse_mask_file)
-        self.show_mask_button.clicked.connect(self.show_mask_file)
 
         # add a centre-aligned label at the top of the next row
         layout.addWidget(QtWidgets.QLabel("LED Array Configuration:"), 2, 0, 1, 4, QtCore.Qt.AlignCenter)
@@ -164,13 +161,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.binarization_threshold_relative.setValidator(QtGui.QIntValidator(0, 100))
         layout.addWidget(self.binarization_threshold_relative, 11, 3)
 
+        # add a sublayout to hold 4 checkboxes
+        sublayout = QtWidgets.QGridLayout()
+
         # add a checkbox to record video
         self.record_video_checkbox = QtWidgets.QCheckBox("Record Video")
-        layout.addWidget(self.record_video_checkbox, 12, 0)
+        sublayout.addWidget(self.record_video_checkbox, 0, 0)
 
         # add a checkbox to live stream video
-        self.live_stream_checkbox = QtWidgets.QCheckBox("Live Stream (Reduces FPS)")
-        layout.addWidget(self.live_stream_checkbox, 12, 1)
+        self.live_stream_checkbox = QtWidgets.QCheckBox("Save Processed (Reduces FPS)")
+        sublayout.addWidget(self.live_stream_checkbox, 0, 1)
+
+        # add a checkbox to enable lossless compression
+        self.lossless_compression_checkbox = QtWidgets.QCheckBox("Lossless Compression")
+        sublayout.addWidget(self.lossless_compression_checkbox, 0, 2)
+
+        # add a checkbox to enable fast lossless compression
+        self.fast_lossless_compression_checkbox = QtWidgets.QCheckBox("Fast Mode")
+        sublayout.addWidget(self.fast_lossless_compression_checkbox, 0, 3)
+
+        # add the sublayout to the main layout
+        layout.addLayout(sublayout, 12, 0, 1, 2)
 
         # add a text box to set the binarization threshold
         layout.addWidget(QtWidgets.QLabel("Binarization Threshold (Absolute)"), 12, 2)
@@ -207,7 +218,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(16):
             self.mfc_device_id_droboxes.append(QtWidgets.QComboBox())
             self.mfc_device_id_droboxes[i].addItems([chr(i) for i in range(ord("A"), ord("Z") + 1)])
-            self.mfc_device_id_droboxes[i].setCurrentIndex(indices[i])
+            self.mfc_device_id_droboxes[i].setCurrentIndex(indices[i]) 
             self.mfc_device_id_droboxes[i].setFixedWidth(50)
             self.mfc_configuration_layout.addWidget(self.mfc_device_id_droboxes[i], 0, i + 1)
 
@@ -264,18 +275,46 @@ class MainWindow(QtWidgets.QMainWindow):
         self.email_addresses = QtWidgets.QLineEdit()
         self.email_addresses.setText("mohantas@janelia.hhmi.org")
         layout.addWidget(self.email_addresses, 23, 2, 1, 2)
+        
+        # add a sub-layout to hold the LED Scaling Factors
+        self.led_scaling_factors_layout = QtWidgets.QGridLayout()
+
+        # add a label to set the LED Scaling Factors
+        self.led_scaling_factors_label = QtWidgets.QLabel("LED Scaling Factors:")
+        self.led_scaling_factors_layout.addWidget(self.led_scaling_factors_label, 0, 0, 1, 17, QtCore.Qt.AlignCenter)
+
+        # add a series of text boxes to set the LED Scaling Factors
+        irgb_default_values = [
+            [0.997,1.000,0.974,0.992,0.721,0.709,0.711,0.702,0.713,0.721,0.735,0.698,0.763,0.768,0.788,0.774],
+            [1.000,0.976,0.992,0.991,0.702,0.724,0.708,0.706,0.714,0.702,0.715,0.690,0.745,0.752,0.781,0.774],
+            [1.000,0.976,0.992,0.991,0.702,0.724,0.708,0.706,0.714,0.702,0.715,0.690,0.745,0.752,0.781,0.774],
+            [1.000,0.976,0.992,0.991,0.702,0.724,0.708,0.706,0.714,0.702,0.715,0.690,0.745,0.752,0.781,0.774]
+        ]
+        irgb_names = ["IR", "Red", "Green", "Blue"]
+        self.led_scaling_factors = []
+        for i in range(4):
+            self.led_scaling_factors.append([])
+            for j in range(16):
+                self.led_scaling_factors[i].append(QtWidgets.QLineEdit())
+                self.led_scaling_factors[i][j].setText(str(irgb_default_values[i][j]))
+                self.led_scaling_factors[i][j].setValidator(QtGui.QDoubleValidator(0.0, 1.0, 3))
+                self.led_scaling_factors_layout.addWidget(QtWidgets.QLabel(irgb_names[i]), i+1, 0)
+                self.led_scaling_factors_layout.addWidget(self.led_scaling_factors[i][j], i+1, j+1)
+        
+        # add the LED Scaling Factors sub-layout to the main layout
+        layout.addLayout(self.led_scaling_factors_layout, 24, 0, 1, 4)
 
         # Add a button to enable the GPU processing
         self.enable_gpu_processing_checkbox = QtWidgets.QCheckBox("Enable GPU Processing")
-        layout.addWidget(self.enable_gpu_processing_checkbox, 24, 0)
+        layout.addWidget(self.enable_gpu_processing_checkbox, 25, 0)
 
         # Add a button to load and save the configuration
         self.load_configuration_button = QtWidgets.QPushButton("Load Configuration")
-        layout.addWidget(self.load_configuration_button, 24, 1)
+        layout.addWidget(self.load_configuration_button, 25, 1)
         self.load_configuration_button.clicked.connect(self.load_configuration)
 
         self.save_configuration_button = QtWidgets.QPushButton("Save Configuration")
-        layout.addWidget(self.save_configuration_button, 24, 2, 1, 2)
+        layout.addWidget(self.save_configuration_button, 25, 2, 1, 2)
         self.save_configuration_button.clicked.connect(self.save_configuration)
 
         # create the main widget
@@ -337,8 +376,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.closing_radius.setText(str(configuration["closing_radius"]))
         self.binarization_threshold_relative.setText(str(configuration["binarization_threshold_relative"]))
         self.binarization_threshold_absolute.setText(str(configuration["binarization_threshold_absolute"]))
+
+        # recording (allow legacy configuration support)
         self.record_video_checkbox.setChecked(configuration["record_video"])
         self.live_stream_checkbox.setChecked(configuration["live_stream"])
+        try:
+            self.lossless_compression_checkbox.setChecked(configuration["lossless_compression"])
+            self.fast_lossless_compression_checkbox.setChecked(configuration["fast_mode"])
+        except:
+            pass
 
         # mfc
         self.mfc_com_port.setCurrentIndex(self.mfc_com_port.findText(configuration["mfc_com_port"]))
@@ -361,9 +407,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self.email_addresses.setText(", ".join(configuration["email_addresses"]))
         except:
             pass
+        
+        # led scaling factors (allow legacy configuration support)
+        try:
+            for i in range(4):
+                for j in range(16):
+                    self.led_scaling_factors[i][j].setText(str(configuration["led_scaling_factors"][i][j]))
+        except:
+            pass
 
         # gpu processing
         self.enable_gpu_processing_checkbox.setChecked(configuration["enable_gpu_processing"])
+
+
 
     def save_configuration(self):
         """
@@ -411,6 +467,8 @@ class MainWindow(QtWidgets.QMainWindow):
         configuration["threshold_type"] = threshold_type
         configuration["record_video"] = self.record_video_checkbox.isChecked()
         configuration["live_stream"] = self.live_stream_checkbox.isChecked()
+        configuration["lossless_compression"] = self.lossless_compression_checkbox.isChecked()
+        configuration["fast_mode"] = self.fast_lossless_compression_checkbox.isChecked()
         # mfc
         configuration["mfc_com_port"] = self.mfc_com_port.currentText()
         configuration["mfc_device_ids"] = []
@@ -427,6 +485,12 @@ class MainWindow(QtWidgets.QMainWindow):
         # email
         configuration["email_notifications"] = self.email_notifications_checkbox.isChecked()
         configuration["email_addresses"] = [str(i).strip().lower() for i in self.email_addresses.text().split(",")]
+        # led scaling factors
+        configuration["led_scaling_factors"] = []
+        for i in range(4):
+            configuration["led_scaling_factors"].append([])
+            for j in range(16):
+                configuration["led_scaling_factors"][i].append(float(self.led_scaling_factors[i][j].text()))
         # save the configuration as a json object
         with open(file_name, "w") as f:
             json.dump(configuration, f)
@@ -477,25 +541,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # set the file name
         self.mask_file.setText(file_name)
 
-    def show_mask_file(self):
-        """
-        A function to show the mask file
-        """
-        # get the file name
-        file_name = self.mask_file.text()
-
-        if file_name == "":
-            # show a warning
-            QtWidgets.QMessageBox.warning(self, "Warning", "No mask file selected")
-            return
-
-        # load the mask file
-        arm_mask, reward_mask, _ = np.load(file_name, allow_pickle=True)
-
-        # show the mask
-        plt.imshow(arm_mask.sum(axis=0) + reward_mask.sum(axis=0), cmap="gray")
-        plt.show()
-
     def browse_ffmpeg_path(self):
         """
         A function to browse for the ffmpeg path
@@ -530,6 +575,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         A function to setup a camera and capture a background
         """
+        com_ports = []
+        quadrant_ids = []
+        for i in range(4):
+            com_ports.append(self.com_ports_dropboxes[i].currentText())
+            quadrant_ids.append(self.quadrant_ids_dropboxes[i].currentText())
+
         with SpinnakerCamera(
             index=int(self.camera_index.text()),
             gpu_enabled=False,
@@ -539,7 +590,12 @@ class MainWindow(QtWidgets.QMainWindow):
             GAMMA=int(self.gamma.text()),
             record_video=False,
             show_video=False,
-        ) as camera:
+        ) as camera, LEDController(
+            ports=com_ports, 
+            baudrate=self.baud_rates_dropbox.currentText(), 
+            arena_panel_ids=quadrant_ids
+        ) as led:
+            led.turn_on_backlight(100)
             background, _, _, _ = record_background(
                 time_to_record=int(self.background_calculation_time.text()), camera=camera, gpu_enabled=False
             )
@@ -586,24 +642,47 @@ class MainWindow(QtWidgets.QMainWindow):
             led.turn_on_backlight(100)
             led.reset_accumulated_led_stimulus()
             time.sleep(1)
-            for color in [b"R"]:
-                for i in range(4):
-                    for arena in range(16):
-                        led.accumulate_led_stimulus(
-                            arena,
-                            color,
-                            25,
-                            PULSE_WIDTH,
-                            PULSE_PERIOD,
-                            PULSE_COUNT,
-                            PULSE_DEADTIME,
-                            PULSE_DELAY,
-                            PULSE_REPEAT,
-                            debug_mode=False,
-                        )
-                    led.run_accumulated_led_stimulus()
-                    print("Running accumulated LED stimulus")
-                    time.sleep(1)
+            while True:
+                try:
+                    for color in [b"R", b"G", b"B"]:
+                        for intensity in [10,1]:
+                            for arena in range(16):
+                                for a in range(16):
+                                    if a == arena:
+                                        led.accumulate_led_stimulus(
+                                            a,
+                                            color,
+                                            intensity,
+                                            PULSE_WIDTH//2,
+                                            PULSE_PERIOD//2,
+                                            PULSE_COUNT*2,
+                                            PULSE_DEADTIME,
+                                            PULSE_DELAY,
+                                            PULSE_REPEAT,
+                                            debug_mode=False,
+                                        )
+                                    else:
+                                        led.accumulate_led_stimulus(
+                                            a,
+                                            color,
+                                            intensity,
+                                            PULSE_WIDTH,
+                                            PULSE_PERIOD,
+                                            PULSE_COUNT,
+                                            PULSE_DEADTIME,
+                                            PULSE_DELAY,
+                                            PULSE_REPEAT,
+                                            debug_mode=False,
+                                        )
+                                led.run_accumulated_led_stimulus()
+                                print("Running accumulated LED stimulus")
+                                time.sleep(0.5)
+                                # for conn in led.conns:
+                                #     conn.write(b"RESET\r")
+                                # time.sleep(0.5)
+                except KeyboardInterrupt:
+                    print("Keyboard interrupt")
+                    break
 
 
 if __name__ == "__main__":

@@ -184,8 +184,11 @@ if __name__ == "__main__":
         video_output_name=experiment_name[5:] + "_" + str(rig_config["camera_index"]),
         show_video=rig_config["live_stream"],
         show_every_n=1,
+        lossless=rig_config["lossless_compression"],
+        fast_mode=rig_config["fast_mode"],
     ) as camera, OdorValveController(minimum_delay=rig_config["minimum_message_delay"] / 1000) as odor, LEDController(
-        ports=rig_config["com_ports"], baudrate=rig_config["baud_rate"], arena_panel_ids=rig_config["quadrant_ids"]
+        ports=rig_config["com_ports"], baudrate=rig_config["baud_rate"], arena_panel_ids=rig_config["quadrant_ids"],
+        irgb_scaling_factors=rig_config["led_scaling_factors"]
     ) as led, MFCController(
         com_port=rig_config["mfc_com_port"],
         device_ids=rig_config[
@@ -201,7 +204,7 @@ if __name__ == "__main__":
         print("All controllers initialized.\n")
 
         # turn on MFCs
-        for i in fly_arenas:
+        for i in range(16):
             controllers["mfc"].set_flow_rate(i, rig_config["mfc_flow_rate"])
         print("MFCs turned on.\n")
 
@@ -215,12 +218,12 @@ if __name__ == "__main__":
         keep_trying = True
         while keep_trying:
             n_observations = 10
-            mfc_observations = np.zeros((n_observations, len(fly_arenas)))
+            mfc_observations = np.zeros((n_observations, 16))
             for i in range(n_observations):
                 observed = False
                 while not observed:
                     try:
-                        for j in fly_arenas:
+                        for j in range(16):
                             mfc_observations[i, j] = mfc.get_flow_rate(j)
                         observed = True
                     except:
@@ -616,7 +619,7 @@ if __name__ == "__main__":
                             frame.get()
                             if rig_config["enable_gpu_processing"]
                             else frame,  # might be very slow if using gpu
-                            project_directory + experiment_name + "/video/processed/" + current_time + ".png",
+                            project_directory + experiment_name + "/video/processed/" + current_time + ".jpg",
                         )
                     )
 

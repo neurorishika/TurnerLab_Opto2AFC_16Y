@@ -1,1 +1,1 @@
-conda activate sixteeny && python sixteeny\gui\16Y_project_manager.py && pause
+conda activate yarena && python sixteeny\gui\16Y_project_manager.py && pause

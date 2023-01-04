@@ -1,1 +1,1 @@
-conda activate sixteeny && python sixteeny\gui\16Y_rig_configurator.py && pause
+conda activate yarena && python sixteeny\gui\16Y_rig_configurator.py && pause

@@ -96,6 +96,8 @@ class SpinnakerCamera:
         video_output_name=None,
         show_video=False,
         show_every_n=None,
+        lossless=False,
+        fast_mode=True,
     ):
         """
         Initialize the camera object.
@@ -146,6 +148,8 @@ class SpinnakerCamera:
         cam_list.Clear()
 
         self.running = False
+        self.lossless = lossless
+        self.fast_mode = fast_mode
 
     def init(self):
         """
@@ -184,20 +188,26 @@ class SpinnakerCamera:
         if self.record_video:
             self.timestamps = []
             if self.gpu_enabled:
-                # create an FFmpegWriter object with lossless encoding
-                self.writer = skvideo.io.FFmpegWriter(
-                    self.video_output_path + self.video_output_name + ".mp4",
-                    outputdict={
-                        "-vcodec": "h264"
-                    },  # , "-hwaccel": "cuda", "-preset": "lossless", "-rc": "constantqp", "-qp": "0"
-                )
+                if self.lossless:
+                    # create an FFmpegWriter object with lossless encoding
+                    self.writer = skvideo.io.FFmpegWriter(
+                        self.video_output_path + self.video_output_name + ".mp4",
+                        outputdict={
+                            "-vcodec": "h264", "-qp": "0", "-preset": "ultrafast" if self.fast_mode else "veryslow"
+                        },
+                    )
+                else:
+                    # create an FFmpegWriter object
+                    self.writer = skvideo.io.FFmpegWriter(
+                        self.video_output_path + self.video_output_name + ".mp4", outputdict={"-vcodec": "h264"}
+                    )
             else:
                 self.writer = skvideo.io.FFmpegWriter(
                     self.video_output_path + self.video_output_name + ".mp4", outputdict={"-vcodec": "mpeg4"}
                 )
             self.save_queue = queue.Queue()
             self.save_thread = threading.Thread(target=video_writer, args=(self.save_queue, self.writer))
-
+        # , "-hwaccel": "cuda", "-preset": "lossless", "-rc": "constantqp", "-qp": "0"
         # if self.show_video:
         #     self.play_queue = queue.Queue()
         #     self.frame_count = 0
