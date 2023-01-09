@@ -178,6 +178,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add a checkbox to enable fast lossless compression
         self.fast_lossless_compression_checkbox = QtWidgets.QCheckBox("Fast Mode")
+        self.fast_lossless_compression_checkbox.setEnabled(True)
         sublayout.addWidget(self.fast_lossless_compression_checkbox, 0, 3)
 
         # add the sublayout to the main layout

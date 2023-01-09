@@ -199,7 +199,7 @@ class SpinnakerCamera:
                 else:
                     # create an FFmpegWriter object
                     self.writer = skvideo.io.FFmpegWriter(
-                        self.video_output_path + self.video_output_name + ".mp4", outputdict={"-vcodec": "h264"}
+                        self.video_output_path + self.video_output_name + ".mp4", outputdict={"-vcodec": "h264", "-crf": "12"}
                     )
             else:
                 self.writer = skvideo.io.FFmpegWriter(

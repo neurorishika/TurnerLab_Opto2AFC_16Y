@@ -3,7 +3,93 @@ import json
 import numpy as np
 
 
-class FiniteStateExperimenter(Experimenter):
+class DeterministicFiniteStateExperimenter(Experimenter):
+    """
+    A class that uses a Markov chain on State-Action space to design experiments
+    """
+
+    def __init__(self, experiment_config_file):
+        """
+        A method to initialize a FiniteStateExperimenter object
+        """
+        super().__init__(experiment_config_file)
+        # confirm that the config file is a json object
+        assert self.experiment_config_file.endswith(".yfse")
+        # read the config file
+        with open(self.experiment_config_file) as f:
+            self.experiment_config = json.load(f)
+        # get experiment folder as the full path to the folder containing the experiment config file
+        self.experiment_folder = self.experiment_config_file.split("/")[:-2]
+        self.experiment_folder = "/".join(self.experiment_folder) + "/"
+        # get experiment details
+        self.exp_trials = int(self.experiment_config["num_trials"])
+        self.naive_trials = int(self.experiment_config["num_naive_trials"])
+        self.n_trials = self.exp_trials + self.naive_trials
+        self.n_states = int(self.experiment_config["num_states"])
+        self.state_labels = np.array(self.experiment_config["state_labels"]) # 0 is rewarded, 1 is unrewarded
+        self.transition_matrix = np.array(
+            self.experiment_config["transition_matrix"]
+        )  # shape (n_states, 2)
+        self.rewarded_stimulus = self.experiment_config["rewarded_stimulus"]
+        self.unrewarded_stimulus = self.experiment_config["unrewarded_stimulus"]
+        self.lr_randomization = self.experiment_config["lr_randomization"]
+        # randomly choose a starting state
+        self.current_state = np.random.choice(self.n_states)
+
+
+    def state_update(self, chosen_odor):
+        """
+        Update the current state based on the chosen odor
+        """
+        # get the next state
+        self.current_state = self.transition_matrix[self.current_state, int(chosen_odor - 1)]
+
+    def get_next_trial(self, history):
+        """
+        Return the next trial based on current state
+        """        
+        # get latest choice if there is one
+        if len(history["chosen_odor"]) < self.naive_trials:
+            self.rewards = [0, 0]
+            state = -1
+        elif len(history["chosen_odor"]) == self.naive_trials:
+            self.rewards = [self.state_labels[self.transition_matrix[self.current_state, 0]], self.state_labels[self.transition_matrix[self.current_state, 1]]]
+            state = self.current_state
+        else:
+            chosen_odor = history["chosen_odor"][-1]
+            # update the current state
+            self.state_update(chosen_odor)
+            self.rewards = [self.state_labels[self.transition_matrix[self.current_state, 0]], self.state_labels[self.transition_matrix[self.current_state, 1]]]
+            state = self.current_state
+
+        # get the next trial
+        next_trial = {}
+        randomize = np.random.choice(2) if self.lr_randomization else 0
+        next_trial["world_state"] = state
+        next_trial["world_rewards"] = self.rewards
+        next_trial["relative_odor_vector"] = [0, 1 + randomize, 2 - randomize]
+        next_trial["reward_probability"] = [
+            0,
+            self.rewards[randomize],
+            self.rewards[1 - randomize],
+        ]  # adjust from randomization
+        next_trial["time_needed_in_reward_zone"] = ["inf", "0", "0"]
+        next_trial["reward_stimulus"] = [
+            "empty.stim", 
+            self.rewarded_stimulus if self.rewards[randomize] == 1 else self.unrewarded_stimulus, 
+            self.rewarded_stimulus if self.rewards[1 - randomize] == 1 else self.unrewarded_stimulus
+            ]
+        next_trial["timed"] = 0
+        next_trial["odor_delay"] = 0
+        next_trial["unconditioned_stimulus"] = "empty.stim"
+        # increment the trial number
+        self.trial_number += 1
+        # append the trial to the list of trials
+        self.states.append(next_trial)
+        return next_trial
+
+
+class ProbabilisticFiniteStateExperimenter(Experimenter):
     """
     A class that uses a Markov chain on State-Action space to design experiments
     """

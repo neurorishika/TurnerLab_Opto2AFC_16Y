@@ -304,11 +304,11 @@ if __name__ == "__main__":
                 elif background_confirmed == "n" or background_confirmed == "N":
                     print("Background image capture failed. Retry?")
                     while True:
-                        retry = input("Retry? (y/n) ")
-                        if retry == "y" or retry == "Y":
+                        entry = input("Retry? (y/n) ")
+                        if entry == "y" or entry == "Y":
                             retry = True
                             break
-                        elif retry == "n" or retry == "N":
+                        elif entry == "n" or entry == "N":
                             print("Exiting.")
                             sys.exit(1)
                         else:
@@ -316,6 +316,8 @@ if __name__ == "__main__":
                 else:
                     print("Invalid input. Enter 'y' or 'n'.")
                     continue
+                if retry:
+                    break
 
         # load the mask
         if not os.path.isfile(rig_config["mask_file"]):
