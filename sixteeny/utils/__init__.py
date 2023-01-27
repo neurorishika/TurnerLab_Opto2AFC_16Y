@@ -5,3 +5,4 @@ from .experimenter.base import Experimenter
 from .experimenter.openloop import CSVExperimenter
 from .tracker import ArenaTracker
 from .emailer import Emailer
+from .printer import Printer

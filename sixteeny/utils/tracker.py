@@ -1,10 +1,10 @@
 import numpy as np
 import json
 import time
-
+from sixteeny.utils.printer import Printer
 
 class ArenaTracker(object):
-    def __init__(self, arena_index, experimenter, controllers):
+    def __init__(self, arena_index, experimenter, controllers, printer=None):
         """
         A class to track the state of each of the 16 arenas.
 
@@ -63,6 +63,12 @@ class ArenaTracker(object):
         self.clockwise_arena_indices = [0, 2, 4, 6, 8, 10, 12, 14]
 
         self.start_new_trial_next_frame = False
+
+        if printer is not None:
+            if not isinstance(printer, Printer):
+                raise TypeError("printer must be an instance of the Printer class")
+        
+        self.printer = printer
 
     def relative_to_absolute_arm(self, relative_position, start_arm, arena_index):
         """
@@ -226,7 +232,7 @@ class ArenaTracker(object):
             with open(reward_stimulus, "r") as f:
                 reward_stimulus = json.load(f)
             # deliver reward
-            self.controllers["led"].accumulate_json(self.arena_index, reward_stimulus, debug_mode=True)
+            self.controllers["led"].accumulate_json(self.arena_index, reward_stimulus, debug_mode=False)
             self.reward_delivered[self.trial_count] = 1
             # reset reward state
             reward_state[self.odor_vector[self.current_arm]] = 0
@@ -242,7 +248,10 @@ class ArenaTracker(object):
 
         # check if all trials have been completed
         if self.trial_count == self.n_trials - 1:
-            print("All trials completed")
+            if self.printer is not None:
+                self.printer.print("All trials completed")
+            else:
+                print("All trials completed")
             self.trial_count += 1
             # flip all valves to air
             self.controllers["odor"].publish(self.arena_index, [0, 0, 0])
@@ -267,8 +276,8 @@ class ArenaTracker(object):
         # get next trial data
         history = {
             "trial_count": self.trial_count,
-            "chosen_arms": self.chosen_arms[: self.trial_count + 1],
-            "chosen_odor": self.chosen_odor[: self.trial_count + 1],
+            "chosen_arms": self.chosen_arms[: self.trial_count] if self.trial_count > 0 else [],
+            "chosen_odor": self.chosen_odor[: self.trial_count] if self.trial_count > 0 else [],
             "reward_delivered": self.reward_delivered[: self.trial_count + 1],
             "time_spent_in_reward_zone": self.time_spent_in_reward_zone[: self.trial_count + 1],
             "lengths_of_trials": self.lengths_of_trials[: self.trial_count + 1],

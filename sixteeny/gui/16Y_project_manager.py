@@ -140,6 +140,18 @@ class MainWindow(QtWidgets.QMainWindow):
         # get the name of the project
         name = QtWidgets.QInputDialog.getText(self, "Project Name", "Enter the name of the project")[0]
 
+        # make sure the name is not empty
+        if name == "":
+            # tell the user that the name cannot be empty
+            QtWidgets.QMessageBox.critical(self, "Project Name Cannot Be Empty", "The project name cannot be empty.")
+            return
+        
+        # make sure the directory is not empty
+        if directory == "":
+            # tell the user that the directory cannot be empty
+            QtWidgets.QMessageBox.critical(self, "Project Directory Cannot Be Empty", "The project directory cannot be empty.")
+            return
+
         # create the project directory
         project_directory = directory + "/" + name
         if not os.path.exists(project_directory):
@@ -394,7 +406,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.project_directory_textbox.text() == "":
             return
         # ask the user to select an experiment type between 2AFC and Finite World Dynamics
-        types = ["2AFC", "Finite World Dynamics", "Custom CSV"]
+        types = ["2AFC", "Deterministic Finite World Dynamics", "Custom CSV"]
         type_dialog = QtWidgets.QInputDialog()
         type_dialog.setInputMode(QtWidgets.QInputDialog.TextInput)
         type_dialog.setComboBoxItems(types)
@@ -418,12 +430,14 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.project_directory_textbox.text() + "/experiment_zoo",
                 ]
             )
-        elif type == "Finite World Dynamics":
-            # tell the user that the Finite World Dynamics experiment type is not yet implemented
-            QtWidgets.QMessageBox.information(
-                self,
-                "Finite World Dynamics Not Implemented",
-                "The Finite World Dynamics experiment type is not yet implemented.",
+        elif type == "Deterministic Finite World Dynamics":
+            # call the DFSE_experiment_designer script and wait for it to finish
+            call(
+                [
+                    "python",
+                    "./sixteeny/gui/16Y_DFSE_designer.py",
+                    self.project_directory_textbox.text() + "/experiment_zoo",
+                ]
             )
         elif type == "Custom CSV":
             # ask the user to enter the name of the custom CSV file
@@ -498,7 +512,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # get the selected experiment file
         selected_experiment_file = self.experiment_zoo_table.selectedItems()[0].text()
         # ask the user to select an experiment type between 2AFC and Finite World Dynamics
-        types = ["2AFC", "Finite World Dynamics", "Custom CSV"]
+        types = ["2AFC", "Deterministic Finite World Dynamics", "Custom CSV"]
         type_dialog = QtWidgets.QInputDialog()
         type_dialog.setInputMode(QtWidgets.QInputDialog.TextInput)
         type_dialog.setComboBoxItems(types)
@@ -528,12 +542,20 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.project_directory_textbox.text() + "/experiment_zoo" + "/" + selected_experiment_file,
                 ]
             )
-        elif type == "Finite World Dynamics":
-            # tell the user that the Finite World Dynamics experiment type is not yet implemented
-            QtWidgets.QMessageBox.information(
-                self,
-                "Finite World Dynamics Not Implemented",
-                "The Finite World Dynamics experiment type is not yet implemented.",
+        elif type == "Deterministic Finite World Dynamics":
+            # check if the experiment file is a YFSE file
+            if selected_experiment_file.split(".")[1] != "yfse":
+                QtWidgets.QMessageBox.information(
+                    self, "Invalid Experiment File", "The selected experiment file is not a YFSE file.",
+                )
+                return
+            # call the DFSE_designer script and wait for it to finish
+            call(
+                [
+                    "python",
+                    "./sixteeny/gui/16Y_DFSE_designer.py",
+                    self.project_directory_textbox.text() + "/experiment_zoo" + "/" + selected_experiment_file,
+                ]
             )
         elif type == "Custom CSV":
             # ensure the experiment file is a CSV file

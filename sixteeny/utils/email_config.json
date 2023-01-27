@@ -2,7 +2,8 @@
     "CLIENT_SECRET_FILE": "sixteeny/utils/client_secret.json",
     "SENDER_ACCOUNT": "turnerlab.yuser@gmail.com",
     "RECIPIENT_ACCOUNTS": [
-        "neurorishika@gmail.com",
-        "mohantas@janelia.hhmi.org"
+        "mohantas@janelia.hhmi.org",
+        "boonek@janelia.hhmi.org",
+        "turnerg@janelia.hhmi.org"
     ]
 }

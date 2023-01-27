@@ -28,7 +28,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # create a checkbox for Reciprocal Task
         self.reciprocal_task = QtWidgets.QCheckBox("Reciprocal Task?")
-        self.reciprocal_task.setChecked(True)
+        self.reciprocal_task.setChecked(False)
         self.main_layout.addWidget(self.reciprocal_task, 0, 2, 1, 2)
 
         default_database = "C:\\16YArena\\TurnerLab_Opto2AFC_16Y\\sixteeny\\utils\\experimenter\\tasks.pkl"
@@ -77,53 +77,62 @@ class MainWindow(QtWidgets.QMainWindow):
         self.state_transitions_textbox.setReadOnly(True)
         self.main_layout.addWidget(self.state_transitions_label, 4, 0, 1,1)
         self.main_layout.addWidget(self.state_transitions_textbox, 4, 1, 1, 3)
+
+                # create a text label, text box to enter starting state
+        self.starting_state_label = QtWidgets.QLabel("Starting State (-1 for random)")
+        self.starting_state_textbox = QtWidgets.QLineEdit()
+        self.starting_state_textbox.setText("-1")
+        self.starting_state_textbox.setValidator(QtGui.QIntValidator())
+        self.main_layout.addWidget(self.starting_state_label, 5, 0, 1, 1)
+        self.main_layout.addWidget(self.starting_state_textbox, 5, 1, 1, 3)
+
         
 
         # create a text label, text box, and button to load stimulus for odor 1
         self.rewarded_label = QtWidgets.QLabel("Rewarded Stimulus")
-        self.main_layout.addWidget(self.rewarded_label, 5, 0, 1, 1)
+        self.main_layout.addWidget(self.rewarded_label, 6, 0, 1, 1)
         self.rewarded_textbox = QtWidgets.QLineEdit()
         self.rewarded_button = QtWidgets.QPushButton("Load")
         self.rewarded_button.clicked.connect(self.load_rewarded)
         self.rewarded_textbox.setReadOnly(True)
-        self.main_layout.addWidget(self.rewarded_textbox, 5, 1, 1, 2)
-        self.main_layout.addWidget(self.rewarded_button, 5, 3, 1, 1)
+        self.main_layout.addWidget(self.rewarded_textbox, 6, 1, 1, 2)
+        self.main_layout.addWidget(self.rewarded_button, 6, 3, 1, 1)
 
         # create a text label, text box, and button to load stimulus for odor 2
         self.unrewarded_label = QtWidgets.QLabel("Unrewarded Stimulus")
-        self.main_layout.addWidget(self.unrewarded_label, 6, 0, 1, 1)
-        self.unrewarded_textbox = QtWidgets.QLineEdit()
+        self.main_layout.addWidget(self.unrewarded_label, 7, 0, 1, 1)
+        self.unrewarded_textbox = QtWidgets.QLineEdit("empty.stim")
         self.unrewarded_button = QtWidgets.QPushButton("Load")
         self.unrewarded_button.clicked.connect(self.load_unrewarded)
         self.unrewarded_textbox.setReadOnly(True)
-        self.main_layout.addWidget(self.unrewarded_textbox, 6, 1, 1, 2)
-        self.main_layout.addWidget(self.unrewarded_button, 6, 3, 1, 1)
+        self.main_layout.addWidget(self.unrewarded_textbox, 7, 1, 1, 2)
+        self.main_layout.addWidget(self.unrewarded_button, 7, 3, 1, 1)
 
         # create a text label, text box to enter number of N trials
         self.naive_trials_label = QtWidgets.QLabel("No. of Naive Trials")
         self.naive_trials_textbox = QtWidgets.QLineEdit()
         self.naive_trials_textbox.setText("20")
         self.naive_trials_textbox.setValidator(QtGui.QIntValidator())
-        self.main_layout.addWidget(self.naive_trials_label, 7, 0, 1, 1)
-        self.main_layout.addWidget(self.naive_trials_textbox, 7, 1, 1, 1)
+        self.main_layout.addWidget(self.naive_trials_label, 8, 0, 1, 1)
+        self.main_layout.addWidget(self.naive_trials_textbox, 8, 1, 1, 1)
 
         # create a text label, text box to enter number of experiment trials
         self.num_trials_label = QtWidgets.QLabel("No. of Experiment Trials")
         self.num_trials_textbox = QtWidgets.QLineEdit()
         self.num_trials_textbox.setText("180")
         self.num_trials_textbox.setValidator(QtGui.QIntValidator())
-        self.main_layout.addWidget(self.num_trials_label, 7, 2, 1, 1)
-        self.main_layout.addWidget(self.num_trials_textbox, 7, 3, 1, 1)
+        self.main_layout.addWidget(self.num_trials_label, 8, 2, 1, 1)
+        self.main_layout.addWidget(self.num_trials_textbox, 8, 3, 1, 1)
 
         # create a button to save the experiment
         self.save_button = QtWidgets.QPushButton("Save")
         self.save_button.clicked.connect(self.save)
-        self.main_layout.addWidget(self.save_button, 8, 0, 1, 2)
+        self.main_layout.addWidget(self.save_button, 9, 0, 1, 2)
 
         # create a button to load the experiment
         self.load_button = QtWidgets.QPushButton("Load")
         self.load_button.clicked.connect(self.load)
-        self.main_layout.addWidget(self.load_button, 8, 2, 1, 2)
+        self.main_layout.addWidget(self.load_button, 9, 2, 1, 2)
 
         # create the central widget
         self.central_widget = QtWidgets.QWidget()
@@ -143,8 +152,15 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Load the stimulus for odor 1.
         """
+        folder = self.start_folder
+        # move back one folder
+        if folder[-1] == "/":
+            folder = folder[:-1]
+        folder = folder[:folder.rfind("/")]
+        # go to the stimulus_zoo folder
+        folder = folder + "/stimulus_zoo/"
         # open a file dialog
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", self.start_folder, "*.stim")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", folder, "*.stim")
         # if a file was selected
         if filename:
             # set the textbox to the file name (without the path)
@@ -154,8 +170,15 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Load the stimulus for odor 2.
         """
+        folder = self.start_folder
+        # move back one folder
+        if folder[-1] == "/":
+            folder = folder[:-1]
+        folder = folder[:folder.rfind("/")]
+        # go to the stimulus_zoo folder
+        folder = folder + "/stimulus_zoo/"
         # open a file dialog
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", self.start_folder, "*.stim")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", folder, "*.stim")
         # if a file was selected
         if filename:
             # set the textbox to the file name (without the path)
@@ -240,6 +263,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 "task_database": self.task_database_textbox.text(),
                 "reciprocal_task": self.reciprocal_task.isChecked(),
                 "lr_randomization": self.randomize_lr.isChecked(),
+                "starting_state": self.starting_state_textbox.text(),
             }
             # save the experiment dictionary to a json file
             with open(filename, "w") as f:
@@ -315,10 +339,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.rewarded_textbox.setText(experiment["rewarded_stimulus"])
             self.unrewarded_textbox.setText(experiment["unrewarded_stimulus"])
             self.task_id = experiment["task_id"]
-            self.task_id_textbox.setText(experiment["task_id"])
+            self.task_textbox.setText(str(experiment["task_id"]))
             self.task_database_textbox.setText(experiment["task_database"])
             self.reciprocal_task.setChecked(experiment["reciprocal_task"])
             self.randomize_lr.setChecked(experiment["lr_randomization"])
+            self.starting_state_textbox.setText(experiment["starting_state"])
 
             # reload the database
             self.reload_task_database()

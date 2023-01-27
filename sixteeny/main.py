@@ -6,9 +6,10 @@ import cupy as cp
 import matplotlib.pyplot as plt
 
 from sixteeny.utils.tracker import ArenaTracker
-from sixteeny.utils.experimenter import CSVExperimenter, FiniteStateExperimenter
+from sixteeny.utils.experimenter import CSVExperimenter, DeterministicFiniteStateExperimenter, ProbabilisticFiniteStateExperimenter
 from sixteeny.utils.camera import record_background, change_in_image, binarize, combine_binarized_images
 from sixteeny.utils.emailer import Emailer
+from sixteeny.utils.printer import Printer
 
 from sixteeny.controller.camera import SpinnakerCamera
 from sixteeny.controller.odor import OdorValveController
@@ -120,20 +121,28 @@ if __name__ == "__main__":
 
     print()
 
+    # create a log file and add it to a Printer
+    printer = Printer(project_directory + experiment_name + "/log.txt")
+    printer.print("Project directory: " + project_directory, dont_print_to_console=True)
+    printer.print("Experiment name: " + experiment_name, dont_print_to_console=True)
+    printer.print("", dont_print_to_console=True)
+    printer.print("Project directory found.", dont_print_to_console=True)
+    printer.print("Experiment directory found.", dont_print_to_console=True)
+
     # load the rig configuration file
     if not os.path.isfile(project_directory + experiment_name + "/config.yarena"):
-        print("Experiment config file does not exist.")
+        printer.print("Experiment config file does not exist.")
         sys.exit(1)
     else:
-        print("Experiment config file found.")
+        printer.print("Experiment config file found.")
 
     with open(project_directory + experiment_name + "/config.yarena", "r") as f:
         rig_config = json.load(f)
-    print("Rig config loaded.")
+    printer.print("Rig config loaded.")
 
     # find all *.yexperiment files in the folder
     experiment_files = [f for f in os.listdir(project_directory + experiment_name) if f.endswith(".yexperiment")]
-    print("Found " + str(len(experiment_files)) + " experiment files.")
+    printer.print("Found " + str(len(experiment_files)) + " experiment files.")
 
     n_flies = len(experiment_files)
     fly_arenas = [int(experiment.split(".")[0].split("_")[1]) for experiment in experiment_files]
@@ -145,8 +154,8 @@ if __name__ == "__main__":
         shutil.rmtree(video_folder)
     # create the folder
     os.mkdir(video_folder)
-    print("Video folder created.")
-    print()
+    printer.print("Video folder created.")
+    printer.print("")
 
     # ask the user if they have turned on the air supply
     while True:
@@ -154,9 +163,9 @@ if __name__ == "__main__":
         if air_supply == "y" or air_supply == "Y":
             break
         elif air_supply == "n" or air_supply == "N":
-            print("Please turn on the air supply and try again.")
+            printer.print("Please turn on the air supply and try again.")
         else:
-            print("Please enter either 'y' or 'n'.")
+            printer.print("Please enter either 'y' or 'n'.")
 
     # import the skimage module
     if rig_config["enable_gpu_processing"]:
@@ -170,7 +179,7 @@ if __name__ == "__main__":
     # Initialize controllers
     controllers = {}
 
-    print("Initializing controllers.")
+    printer.print("Initializing controllers.")
 
     with SpinnakerCamera(
         index=rig_config["camera_index"],
@@ -188,7 +197,7 @@ if __name__ == "__main__":
         fast_mode=rig_config["fast_mode"],
     ) as camera, OdorValveController(minimum_delay=rig_config["minimum_message_delay"] / 1000) as odor, LEDController(
         ports=rig_config["com_ports"], baudrate=rig_config["baud_rate"], arena_panel_ids=rig_config["quadrant_ids"],
-        irgb_scaling_factors=rig_config["led_scaling_factors"]
+        irgb_scaling_factors=rig_config["led_scaling_factors"],printer=printer
     ) as led, MFCController(
         com_port=rig_config["mfc_com_port"],
         device_ids=rig_config[
@@ -201,19 +210,19 @@ if __name__ == "__main__":
         controllers["led"] = led
         controllers["mfc"] = mfc
 
-        print("All controllers initialized.\n")
+        printer.print("All controllers initialized.\n")
 
         # turn on MFCs
         for i in range(16):
             controllers["mfc"].set_flow_rate(i, rig_config["mfc_flow_rate"])
-        print("MFCs turned on.\n")
+        printer.print("MFCs turned on.\n")
 
         # Start IR backlight
         led.turn_on_backlight(rig_config["ir_intensity"])
-        print("IR backlight turned on.")
+        printer.print("IR backlight turned on.")
 
         # Check MFC values
-        print("Checking MFC values...")
+        printer.print("Checking MFC values...")
 
         keep_trying = True
         while keep_trying:
@@ -227,7 +236,7 @@ if __name__ == "__main__":
                             mfc_observations[i, j] = mfc.get_flow_rate(j)
                         observed = True
                     except:
-                        print("MFC communication error for device " + str(j) + ".")
+                        printer.print("MFC communication error for device " + str(j) + ".")
                 time.sleep(1)
 
             error_margin = 0.1
@@ -240,7 +249,7 @@ if __name__ == "__main__":
                 if average_flow_rates[i] < rig_config["mfc_flow_rate"] * (1 - error_margin) or average_flow_rates[
                     i
                 ] > rig_config["mfc_flow_rate"] * (1 + error_margin):
-                    print(
+                    printer.print(
                         "Flow rate for MFC "
                         + str(n)
                         + " is out of range. Expected "
@@ -252,38 +261,38 @@ if __name__ == "__main__":
                     keep_trying = True
                     retry = input("Retry? (y/n) ")
                     if retry == "n":
-                        print("Exiting.")
+                        printer.print("Exiting.")
                         sys.exit(1)
                     else:
                         break
                 else:
                     keep_trying = False
 
-        print(
+        printer.print(
             "Flow rates are:\n {} mL/min.".format(" ml/min\n ".join(["{:0.2f}".format(x) for x in average_flow_rates]))
         )
-        print(
+        printer.print(
             "MFC values are within {}% error margin based on {} observations.".format(
                 error_margin * 100, n_observations
             )
         )
 
         # flip all odor valves to air
-        print("Flipping all odor valves to air...")
+        printer.print("Flipping all odor valves to air...")
         for i in range(16):
             odor.publish(i, [0, 0, 0])
-        print("All odor valves flipped to air.")
+        printer.print("All odor valves flipped to air.")
 
         retry = True
         while retry:
             # record the background image
-            print("Recording background image for {} seconds...".format(rig_config["background_calculation_time"]))
+            printer.print("Recording background image for {} seconds...".format(rig_config["background_calculation_time"]))
             background, eff_fps, eff_duration, timestamp = record_background(
                 time_to_record=rig_config["background_calculation_time"],
                 camera=camera,
                 gpu_enabled=rig_config["enable_gpu_processing"],
             )
-            print("Background image recorded at {} fps for {} seconds".format(eff_fps, eff_duration))
+            printer.print("Background image recorded at {} fps for {} seconds".format(eff_fps, eff_duration))
 
             # show the background image
             if rig_config["enable_gpu_processing"]:
@@ -298,35 +307,35 @@ if __name__ == "__main__":
             while True:
                 background_confirmed = input("Is this the background image? (y/n) ")
                 if background_confirmed == "y" or background_confirmed == "Y":
-                    print("Background image verified.")
+                    printer.print("Background image verified.")
                     retry = False
                     break
                 elif background_confirmed == "n" or background_confirmed == "N":
-                    print("Background image capture failed. Retry?")
+                    printer.print("Background image capture failed. Retry?")
                     while True:
                         entry = input("Retry? (y/n) ")
                         if entry == "y" or entry == "Y":
                             retry = True
                             break
                         elif entry == "n" or entry == "N":
-                            print("Exiting.")
+                            printer.print("Exiting.")
                             sys.exit(1)
                         else:
-                            print("Invalid input. Enter 'y' or 'n'.")
+                            printer.print("Invalid input. Enter 'y' or 'n'.")
                 else:
-                    print("Invalid input. Enter 'y' or 'n'.")
+                    printer.print("Invalid input. Enter 'y' or 'n'.")
                     continue
                 if retry:
                     break
 
         # load the mask
         if not os.path.isfile(rig_config["mask_file"]):
-            print("Mask file does not exist.")
+            printer.print("Mask file does not exist.")
             # ask if the user wants to create a new mask
             create_new_mask = input("Create new mask? (y/n) ")
             if create_new_mask == "y":
                 # run mask_designer.py with the background image as the argument and wait for it to finish
-                print(
+                printer.print(
                     "Running mask designer...\nPlease make sure to save the mask file as mask.npz in the experiment directory."
                 )
                 subprocess.call(
@@ -336,14 +345,14 @@ if __name__ == "__main__":
                         project_directory + experiment_name + "/background.png",
                     ]
                 )
-                print("Mask designer complete.")
+                printer.print("Mask designer complete.")
                 # load the mask
                 temp = np.load(project_directory + experiment_name + "/mask.npz", allow_pickle=True)
                 arm_mask = temp["arm_masks"]
                 reward_mask = temp["arm_reward_masks"]
-                print("Mask loaded.")
+                printer.print("Mask loaded.")
             else:
-                print("Exiting.")
+                printer.print("Exiting.")
                 sys.exit(1)
         else:
             # copy the mask file to the experiment folder
@@ -353,7 +362,7 @@ if __name__ == "__main__":
             arm_mask = temp["arm_masks"]
             reward_mask = temp["arm_reward_masks"]
             combined_mask = temp["combined_mask"]
-            print("Mask loaded.")
+            printer.print("Mask loaded.")
 
         # overlay the mask on the background image
         if rig_config["enable_gpu_processing"]:
@@ -372,13 +381,13 @@ if __name__ == "__main__":
         while True:
             mask_confirmed = input("Is this the mask? (y/n) ")
             if mask_confirmed == "y" or mask_confirmed == "Y":
-                print("Mask verified.")
+                printer.print("Mask verified.")
                 break
             elif mask_confirmed == "n" or mask_confirmed == "N":
-                print("Mask capture failed. Exiting.")
+                printer.print("Mask capture failed. Exiting.")
                 sys.exit(1)
             else:
-                print("Invalid input. Enter 'y' or 'n'.")
+                printer.print("Invalid input. Enter 'y' or 'n'.")
                 continue
 
         # convert the combined mask to a correct format
@@ -394,7 +403,7 @@ if __name__ == "__main__":
         background = max_value - background
 
         # create experimenters
-        print("Creating experimenters...")
+        printer.print("Creating experimenters...")
         experimenters = {}
         for i, n in zip(experiment_files, fly_arenas):
             # load experiment file as json
@@ -406,13 +415,13 @@ if __name__ == "__main__":
                     project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
                 )
             elif experiment_file["fly_experiment"].endswith(".yfse"):
-                experimenters[n] = FiniteStateExperimenter(
+                experimenters[n] = DeterministicFiniteStateExperimenter(
                     project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
                 )
             else:
-                print("Invalid experiment file. Exiting.")
+                printer.print("Invalid experiment file. Exiting.")
                 sys.exit(1)
-        print("Experimenters created.")
+        printer.print("Experimenters created.")
 
         # start arena trackers
         trackers = {}
@@ -425,18 +434,18 @@ if __name__ == "__main__":
             debug_mode = input("Start in debug mode? (y/n) ")
             if debug_mode == "y" or debug_mode == "Y":
                 debug_mode = True
-                print("Debug mode enabled.")
+                printer.print("Debug mode enabled.")
                 break
             elif debug_mode == "n" or debug_mode == "N":
                 debug_mode = False
-                print("Debug mode disabled.")
+                printer.print("Debug mode disabled.")
                 break
             else:
-                print("Invalid input. Enter 'y' or 'n'.")
+                printer.print("Invalid input. Enter 'y' or 'n'.")
                 continue
 
         # start experiment loop
-        print("Starting experiment...")
+        printer.print("Starting experiment...")
         experiment_ongoing = True
 
         # if live stream is enabled, create a new save queue and thread
@@ -458,9 +467,9 @@ if __name__ == "__main__":
         # if email notification is enabled, create a new email queue and thread
         if rig_config["email_notifications"]:
             # create emailer
-            print("Creating emailer...")
-            emailer = Emailer(recipients=rig_config["email_addresses"])
-            print("Emailer created.")
+            printer.print("Creating emailer...")
+            emailer = Emailer(recipients=rig_config["email_addresses"], printer=printer)
+            printer.print("Emailer created.")
 
             # create an email queue
             email_queue = queue.Queue()
@@ -561,7 +570,7 @@ if __name__ == "__main__":
                 object_summary = object_summary[~np.isnan(object_summary).any(axis=1)]
 
                 if debug_mode and started:
-                    print("T: " + str(current_time), end="\t")
+                    printer.print("T: " + str(current_time), end="\t")
 
                 # loop over active arenas and find the largest object in each arena
                 detected = []
@@ -571,7 +580,7 @@ if __name__ == "__main__":
                     # see if any objects are in the arena
                     if not np.any(object_summary[:, 2] == i):
                         if debug_mode and started:
-                            print("NA", end="\t")
+                            printer.print("NA", end="\t")
                         continue
                     else:
                         detected.append(i)
@@ -595,7 +604,7 @@ if __name__ == "__main__":
                     if started:
 
                         if debug_mode:
-                            print(
+                            printer.print(
                                 str(trackers[i].trial_count + 1)
                                 + ","
                                 + str(arm)
@@ -611,7 +620,7 @@ if __name__ == "__main__":
                             rewarded.append(i)
 
                 if debug_mode and started:
-                    print("")
+                    printer.print("")
 
                 # if live stream is enabled and any fly was detected, save the frame
                 if rig_config["live_stream"] and len(detected) > 0 and frame_number % 10 == 0 and started:
@@ -634,9 +643,9 @@ if __name__ == "__main__":
                 # process wait period
                 if not started and time.time() - tracking_start_time > wait_period:
                     started = True
-                    print("Wait Period Over. Started Tracking.")
+                    printer.print("Wait Period Over. Started Tracking.")
                 elif not started:
-                    print(
+                    printer.print(
                         "\rWait Period is active for allocating space in memory. Please wait for {:0.1f} seconds.".format(
                             wait_period - (time.time() - tracking_start_time)
                         )
@@ -675,7 +684,7 @@ if __name__ == "__main__":
 
                 if len(incomplete_arenas) == 0 or time.time() - tracking_start_time > maximum_time + wait_period:
                     # all arenas are complete
-                    print("All arenas complete.")
+                    printer.print("All arenas complete.")
                     # send email
                     if rig_config["email_notifications"]:
                         email_queue.put(
@@ -687,7 +696,7 @@ if __name__ == "__main__":
                     experiment_ongoing = False
 
             except KeyboardInterrupt:
-                print("Experiment interrupted.")
+                printer.print("Experiment interrupted.")
                 # send email
                 if rig_config["email_notifications"]:
                     email_queue.put(
@@ -699,7 +708,7 @@ if __name__ == "__main__":
                 experiment_ongoing = False
 
             except Exception as e:
-                print("Error: " + str(e))
+                printer.print("Error: " + str(e))
                 # send email
                 if rig_config["email_notifications"]:
                     email_queue.put(
@@ -726,16 +735,16 @@ if __name__ == "__main__":
             trackers[i].save_data(project_directory + experiment_name + "/data/")
 
         # flip all valves to air
-        print("Flipping all odor valves to air...")
+        printer.print("Flipping all odor valves to air...")
         for i in range(16):
             odor.publish(i, [0, 0, 0])
-        print("All odor valves flipped to air.")
+        printer.print("All odor valves flipped to air.")
 
         # wait for save queue to empty
         if rig_config["live_stream"]:
-            print("Waiting for save queue to empty...")
+            printer.print("Waiting for save queue to empty...")
             save_queue.join()
-            print("Saved all frames.")
+            printer.print("Saved all frames.")
 
     # add a parallel thread to send emails every 5 minutes
     if rig_config["email_notifications"]:
@@ -743,25 +752,28 @@ if __name__ == "__main__":
         reminder_thread.start()
 
     # ask the user if they turned off the air supply
-    print("Please turn off the air supply and MFCs.")
+    printer.print("Please turn off the air supply and MFCs.")
     while True:
         air_supply = input("Did you turn off the air supply and MFCs? (y/n) ")
         if air_supply == "y" or air_supply == "Y":
             break
         elif air_supply == "n" or air_supply == "N":
-            print("Please turn off the air supply and MFCs and try again.")
+            printer.print("Please turn off the air supply and MFCs and try again.")
         else:
-            print("Please enter either 'y' or 'n'.")
+            printer.print("Please enter either 'y' or 'n'.")
 
     # wait for email queue to empty
     if rig_config["email_notifications"]:
-        print("Waiting for email queue to empty...")
+        printer.print("Waiting for email queue to empty...")
         email_queue.join()
         # reminder_thread.join()
-        print("Sent all emails.")
+        printer.print("Sent all emails.")
 
     # final message
-    print("Experiment complete. Thank you for using 16Y-Maze Rig for your experiment.")
+    printer.print("Experiment complete. Thank you for using 16Y-Maze Rig for your experiment.")
+
+    # close the printer
+    printer.close()
 
     # end python script
     sys.exit()

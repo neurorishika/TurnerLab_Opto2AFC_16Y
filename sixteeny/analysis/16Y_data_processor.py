@@ -89,13 +89,32 @@ def process_file(file_path, output_path, estimated_transforms, origin):
     """
     Given a ydata file generate processed variables and save them to a new file
     """
+    # get config file by moving up one directory to the parent and then look for config.yarena
+    parent_dir = os.path.dirname(os.path.dirname(file_path))
+    config_file = os.path.join(parent_dir, "config.yarena")
+    try:
+        with open(config_file, "r") as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        print("Could not find config file")
+        return
+    
+    # get index of the arena from the filename
+    index = int(file_path.split(".")[0].split("_")[-1])
+    
+    # get experiment_file by moving up one directory to the parent and then look for fly_id.yexperiment
+    experiment_file = os.path.join(parent_dir, f"fly_{index}.yexperiment")
+    try:
+        with open(experiment_file, "r") as f:
+            experiment = json.load(f)
+    except FileNotFoundError:
+        print("Could not find experiment file")
+        return
+    
     try:
         # get the data as a json file
         with open(file_path, "r") as f:
             data = json.load(f)
-
-        # get index of the arena from the filename
-        index = int(file_path.split(".")[0].split("_")[-1])
 
         # get fly position and switch x and y (because of the transpose)
         fly_position = np.array(data["fly_positions"])
@@ -295,6 +314,12 @@ def process_file(file_path, output_path, estimated_transforms, origin):
         processed_data["rewarded_frames"] = rewarded_frames.tolist()
         processed_data["trial_oriented_position"] = trial_oriented_position.tolist()
         processed_data["odor_oriented_position"] = odor_oriented_position.tolist()
+        processed_data["odor_1"] = config["odor_1"]
+        processed_data["odor_2"] = config["odor_2"]
+
+        # add all keys from experiment to processed data
+        for key in experiment.keys():
+            processed_data[key] = experiment[key]
 
         # save the processed data
         with open(output_path, "w") as f:

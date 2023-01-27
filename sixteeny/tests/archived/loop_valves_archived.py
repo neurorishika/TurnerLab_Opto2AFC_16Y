@@ -11,7 +11,7 @@ class ArenaOdorsPublisher(Node):
     def __init__(self):
         super().__init__('arena_odors_publisher')
         self.publisher_ = self.create_publisher(ArenaOdors, '/arena_odors', 10)
-        timer_period = 0.5  # seconds
+        timer_period = 0.25  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self._arena = 0
         self._iteration = 0

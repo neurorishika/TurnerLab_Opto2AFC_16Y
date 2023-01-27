@@ -1,27 +1,13 @@
 import serial
-import random
+import time
+from sixteeny.utils.printer import Printer
+import numpy as np
 
 def hex_to_rgb_intensity(hex_value):
     hex_value = hex_value.decode().lstrip("#")
     rgb = tuple(int(hex_value[i : i + 2], 16) for i in (0, 2, 4))
     rgb_intensity = tuple(int(i / 255 * 100) for i in rgb)
     return rgb_intensity
-
-
-def get_stimulus_duration(pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat):
-    """
-    Get the length of the LED stimulus in seconds
-
-    Variables:
-        pulse_width: width of the pulse pattern (int)
-        pulse_period: period of the pulse pattern (int)
-        pulse_count: number of pulses in the pulse pattern (int)
-        pulse_deadtime: deadtime of the pulse pattern (int)
-        pulse_delay: delay of the pulse pattern (int)
-        pulse_repeat: number of times to repeat the pulse pattern (int)
-    """
-    return pulse_delay * 1000 + pulse_repeat * (pulse_deadtime + pulse_count * pulse_period)
-
 
 class LEDController(object):
     """
@@ -76,7 +62,7 @@ class LEDController(object):
             [1.000,0.976,0.992,0.991,0.702,0.724,0.708,0.706,0.714,0.702,0.715,0.690,0.745,0.752,0.781,0.774],
             [1.000,0.976,0.992,0.991,0.702,0.724,0.708,0.706,0.714,0.702,0.715,0.690,0.745,0.752,0.781,0.774],
             [1.000,0.976,0.992,0.991,0.702,0.724,0.708,0.706,0.714,0.702,0.715,0.690,0.745,0.752,0.781,0.774]
-        ]
+        ], printer=None
     ):
         """
         Initialize the LED controller class
@@ -117,6 +103,15 @@ class LEDController(object):
                 [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
             ]
         self.irgb_scaling_factors = irgb_scaling_factors
+        self.last_run = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.runtime = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        
+        if printer is not None:
+            if not isinstance(printer, Printer):
+                raise TypeError("printer must be a Printer object")
+        self.printer = printer
+
+        self.first_pulse = [True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True]
 
     def setup_connections(self):
         """
@@ -141,7 +136,10 @@ class LEDController(object):
                 conn.write(b"ON 0\r")
                 self.conns.append(conn)
             except:
-                print("Could not connect to " + port)
+                if self.printer is not None:
+                    self.printer.print("Could not connect to " + port)
+                else:
+                    print("Could not connect to " + port)
 
     def close_connections(self):
         """
@@ -160,7 +158,10 @@ class LEDController(object):
         """
         self.setup_connections()
         self.initialized = True
-        print("LED controllers initialized")
+        if self.printer is not None:
+            self.printer.print("LED controllers initialized")
+        else:
+            print("LED controllers initialized")
 
     def __enter__(self):
         """
@@ -196,7 +197,10 @@ class LEDController(object):
             quadrant = self.arena_specs[arena]["quadrant"]
             conn.write(b"IR " + str(int(ir_intensity*self.irgb_scaling_factors[0][arena])).encode() + b" " + quadrant + b"\r")
         except:
-            print("Could not initialize IR for arena " + str(arena))
+            if self.printer is not None:
+                self.printer.print("Could not initialize IR for arena " + str(arena))
+            else:
+                print("Could not initialize IR for arena " + str(arena))
         
     def turn_on_backlight(self, backlight_intensity):
         """
@@ -337,6 +341,21 @@ class LEDController(object):
                     pass
                 else:
                     raise Exception("Already initialized pulse for " + colors[i] + ", cannot multiplex.")
+    
+    def get_pulse_runtime(self, pulse_state):
+        """
+        Returns the runtime of the pulse pattern in seconds
+
+        Variables:
+            pulse_state: pulse state to get the runtime for (list of 6 ints)
+        """
+        pulse_width = pulse_state[0]
+        pulse_period = pulse_state[1]
+        pulse_count = pulse_state[2]
+        pulse_deadtime = pulse_state[3]
+        pulse_delay = pulse_state[4]
+        pulse_repeat = pulse_state[5]
+        return pulse_delay*1000 + (pulse_period * pulse_count + pulse_deadtime) * pulse_repeat
 
     def accumulate_led_stimulus_intensity(self, arena, color, intensity):
         """
@@ -355,7 +374,7 @@ class LEDController(object):
             or (len(color) == 7 and color[0] == 35)
             or (type(color) == tuple and len(color) == 3)
         ), "Invalid color"
-        # print("Accumulating on arena:" + str(arena))
+
         conn = self.arena_specs[arena]["conn"]
         quadrant_count = self.arena_specs[arena]["quadrant_count"]
         # accumulate color to color state
@@ -460,14 +479,14 @@ class LEDController(object):
 
     def run_accumulated_led_stimulus(self):
         """
-        Runs the accumulated LED stimulus
+        Runs the accumulated LED stimulus (hard coded, single pattern)
         """
         for conn in self.conns:
             conn.write(b"RED 0\r")
-            conn.write(b"GRN 0\r")
-            conn.write(b"BLU 0\r")
 
         order = range(16)
+
+        updated_conns = [False, False, False, False]
 
         for i in order:
             try:
@@ -476,109 +495,62 @@ class LEDController(object):
                 conn = self.conns[conn_id]
                 quadrant = self.arena_specs[i]["quadrant"]
                 quadrant_count = self.arena_specs[i]["quadrant_count"]
-                conn.write(
-                    b"PULSE "
-                    + str(self.pulse_state[conn_id][quadrant_count][0][0]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][0][1]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][0][2]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][0][3]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][0][4]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][0][5]).encode()
-                    + b" R "
-                    + quadrant
-                    + b"\r"
-                )
-                conn.write(
-                    b"PULSE "
-                    + str(self.pulse_state[conn_id][quadrant_count][1][0]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][1][1]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][1][2]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][1][3]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][1][4]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][1][5]).encode()
-                    + b" G "
-                    + quadrant
-                    + b"\r"
-                )
-                conn.write(
-                    b"PULSE "
-                    + str(self.pulse_state[conn_id][quadrant_count][2][0]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][2][1]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][2][2]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][2][3]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][2][4]).encode()
-                    + b" "
-                    + str(self.pulse_state[conn_id][quadrant_count][2][5]).encode()
-                    + b" B "
-                    + quadrant
-                    + b"\r"
-                )
+                
+                last_runs = [] ##
+                runtimes = [] ##
+                for x in range(4): ##
+                    last_runs.append(self.last_run[4*conn_id + x]) ##
+                    runtimes.append(self.runtime[4*conn_id + x]) ##
+                last_run = max(last_runs) ##
+                runtime = max(runtimes) ##
+                current_time = time.time() ##
+                
+                err_str = "Error in Arena " + str(i) + " at " + str(current_time) + ": " ##
+                if current_time-last_run < runtime and not updated_conns[conn_id]: ##
+                    err_str += "LEDs are still running with runtime {} secs. Cut short with {} milliseconds left. ".format(runtime, (runtime-(current_time-last_run))*1000) ##
+                    if self.printer is not None: ##
+                        self.printer.print(err_str) ##
+                    else:
+                        print(err_str) ##
+                
+                if self.pulse_state[conn_id][quadrant_count][0][0] != 0 and self.first_pulse[i]:
+                    self.first_pulse[i] = False
+                    conn.write(
+                        b"PULSE "
+                        + str(self.pulse_state[conn_id][quadrant_count][0][0]).encode()
+                        + b" "
+                        + str(self.pulse_state[conn_id][quadrant_count][0][1]).encode()
+                        + b" "
+                        + str(self.pulse_state[conn_id][quadrant_count][0][2]).encode()
+                        + b" "
+                        + str(self.pulse_state[conn_id][quadrant_count][0][3]).encode()
+                        + b" "
+                        + str(self.pulse_state[conn_id][quadrant_count][0][4]).encode()
+                        + b" "
+                        + str(self.pulse_state[conn_id][quadrant_count][0][5]).encode()
+                        + b" R "
+                        + quadrant
+                        + b"\r"
+                    )
                 
                 conn.write(b"RED " + str(int(self.color_state[conn_id][quadrant_count][0]*self.irgb_scaling_factors[1][i])).encode() + b" 0 " + quadrant + b"\r")
-                conn.write(b"GRN " + str(int(self.color_state[conn_id][quadrant_count][1]*self.irgb_scaling_factors[2][i])).encode() + b" 0 " + quadrant + b"\r")
-                conn.write(b"BLU " + str(int(self.color_state[conn_id][quadrant_count][2]*self.irgb_scaling_factors[3][i])).encode() + b" 0 " + quadrant + b"\r")
-            except:
-                print("Could not run LED stimulus for arena " + str(i))
-                
-            # if (
-            #     self.color_state[conn_id][quadrant_count][0] > 0
-            #     or self.color_state[conn_id][quadrant_count][1] > 0
-            #     or self.color_state[conn_id][quadrant_count][2] > 0
-            # ):
-            #     print("Flash on arena " + str(i) + " quadrant " + quadrant.decode() + " conn " + str(conn_id))
-            #     if self.color_state[conn_id][quadrant_count][0] > 0:
-            #         print(
-            #             'R:{} {} {} {} {} {}'.format(
-            #                 str(self.pulse_state[conn_id][quadrant_count][0][0]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][0][1]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][0][2]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][0][3]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][0][4]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][0][5])
-            #             )
-            #         )
-            #     if self.color_state[conn_id][quadrant_count][1] > 0:
-            #         print(
-            #             'G:{} {} {} {} {} {}'.format(
-            #                 str(self.pulse_state[conn_id][quadrant_count][1][0]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][1][1]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][1][2]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][1][3]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][1][4]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][1][5])
-            #             )
-            #         )
-            #     if self.color_state[conn_id][quadrant_count][2] > 0:
-            #         print(
-            #             'B:{} {} {} {} {} {}'.format(
-            #                 str(self.pulse_state[conn_id][quadrant_count][2][0]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][2][1]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][2][2]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][2][3]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][2][4]),
-            #                 str(self.pulse_state[conn_id][quadrant_count][2][5])
-            #             )
-            #         )
 
+                if self.color_state[conn_id][quadrant_count][0] > 0 or self.color_state[conn_id][quadrant_count][1] > 0 or self.color_state[conn_id][quadrant_count][2] > 0:
+                    self.last_run[i] = time.time() 
+                    self.runtime[i] = max([self.get_pulse_runtime(self.pulse_state[conn_id][quadrant_count][0]), self.get_pulse_runtime(self.pulse_state[conn_id][quadrant_count][1]), self.get_pulse_runtime(self.pulse_state[conn_id][quadrant_count][2])]) / 1000 
+                    updated_conns[conn_id] = True
+            except:
+                if self.printer is not None:
+                    self.printer.print("Could not run LED stimulus for arena " + str(i))
+                else:
+                    print("Could not run LED stimulus for arena " + str(i))
 
         for conn in self.conns:
             conn.write(b"RUN\r")
 
         self.reset_accumulated_led_stimulus()
+
+        
 
     def set_led_pulse_pattern(
         self, arena, color, pulse_width, pulse_period, pulse_count, pulse_deadtime, pulse_delay, pulse_repeat
@@ -852,3 +824,258 @@ class LEDController(object):
             json_dict["pulse_repeat"],
             debug,
         )
+    
+    # def run_accumulated_led_stimulus_alternate(self):
+    #     """
+    #     Runs the accumulated LED stimulus
+    #     """
+    #     for conn in self.conns:
+    #         conn.write(b"RED 0\r")
+    #         conn.write(b"GRN 0\r")
+    #         conn.write(b"BLU 0\r")
+
+    #     for conn_id in range(4):
+    #         conn = self.conns[conn_id]
+
+    #         current_time = time.time()
+    #         for i in range(4*conn_id, 4*conn_id+4):
+    #             last_run = self.last_run[i]
+    #             runtime = self.runtime[i]
+
+    #             err_str = "Error in Arena " + str(i) + " at " + str(current_time) + ": " ##
+    #             if current_time - last_run < runtime:
+    #                 err_str += "LEDs are still running with runtime {} secs. Cut short with {} milliseconds left. ".format(runtime, (runtime-(current_time-last_run))*1000) ##
+    #                 if self.printer is not None: ##
+    #                     self.printer.print(err_str) ##
+    #                 else:
+    #                     print(err_str) ##
+            
+    #         run_this_time = False
+
+    #         for i in range(4*conn_id, 4*conn_id+4):
+    #             quadrant = self.arena_specs[i]["quadrant"]
+    #             quadrant_count = self.arena_specs[i]["quadrant_count"]
+
+    #             for j,col in enumerate([b" R ", b" G ", b" B "]):
+    #                 conn.write(
+    #                     b"PULSE "
+    #                     + str(self.pulse_state[conn_id][quadrant_count][j][0]).encode()
+    #                     + b" "
+    #                     + str(self.pulse_state[conn_id][quadrant_count][j][1]).encode()
+    #                     + b" "
+    #                     + str(self.pulse_state[conn_id][quadrant_count][j][2]).encode()
+    #                     + b" "
+    #                     + str(self.pulse_state[conn_id][quadrant_count][j][3]).encode()
+    #                     + b" "
+    #                     + str(self.pulse_state[conn_id][quadrant_count][j][4]).encode()
+    #                     + b" "
+    #                     + str(self.pulse_state[conn_id][quadrant_count][j][5]).encode()
+    #                     + col
+    #                     + quadrant
+    #                     + b"\r"
+    #                 )
+
+    #             if self.color_state[conn_id][quadrant_count][0] > 0 or self.color_state[conn_id][quadrant_count][1] > 0 or self.color_state[conn_id][quadrant_count][2] > 0:
+    #                 run_this_time = True
+
+    #                 # for j,col in enumerate([b"RED ", b"GRN ", b"BLU "]):
+    #                 #     conn.write(col + b"0\r")
+
+    #                 for j,col in enumerate([b"RED ", b"GRN ", b"BLU "]):
+    #                     conn.write(col + str(int(self.color_state[conn_id][quadrant_count][j]*self.irgb_scaling_factors[j+1][i])).encode() + b" 0 " + quadrant + b"\r")
+            
+    #         if run_this_time:
+    #             conn.write(b"RUN\r")
+    #             temp_time = time.time()
+    #             for i in range(4*conn_id, 4*conn_id+4):
+    #                 self.last_run[i] = temp_time
+    #                 self.runtime[i] = max([
+    #                     self.get_pulse_runtime(self.pulse_state[conn_id][self.arena_specs[i]["quadrant_count"]][0]),
+    #                     self.get_pulse_runtime(self.pulse_state[conn_id][self.arena_specs[i]["quadrant_count"]][1]),
+    #                     self.get_pulse_runtime(self.pulse_state[conn_id][self.arena_specs[i]["quadrant_count"]][2]),
+    #                 ])/1000
+            
+    #     # except:
+    #     #     if self.printer is not None:
+    #     #         self.printer.print("Could not run LED stimulus")
+    #     #     else:
+    #     #         print("Could not run LED stimulus")
+
+    #     self.reset_accumulated_led_stimulus()
+
+    # def run_accumulated_led_stimulus(self):
+    #     """
+    #     Runs the accumulated LED stimulus
+    #     """
+    #     for conn in self.conns:
+    #         conn.write(b"RED 0\r")
+    #         conn.write(b"GRN 0\r")
+    #         conn.write(b"BLU 0\r")
+
+    #     order = range(16)
+
+    #     for i in order:
+    #         try:
+    #             conn_id = self.arena_specs[i]["conn"]
+                
+    #             conn = self.conns[conn_id]
+    #             quadrant = self.arena_specs[i]["quadrant"]
+    #             quadrant_count = self.arena_specs[i]["quadrant_count"]
+                
+    #             last_runs = [] ##
+    #             runtimes = [] ##
+    #             for x in range(4): ##
+    #                 last_runs.append(self.last_run[4*conn_id + x]) ##
+    #                 runtimes.append(self.runtime[4*conn_id + x]) ##
+    #             last_run = max(last_runs) ##
+    #             runtime = max(runtimes) ##
+    #             current_time = time.time() ##
+                
+    #             err_str = "Error in Arena " + str(i) + " at " + str(current_time) + ": " ##
+    #             if current_time-last_run < runtime: ##
+    #                 err_str += "LEDs are still running with runtime {} secs. Cut short with {} milliseconds left. ".format(runtime, (runtime-(current_time-last_run))*1000) ##
+    #                 if self.printer is not None: ##
+    #                     self.printer.print(err_str) ##
+    #                 else:
+    #                     print(err_str) ##
+                
+    #             conn.write(
+    #                 b"PULSE "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][0][0]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][0][1]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][0][2]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][0][3]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][0][4]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][0][5]).encode()
+    #                 + b" R "
+    #                 + quadrant
+    #                 + b"\r"
+    #             )
+    #             conn.write(
+    #                 b"PULSE "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][1][0]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][1][1]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][1][2]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][1][3]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][1][4]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][1][5]).encode()
+    #                 + b" G "
+    #                 + quadrant
+    #                 + b"\r"
+    #             )
+    #             conn.write(
+    #                 b"PULSE "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][2][0]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][2][1]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][2][2]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][2][3]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][2][4]).encode()
+    #                 + b" "
+    #                 + str(self.pulse_state[conn_id][quadrant_count][2][5]).encode()
+    #                 + b" B "
+    #                 + quadrant
+    #                 + b"\r"
+    #             )
+                
+    #             conn.write(b"RED " + str(int(self.color_state[conn_id][quadrant_count][0]*self.irgb_scaling_factors[1][i])).encode() + b" 0 " + quadrant + b"\r")
+    #             conn.write(b"GRN " + str(int(self.color_state[conn_id][quadrant_count][1]*self.irgb_scaling_factors[2][i])).encode() + b" 0 " + quadrant + b"\r")
+    #             conn.write(b"BLU " + str(int(self.color_state[conn_id][quadrant_count][2]*self.irgb_scaling_factors[3][i])).encode() + b" 0 " + quadrant + b"\r")
+
+    #             if self.color_state[conn_id][quadrant_count][0] > 0 or self.color_state[conn_id][quadrant_count][1] > 0 or self.color_state[conn_id][quadrant_count][2] > 0:
+    #                 self.last_run[i] = time.time() ##
+    #                 self.runtime[i] = max([self.get_pulse_runtime(self.pulse_state[conn_id][quadrant_count][0]), self.get_pulse_runtime(self.pulse_state[conn_id][quadrant_count][1]), self.get_pulse_runtime(self.pulse_state[conn_id][quadrant_count][2])]) / 1000 ##
+
+    #             # if self.color_state[conn_id][quadrant_count][0] > 0:
+                    
+    #             #     conn.write(
+    #             #         b"PULSE "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][0][0]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][0][1]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][0][2]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][0][3]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][0][4]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][0][5]).encode()
+    #             #         + b" R "
+    #             #         + quadrant
+    #             #         + b"\r"
+    #             #     )
+    #             #     conn.write(b"RED " + str(int(self.color_state[conn_id][quadrant_count][0]*self.irgb_scaling_factors[1][i])).encode() + b" 0 " + quadrant + b"\r")
+    #             #     self.last_run[i] = time.time() ##
+    #             #     self.runtime[i] = self.get_pulse_runtime(self.pulse_state[conn_id][quadrant_count][0]) / 1000 ##
+    #             #     # run_conns.append(conn_id) ##
+
+    #             # if self.color_state[conn_id][quadrant_count][1] > 0:
+    #             #     conn.write(
+    #             #         b"PULSE "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][1][0]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][1][1]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][1][2]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][1][3]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][1][4]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][1][5]).encode()
+    #             #         + b" G "
+    #             #         + quadrant
+    #             #         + b"\r"
+    #             #     )
+    #             #     conn.write(b"GRN " + str(int(self.color_state[conn_id][quadrant_count][1]*self.irgb_scaling_factors[2][i])).encode() + b" 0 " + quadrant + b"\r")
+    #             #     self.last_run[i] = time.time() ##
+    #             #     self.runtime[i] = self.get_pulse_runtime(self.pulse_state[conn_id][quadrant_count][1]) / 1000##
+    #             #     # run_conns.append(conn_id) ##
+
+    #             # if self.color_state[conn_id][quadrant_count][2] > 0:
+    #             #     conn.write(
+    #             #         b"PULSE "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][2][0]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][2][1]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][2][2]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][2][3]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][2][4]).encode()
+    #             #         + b" "
+    #             #         + str(self.pulse_state[conn_id][quadrant_count][2][5]).encode()
+    #             #         + b" B "
+    #             #         + quadrant
+    #             #         + b"\r"
+    #             #     )
+    #             #     conn.write(b"BLU " + str(int(self.color_state[conn_id][quadrant_count][2]*self.irgb_scaling_factors[3][i])).encode() + b" 0 " + quadrant + b"\r")
+    #             #     self.last_run[i] = time.time() ##
+    #             #     self.runtime[i] = self.get_pulse_runtime(self.pulse_state[conn_id][quadrant_count][2])/1000 ##
+    #             #     # run_conns.append(conn_id) ##
+    #         except:
+    #             if self.printer is not None:
+    #                 self.printer.print("Could not run LED stimulus for arena " + str(i))
+    #             else:
+    #                 print("Could not run LED stimulus for arena " + str(i))
+
+    #     for conn in self.conns:
+    #         conn.write(b"RUN\r")
+
+    #     self.reset_accumulated_led_stimulus()
+

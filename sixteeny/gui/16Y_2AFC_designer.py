@@ -100,25 +100,25 @@ class MainWindow(QtWidgets.QMainWindow):
         # create a text label, text box to enter Reward Contrast values
         self.reward_contrast_label = QtWidgets.QLabel("Reward Contrast [0.5, 1]")
         self.reward_contrast_textbox = QtWidgets.QLineEdit()
-        self.reward_contrast_textbox.setText("0.6 0.8 1")
+        self.reward_contrast_textbox.setText("0.5 0.65 0.8")
         # self.reward_contrast_textbox.setValidator(validator)
 
         # create a text label, text box to enter Hazard Rate values
         self.hazard_rate_label = QtWidgets.QLabel("Hazard Rate [0, 1]")
         self.hazard_rate_textbox = QtWidgets.QLineEdit()
-        self.hazard_rate_textbox.setText("0.05 0.035 0.02")
+        self.hazard_rate_textbox.setText("0.035 0.02 0.01")
         # self.hazard_rate_textbox.setValidator(validator)
 
         # create a text label, text box to enter number of naive trials
         self.naive_trials_label = QtWidgets.QLabel("Naive Trials")
         self.naive_trials_textbox = QtWidgets.QLineEdit()
-        self.naive_trials_textbox.setText("10")
+        self.naive_trials_textbox.setText("30")
         self.naive_trials_textbox.setValidator(QtGui.QIntValidator())
 
         # create a text label, text box to enter number of maximum testing trials
-        self.max_trials_label = QtWidgets.QLabel("Max Trials")
+        self.max_trials_label = QtWidgets.QLabel("Max Experiment Trials")
         self.max_trials_textbox = QtWidgets.QLineEdit()
-        self.max_trials_textbox.setText("150")
+        self.max_trials_textbox.setText("170")
         self.max_trials_textbox.setValidator(QtGui.QIntValidator())
 
         # create a button to generate the random task
@@ -171,8 +171,15 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Load the stimulus for odor 1.
         """
+        folder = self.start_folder
+        # move back one folder
+        if folder[-1] == "/":
+            folder = folder[:-1]
+        folder = folder[:folder.rfind("/")]
+        # go to the stimulus_zoo folder
+        folder = folder + "/stimulus_zoo/"
         # open a file dialog
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", self.start_folder, "*.stim")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", folder, "*.stim")
         # if a file was selected
         if filename:
             # set the textbox to the file name (without the path)
@@ -182,8 +189,15 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Load the stimulus for odor 2.
         """
+        folder = self.start_folder
+        # move back one folder
+        if folder[-1] == "/":
+            folder = folder[:-1]
+        folder = folder[:folder.rfind("/")]
+        # go to the stimulus_zoo folder
+        folder = folder + "/stimulus_zoo/"
         # open a file dialog
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", self.start_folder, "*.stim")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Stimulus", folder, "*.stim")
         # if a file was selected
         if filename:
             # set the textbox to the file name (without the path)
@@ -479,6 +493,9 @@ class MainWindow(QtWidgets.QMainWindow):
         n_trials = 0
         max_state = 0
 
+        last_reward_gain = 0
+        last_reward_contrast = 0
+
         while n_trials < max_trials:
 
             while True:
@@ -486,13 +503,18 @@ class MainWindow(QtWidgets.QMainWindow):
                 block_size = np.random.geometric(random_hazard_rate)
                 # round block size to nearest five
                 block_size = int(np.round(block_size / 5) * 5)
-                # check if block size is more than zero
-                if block_size > 0:
+                # check if block size is more than 20 and less than 150
+                if block_size >= 20 and block_size <= 150:
                     break
 
             # sample reward gain and contrast
-            reward_gain = np.random.choice(reward_gains)
-            reward_contrast = np.random.choice(reward_contrasts)
+            while True:
+                reward_gain = np.random.choice(reward_gains)
+                reward_contrast = np.random.choice(reward_contrasts)
+                if reward_gain != last_reward_gain and reward_contrast != last_reward_contrast:
+                    last_reward_contrast = reward_contrast
+                    last_reward_gain = reward_gain
+                    break
 
             # calculate reward probability
             pr1 = round(reward_gain * 2 * reward_contrast, 2)
