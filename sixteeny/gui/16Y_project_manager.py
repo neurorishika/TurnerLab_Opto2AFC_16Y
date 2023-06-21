@@ -250,7 +250,7 @@ class MainWindow(QtWidgets.QMainWindow):
         stimulus_zoo_files = os.listdir(self.project_directory_textbox.text() + "/stimulus_zoo")
         stimulus_zoo_files = [file for file in stimulus_zoo_files if file.endswith(".stim")]
 
-        allowed_experiment_types = {"csv": "open-loop+baiting", "yfse": "finite-world-dynamics"}
+        allowed_experiment_types = {"csv": "open-loop+baiting", "yfse": "deterministic-finite-state", "ymle": "deterministic-multilevel"}
 
         # get the list of allowed experiment types in the experiment_zoo directory
         experiment_zoo_files = os.listdir(self.project_directory_textbox.text() + "/experiment_zoo")
@@ -406,7 +406,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.project_directory_textbox.text() == "":
             return
         # ask the user to select an experiment type between 2AFC and Finite World Dynamics
-        types = ["2AFC", "Deterministic Finite World Dynamics", "Custom CSV"]
+        types = ["2AFC", "Deterministic Finite State", "Deterministic Multilevel", "Custom CSV"]
         type_dialog = QtWidgets.QInputDialog()
         type_dialog.setInputMode(QtWidgets.QInputDialog.TextInput)
         type_dialog.setComboBoxItems(types)
@@ -430,12 +430,21 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.project_directory_textbox.text() + "/experiment_zoo",
                 ]
             )
-        elif type == "Deterministic Finite World Dynamics":
+        elif type == "Deterministic Finite State":
             # call the DFSE_experiment_designer script and wait for it to finish
             call(
                 [
                     "python",
                     "./sixteeny/gui/16Y_DFSE_designer.py",
+                    self.project_directory_textbox.text() + "/experiment_zoo",
+                ]
+            )
+        elif type == "Deterministic Multilevel":
+            # call the DMLE_experiment_designer script and wait for it to finish
+            call(
+                [
+                    "python",
+                    "./sixteeny/gui/16Y_DMLE_designer.py",
                     self.project_directory_textbox.text() + "/experiment_zoo",
                 ]
             )
@@ -512,7 +521,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # get the selected experiment file
         selected_experiment_file = self.experiment_zoo_table.selectedItems()[0].text()
         # ask the user to select an experiment type between 2AFC and Finite World Dynamics
-        types = ["2AFC", "Deterministic Finite World Dynamics", "Custom CSV"]
+        types = ["2AFC", "Deterministic Finite State", "Deterministic Multilevel", "Custom CSV"]
         type_dialog = QtWidgets.QInputDialog()
         type_dialog.setInputMode(QtWidgets.QInputDialog.TextInput)
         type_dialog.setComboBoxItems(types)
@@ -542,7 +551,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.project_directory_textbox.text() + "/experiment_zoo" + "/" + selected_experiment_file,
                 ]
             )
-        elif type == "Deterministic Finite World Dynamics":
+        elif type == "Deterministic Finite State":
             # check if the experiment file is a YFSE file
             if selected_experiment_file.split(".")[1] != "yfse":
                 QtWidgets.QMessageBox.information(
@@ -554,6 +563,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 [
                     "python",
                     "./sixteeny/gui/16Y_DFSE_designer.py",
+                    self.project_directory_textbox.text() + "/experiment_zoo" + "/" + selected_experiment_file,
+                ]
+            )
+        elif type == "Deterministic Multilevel":
+            # check if  the experiment file is a YMLE file
+            if selected_experiment_file.split(".")[1] != "ymle":
+                QtWidgets.QMessageBox.information(
+                    self, "Invalid Experiment File", "The selected experiment file is not a YMLE file.",
+                )
+                return
+            # call the DMLE_designer script and wait for it to finish
+            call(
+                [
+                    "python",
+                    "./sixteeny/gui/16Y_DMLE_designer.py",
                     self.project_directory_textbox.text() + "/experiment_zoo" + "/" + selected_experiment_file,
                 ]
             )

@@ -78,43 +78,43 @@ class MainWindow(QtWidgets.QMainWindow):
         # create a sub-layout for the starvation start date and time, quick buttons, and copy button
         starvation_start_layout = QtWidgets.QGridLayout()
 
-        self.starvation_period = QtWidgets.QLineEdit()
-        # put a float validator on the starvation period
-        self.starvation_period.setValidator(QtGui.QDoubleValidator())
-        self.starvation_period.setText("24.0")
-        starvation_start_layout.addWidget(self.starvation_period, 0, 0)
-
         # add a button for 24 hours, 36 hours, 48 hours, 60 hours, 72 hours
         self.starvation_24_button = QtWidgets.QPushButton("24 hours")
-        starvation_start_layout.addWidget(self.starvation_24_button, 0, 1)
+        starvation_start_layout.addWidget(self.starvation_24_button, 0, 0)
         self.starvation_24_button.clicked.connect(self.starvation_24)
 
         self.starvation_36_button = QtWidgets.QPushButton("36 hours")
-        starvation_start_layout.addWidget(self.starvation_36_button, 0, 2)
+        starvation_start_layout.addWidget(self.starvation_36_button, 0, 1)
         self.starvation_36_button.clicked.connect(self.starvation_36)
 
         self.starvation_48_button = QtWidgets.QPushButton("48 hours")
-        starvation_start_layout.addWidget(self.starvation_48_button, 0, 3)
+        starvation_start_layout.addWidget(self.starvation_48_button, 0, 2)
         self.starvation_48_button.clicked.connect(self.starvation_48)
 
         self.starvation_60_button = QtWidgets.QPushButton("60 hours")
-        starvation_start_layout.addWidget(self.starvation_60_button, 0, 4)
+        starvation_start_layout.addWidget(self.starvation_60_button, 0, 3)
         self.starvation_60_button.clicked.connect(self.starvation_60)
 
         self.starvation_72_button = QtWidgets.QPushButton("72 hours")
-        starvation_start_layout.addWidget(self.starvation_72_button, 0, 5)
+        starvation_start_layout.addWidget(self.starvation_72_button, 0, 4)
         self.starvation_72_button.clicked.connect(self.starvation_72)
+
+        self.starvation_period = QtWidgets.QLineEdit()
+        self.starvation_period.setValidator(QtGui.QDoubleValidator())
+        self.starvation_period.setText("24.0")
+        starvation_start_layout.addWidget(self.starvation_period, 0, 5)
+
+        # add a button to update the starvation start to the current time - starvation period
+        self.starvation_start_now_button = QtWidgets.QPushButton("Update")
+        starvation_start_layout.addWidget(self.starvation_start_now_button, 0, 6)
+        self.starvation_start_now_button.clicked.connect(self.starvation_start_now)
 
         self.starvation_start = QtWidgets.QDateTimeEdit()
         self.starvation_start.setCalendarPopup(True)
         self.starvation_start.setDateTime(self.round_to_30mins(QtCore.QDateTime.currentDateTime()))
-        starvation_start_layout.addWidget(self.starvation_start, 0, 6)
+        starvation_start_layout.addWidget(self.starvation_start, 0, 7)
 
-        # add a button to update the starvation start to the current time - starvation period
-        self.starvation_start_now_button = QtWidgets.QPushButton("Update")
-        starvation_start_layout.addWidget(self.starvation_start_now_button, 0, 7)
-        self.starvation_start_now_button.clicked.connect(self.starvation_start_now)
-
+        
         # add a button to copy the starvation start to all the arenas
         self.copy_starvation_start_button = QtWidgets.QPushButton("Copy Starvation Starts")
         starvation_start_layout.addWidget(self.copy_starvation_start_button, 0, 8)
@@ -149,9 +149,26 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.copy_experiment_button, 5, 2)
         self.copy_experiment_button.clicked.connect(self.copy_experiment)
 
+        # add a text box for entering number of repeats
+        layout.addWidget(QtWidgets.QLabel("Repeats"), 6, 0)
+        self.repeats = QtWidgets.QLineEdit()
+        self.repeats.setText("3")
+        self.repeats.setValidator(QtGui.QIntValidator())
+        layout.addWidget(self.repeats, 6, 1)
+
+        # add a button to auto-populate the repeats
+        self.auto_populate_repeats_button = QtWidgets.QPushButton("Auto-Populate Experiments")
+        layout.addWidget(self.auto_populate_repeats_button, 6, 2)
+        self.auto_populate_repeats_button.clicked.connect(self.auto_populate_repeats)
+
+        # add a button to auto-populate the repeats
+        self.auto_populate_exps_button = QtWidgets.QPushButton("Auto-Populate Experiments from File")
+        layout.addWidget(self.auto_populate_exps_button, 7, 0, 1, 3)
+        self.auto_populate_exps_button.clicked.connect(self.auto_populate_exps)
+
         # add a centre-aligned label at the top of the grid
         layout.addWidget(
-            QtWidgets.QLabel("Assign Experiment for each Y-Arena below:"), 6, 0, 1, 3, QtCore.Qt.AlignCenter
+            QtWidgets.QLabel("Assign Experiment for each Y-Arena below:"), 8, 0, 1, 3, QtCore.Qt.AlignCenter
         )
         # set fixed size for the label
         layout.setRowMinimumHeight(3, 30)
@@ -217,18 +234,18 @@ class MainWindow(QtWidgets.QMainWindow):
                 dropbox_layout.addWidget(datetime, 4 * i + 3, 3 * j, 1, 3)
 
         # add the dropbox layout to the grid
-        layout.addLayout(dropbox_layout, 7, 0, 1, 3)
+        layout.addLayout(dropbox_layout, 9, 0, 1, 3)
 
         self.browse_button.clicked.connect(self.browse_directory)
 
         # add buttons to toggle all arenas and start experiment
         self.toggle_all_arenas_button = QtWidgets.QPushButton("Toggle All Arenas")
         self.toggle_all_arenas_button.clicked.connect(self.toggle_all_arenas)
-        layout.addWidget(self.toggle_all_arenas_button, 8, 0)
+        layout.addWidget(self.toggle_all_arenas_button, 10, 0)
 
         button = QtWidgets.QPushButton("Start Experiment")
         button.clicked.connect(self.start_experiment)
-        layout.addWidget(button, 8, 1, 1, 2)
+        layout.addWidget(button, 10, 1, 1, 2)
 
         # create the main widget
         widget = QtWidgets.QWidget()
@@ -260,6 +277,55 @@ class MainWindow(QtWidgets.QMainWindow):
         # update the dropboxes with the experiments
         self.update_dropboxes()
 
+    def auto_populate_exps(self):
+        """
+        A method to open the suggested file dialog and populate arenas with suggested experiments.
+        """
+        # get the suggested file
+        file = QtWidgets.QFileDialog.getOpenFileName(self, "Select Suggested File")
+        # make sure the file is not empty and its a log file
+        if file[0] and file[0].endswith(".log"):
+            # set the suggested file
+            pass
+        
+        # load the suggested file
+        with open(file[0], "r") as f:
+            # get the lines
+            lines = f.readlines()
+        
+        # remove the empty lines
+        lines = [line for line in lines if line.strip()]
+
+        # ensure at least one arena is active
+        if not any([self.checkboxes[i].isChecked() for i in range(16)]):
+            # give a warning
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select at least one arena.")
+            return
+        
+        # find the number of active arenas
+        active_arenas = [i for i in range(16) if self.checkboxes[i].isChecked()]
+        num_active_arenas = len(active_arenas)
+        
+        # ensure at least one experiment is available
+        if len(self.experiments) == 0:
+            # give a warning
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select a directory with experiments.")
+            return
+
+        # loop through the lines
+        for i, line in enumerate(lines):
+            # make sure there are enough arenas
+            if i >= num_active_arenas:
+                print("Not enough arenas for all experiments.")
+                break
+            # check if the experiment is in the list of experiments
+            if line.strip() in self.experiments:
+                self.dropboxes[active_arenas[i]].setCurrentIndex(self.experiments.index(line.strip()))
+            else:
+                print("Experiment not found in list of experiments.")
+                break
+
+
     def update_dropboxes(self):
         """
         A method to update the dropboxes.
@@ -274,6 +340,44 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fly_genotype.clear()
         self.fly_genotype.addItems(self.genotypes)
         self.fly_genotype.setCurrentIndex(0)
+    
+    def auto_populate_repeats(self):
+        # ensure at least one arena is active
+        if not any([self.checkboxes[i].isChecked() for i in range(16)]):
+            # give a warning
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select at least one arena.")
+            return
+        # ensure at least one experiment is available
+        if len(self.experiments) == 0:
+            # give a warning
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select a directory with experiments.")
+            return
+        # get the number of repeats
+        repeats = int(self.repeats.text())
+        # get the number of active arenas
+        active_arenas = [i for i in range(16) if self.checkboxes[i].isChecked()]
+        # shuffle the active arenas
+        import random
+        random.shuffle(active_arenas)
+        n_arenas = len(active_arenas)
+        if repeats > n_arenas:
+            # give a warning
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select fewer repeats. Not enough arenas.")
+            return
+        if len(self.experiments)*repeats < n_arenas:
+            # give a warning
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select more repeats. Not enough experiments.")
+            return
+        # iterate through the arenas
+        current_experiment = 0
+        current_repeat = 0
+        for arena in active_arenas:
+            if current_repeat == repeats:
+                current_repeat = 0
+                current_experiment += 1
+            self.dropboxes[arena].setCurrentIndex(current_experiment)
+            current_repeat += 1
+        pass
 
     def toggle_checkbox(self, index):
         """
@@ -418,7 +522,7 @@ class MainWindow(QtWidgets.QMainWindow):
             experiments = os.listdir(directory + "/experiment_zoo")
             # filter out the non-experiment files
             experiments = [
-                experiment for experiment in experiments if experiment.endswith(".csv") or experiment.endswith(".yfse")
+                experiment for experiment in experiments if experiment.endswith(".csv") or experiment.endswith(".yfse") or experiment.endswith(".ymle")
             ]
 
         # if there are no experiments, send an alert dialog

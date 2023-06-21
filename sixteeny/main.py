@@ -6,7 +6,7 @@ import cupy as cp
 import matplotlib.pyplot as plt
 
 from sixteeny.utils.tracker import ArenaTracker
-from sixteeny.utils.experimenter import CSVExperimenter, DeterministicFiniteStateExperimenter, ProbabilisticFiniteStateExperimenter
+from sixteeny.utils.experimenter import CSVExperimenter, DeterministicFiniteStateExperimenter, DeterministicMultilevelExperimenter
 from sixteeny.utils.camera import record_background, change_in_image, binarize, combine_binarized_images
 from sixteeny.utils.emailer import Emailer
 from sixteeny.utils.printer import Printer
@@ -418,6 +418,10 @@ if __name__ == "__main__":
                 experimenters[n] = DeterministicFiniteStateExperimenter(
                     project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
                 )
+            elif experiment_file["fly_experiment"].endswith(".ymle"):
+                experimenters[n] = DeterministicMultilevelExperimenter(
+                    project_directory + experiment_name + "/experiments/" + experiment_file["fly_experiment"]
+                )
             else:
                 printer.print("Invalid experiment file. Exiting.")
                 sys.exit(1)
@@ -486,7 +490,7 @@ if __name__ == "__main__":
 
         started = False
         wait_period = 10  # seconds
-        maximum_time = 3 * 60 * 60  # seconds (3 hours)
+        maximum_time = 2.5 * 60 * 60  # seconds (3 hours)
         tracking_start_time = time.time()
 
         # send email

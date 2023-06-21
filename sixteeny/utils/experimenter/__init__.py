@@ -2,4 +2,4 @@
 
 from .base import Experimenter
 from .openloop import CSVExperimenter
-from .closedloop import DeterministicFiniteStateExperimenter, ProbabilisticFiniteStateExperimenter
+from .closedloop import DeterministicFiniteStateExperimenter, ProbabilisticFiniteStateExperimenter, DeterministicMultilevelExperimenter

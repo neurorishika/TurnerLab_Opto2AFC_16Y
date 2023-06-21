@@ -31,7 +31,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.reciprocal_task.setChecked(False)
         self.main_layout.addWidget(self.reciprocal_task, 0, 2, 1, 2)
 
-        default_database = "C:\\16YArena\\TurnerLab_Opto2AFC_16Y\\sixteeny\\utils\\experimenter\\tasks.pkl"
+        default_database = "C:\\16YArena\\TurnerLab_Opto2AFC_16Y\\sixteeny\\utils\\experimenter\\DFSEtasks.pkl"
         try:
             self.tasks = pd.read_pickle(default_database)
         except:

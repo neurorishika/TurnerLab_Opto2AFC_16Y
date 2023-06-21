@@ -35,25 +35,40 @@ class MainWindow(QtWidgets.QMainWindow):
         self.table.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.main_layout.addWidget(self.table, 0, 0, 1, 4)
 
+        # create a GridLayout for the checkboxes
+        self.checkbox_layout = QtWidgets.QGridLayout()
         # create a checkbox for L/R Randomization
         self.randomize_lr = QtWidgets.QCheckBox("Randomize L/R?")
         self.randomize_lr.setChecked(True)
-        self.main_layout.addWidget(self.randomize_lr, 1, 0)
+        self.checkbox_layout.addWidget(self.randomize_lr, 0, 0)
 
         # create a checkbox for presampled L/R
         self.presampled_lr = QtWidgets.QCheckBox("Presampled L/R?")
         self.presampled_lr.setChecked(False)
-        self.main_layout.addWidget(self.presampled_lr, 1, 1)
+        self.checkbox_layout.addWidget(self.presampled_lr, 0, 1)
+
+        # create a checkbox for expectation sampling
+        self.expectation_sampling = QtWidgets.QCheckBox("Expectation Sampling?")
+        self.expectation_sampling.setChecked(False)
+        self.checkbox_layout.addWidget(self.expectation_sampling, 0, 2)
+
+        # create a checkbox for Max Alternation
+        self.max_alternation = QtWidgets.QCheckBox("Max Alternation?")
+        self.max_alternation.setChecked(False)
+        self.checkbox_layout.addWidget(self.max_alternation, 0, 3)
 
         # create a checkbox for Reward Hold/Baiting
         self.reward_hold_bait = QtWidgets.QCheckBox("Hold/Bait Rewards?")
         self.reward_hold_bait.setChecked(False)
-        self.main_layout.addWidget(self.reward_hold_bait, 1, 2)
+        self.checkbox_layout.addWidget(self.reward_hold_bait, 0, 4)
 
         # create a checkbox for Reciprocal Task
         self.reciprocal_task = QtWidgets.QCheckBox("Reciprocal Task?")
         self.reciprocal_task.setChecked(True)
-        self.main_layout.addWidget(self.reciprocal_task, 1, 3)
+        self.checkbox_layout.addWidget(self.reciprocal_task, 0, 5)
+
+        # add the checkbox layout to the main layout
+        self.main_layout.addLayout(self.checkbox_layout, 1, 0, 1, 4)
 
         # create a button to add a row
         self.add_row_button = QtWidgets.QPushButton("Add new block")
@@ -94,19 +109,19 @@ class MainWindow(QtWidgets.QMainWindow):
         # create a text label, text box to enter Reward Gain values
         self.reward_gain_label = QtWidgets.QLabel("Reward Gain [0, 1]")
         self.reward_gain_textbox = QtWidgets.QLineEdit()
-        self.reward_gain_textbox.setText("0.125 0.25 0.5")
+        self.reward_gain_textbox.setText("0.125 0.25 0.5 0.75 0.875 1.0")
         # self.reward_gain_textbox.setValidator(validator)
 
         # create a text label, text box to enter Reward Contrast values
         self.reward_contrast_label = QtWidgets.QLabel("Reward Contrast [0.5, 1]")
         self.reward_contrast_textbox = QtWidgets.QLineEdit()
-        self.reward_contrast_textbox.setText("0.5 0.65 0.8")
+        self.reward_contrast_textbox.setText("0.5 0.6 0.7 0.8 0.9 1.0")
         # self.reward_contrast_textbox.setValidator(validator)
 
         # create a text label, text box to enter Hazard Rate values
         self.hazard_rate_label = QtWidgets.QLabel("Hazard Rate [0, 1]")
         self.hazard_rate_textbox = QtWidgets.QLineEdit()
-        self.hazard_rate_textbox.setText("0.035 0.02 0.01")
+        self.hazard_rate_textbox.setText("0.033 0.02 0.01")
         # self.hazard_rate_textbox.setValidator(validator)
 
         # create a text label, text box to enter number of naive trials
@@ -118,7 +133,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # create a text label, text box to enter number of maximum testing trials
         self.max_trials_label = QtWidgets.QLabel("Max Experiment Trials")
         self.max_trials_textbox = QtWidgets.QLineEdit()
-        self.max_trials_textbox.setText("170")
+        self.max_trials_textbox.setText("1500")
         self.max_trials_textbox.setValidator(QtGui.QIntValidator())
 
         # create a button to generate the random task
@@ -282,6 +297,15 @@ class MainWindow(QtWidgets.QMainWindow):
             # get the baiting status
             baited = 1 if self.reward_hold_bait.isChecked() else 0
 
+            # expectation sampling
+            if self.expectation_sampling.isChecked():
+                n_r_o1 = int(num_trials * p_r_o1)
+                n_r_o2 = int(num_trials * p_r_o2)
+                r_o1 = np.concatenate((np.ones(n_r_o1), np.zeros(num_trials - n_r_o1)))
+                r_o2 = np.concatenate((np.ones(n_r_o2), np.zeros(num_trials - n_r_o2)))
+                np.random.shuffle(r_o1)
+                np.random.shuffle(r_o2)
+
             # add a row to the dataframe for each trial
             for trial in range(num_trials):
                 # if the randomize L/R checkbox is checked, randomly assign L/R
@@ -290,12 +314,20 @@ class MainWindow(QtWidgets.QMainWindow):
                     if self.randomize_lr.isChecked()
                     else 1
                 )
+                # if expectation sampling is checked, use the reward probabilities to determine the reward
+                if self.expectation_sampling.isChecked():
+                    ro1 = r_o1[trial]
+                    ro2 = r_o2[trial]
+                # otherwise, use reward probabilities to determine the reward
+                else:
+                    ro1 = p_r_o1
+                    ro2 = p_r_o2
                 # add a row to the dataframe
                 df.loc[len(df)] = [
                     1,
                     0,
-                    p_r_o1,
-                    p_r_o2,
+                    ro1,
+                    ro2,
                     0,
                     left,
                     3 - left,
@@ -502,7 +534,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # sample block size as geometric distribution using hazard rate
                 block_size = np.random.geometric(random_hazard_rate)
                 # round block size to nearest five
-                block_size = int(np.round(block_size / 5) * 5)
+                # block_size = int(np.round(block_size / 5) * 5)
                 # check if block size is more than 20 and less than 150
                 if block_size >= 20 and block_size <= 150:
                     break
@@ -511,23 +543,37 @@ class MainWindow(QtWidgets.QMainWindow):
             while True:
                 reward_gain = np.random.choice(reward_gains)
                 reward_contrast = np.random.choice(reward_contrasts)
+                # print(reward_gain, reward_contrast, reward_gains, reward_contrasts)
+
+                # calculate reward probability
+                pr1 = round(reward_gain * 2 * reward_contrast, 2)
+                pr2 = round(reward_gain * 2 * (1 - reward_contrast), 2)
+                # check if reward probability is between 0 and 1
+                if not (pr1 >= 0 and pr1 <= 1 and pr2 >= 0 and pr2 <= 1):
+                    continue
+                # check if reward probability is different from the last block
                 if reward_gain != last_reward_gain and reward_contrast != last_reward_contrast:
                     last_reward_contrast = reward_contrast
                     last_reward_gain = reward_gain
+                    
                     break
-
-            # calculate reward probability
-            pr1 = round(reward_gain * 2 * reward_contrast, 2)
-            pr2 = round(reward_gain * 2 * (1 - reward_contrast), 2)
 
             if n_trials + block_size > max_trials:
                 block_size = max_trials - n_trials
-            if max_state == 0:
-                experiments.append([block_size, pr1, pr2])
-                max_state = 1
+
+            if self.max_alternation.isChecked():
+                if max_state == 0:
+                    experiments.append([block_size, pr1, pr2])
+                    max_state = 1
+                else:
+                    experiments.append([block_size, pr2, pr1])
+                    max_state = 0
             else:
-                experiments.append([block_size, pr2, pr1])
-                max_state = 0
+                # randomize the reward probability
+                if np.random.rand() < 0.5:
+                    experiments.append([block_size, pr1, pr2])
+                else:
+                    experiments.append([block_size, pr2, pr1])
 
             n_trials += block_size
 
