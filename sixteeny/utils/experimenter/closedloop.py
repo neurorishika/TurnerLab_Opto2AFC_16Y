@@ -76,20 +76,21 @@ class DeterministicMultilevelExperimenter(Experimenter):
         next_trial["relative_odor_vector"] = [0, 1 + randomize, 2 - randomize]
         next_trial["reward_probability"] = [
             0,
-            1 if self.rewards[randomize] > 0 else 0,
-            1 if self.rewards[1 - randomize] > 0 else 0,
+            1 if self.rewards[0] > 0 else 0,
+            1 if self.rewards[1] > 0 else 0,
         ]  # adjust from randomization
         next_trial["time_needed_in_reward_zone"] = ["inf", "0", "0"]
 
         next_trial["reward_stimulus"] = [
             "empty.stim", 
-            self.__reward_alloc(self.rewards[randomize]),
-            self.__reward_alloc(self.rewards[1 - randomize])
+            self.__reward_alloc(self.rewards[0]),
+            self.__reward_alloc(self.rewards[1])
             ]
         next_trial["timed"] = 0
         next_trial["odor_delay"] = 0
         next_trial["unconditioned_stimulus"] = "empty.stim"
         next_trial["baited"] = 0
+        next_trial["randomize"] = randomize
         # increment the trial number
         self.trial_number += 1
         # append the trial to the list of trials

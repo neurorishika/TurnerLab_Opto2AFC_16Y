@@ -23,8 +23,20 @@ import datetime
 import shutil
 import threading
 import queue
+import socket
 
 frame_write_count = 0
+
+def isConnect():
+    try:
+        s = socket.create_connection(
+              ("www.google.com", 80))
+        if s is not None:
+            s.close
+        return True
+    except OSError:
+        pass
+    return False
 
 def async_video_writer(save_queue, gpu, pre_acquired=False):
     """
@@ -89,6 +101,58 @@ if __name__ == "__main__":
 ====================================================================
     """
     print(start_string)
+
+    # check firewall status
+    firewall = open('firewall_status.txt', 'w')
+    subprocess.call('netsh advfirewall show allprofiles state', stdout=firewall, shell=True)
+    firewall.close()
+
+    # read status
+    firewall = open('firewall_status.txt', 'r')
+    domain_status, private_status, public_status = None, None, None
+    reading_on = False
+    for line in firewall:
+        print(line)
+        if line.startswith('Domain Profile'):
+            reading_on = True
+        elif line.startswith('Private Profile'):
+            reading_on = True
+        elif line.startswith('Public Profile'):
+            reading_on = True
+        elif reading_on:
+            if line.startswith('State'):
+                if domain_status is None:
+                    domain_status = False if 'OFF' in line else True
+                elif private_status is None:
+                    private_status = False if 'OFF' in line else True
+                elif public_status is None:
+                    public_status = False if 'OFF' in line else True
+                else:
+                    reading_on = False
+    firewall.close()
+
+    # make sure private and public are OFF
+    if private_status or public_status:
+        print("Please turn off private and public firewalls.")
+        sys.exit(1)
+    else:
+        print("FIREWALL STATUS:")
+        print("Domain firewall status: " + ("On" if domain_status else "Off"))
+        print("Private firewall status: " + ("On" if private_status else "Off"))
+        print("Public firewall status: " + ("On" if public_status else "Off"))
+        print("FIREWALL CHECK: PASSED")
+
+    print()
+
+    # check internet connection for email
+    if not isConnect():
+        print("INTERNET CONNECTION CHECK: FAILED")
+        print("Please connect to the internet for email functionality.")
+        sys.exit(1)
+    else:
+        print("INTERNET CONNECTION CHECK: PASSED")
+    
+    print()
 
     # Get project directory and name from command line arguments
     if len(sys.argv) > 2:

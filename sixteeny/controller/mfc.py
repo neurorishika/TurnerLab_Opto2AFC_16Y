@@ -1,4 +1,5 @@
 import alicat
+import time
 
 class MFCController(object):
     """
@@ -35,11 +36,30 @@ class MFCController(object):
         Close the MFCs
         """
         for i in range(len(self.mfcs)):
-            # set flow rate to 0
-            self.set_flow_rate(i, 0)
-            # close the connection
-            self.mfcs[i].close()
-        
+            repeats = 0
+            while True:
+                try:
+                    # set flow rate to 0
+                    self.set_flow_rate(i, 0)
+                    # close the connection
+                    self.mfcs[i].close()
+                    # break out of the loop if successful
+                    break
+                except:
+                    repeats += 1
+                    # give up if unsuccessful after 10 tries
+                    if repeats > 10:
+                        print('Failed to close Alicat MFC with ID: {} on COM{}'.format(self.device_ids[i], self.com_port))
+                        print('Giving up...')
+                        break
+                    # try again if unsuccessful
+                    print('Failed to close Alicat MFC with ID: {} on COM{}'.format(self.device_ids[i], self.com_port))
+                    print('Trying again after 1 second...')
+                    # wait for 1 second before trying again
+                    time.sleep(1)
+                    continue
+
+            
     def __exit__(self, type, value, traceback):
         """
         Close the MFCs with a context manager
