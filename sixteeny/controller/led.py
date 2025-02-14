@@ -127,7 +127,7 @@ class LEDController(object):
         self.conns = []
         for port in self.ports:
             try:
-                conn = serial.Serial(port, self.baudrate)
+                conn = serial.Serial(port, self.baudrate, write_timeout=1, timeout=0)
                 conn.write(b"RESET\r")
                 conn.write(b"RED 0\r")
                 conn.write(b"GRN 0\r")
@@ -903,7 +903,7 @@ class LEDController(object):
 
     #     self.reset_accumulated_led_stimulus()
 
-    def run_accumulated_led_stimulus(self):
+    def run_accumulated_led_stimulus(self,debug=False):
         """
         Runs the accumulated LED stimulus
         """
@@ -936,9 +936,14 @@ class LEDController(object):
                     err_str = "Error in Arena " + str(4*i + j) + " at " + current_time_str + ": "
                     err_str += "LEDs are still running with runtime {} secs. Cut short with {} milliseconds left. ".format(runtime, (runtime-(current_time-last_run))*1000)
                     if self.printer is not None:
-                        self.printer.print(err_str) 
+                        self.printer.print(err_str)
                     else:
                         print(err_str)
+                    debug=True
+                    if self.printer is not None:
+                        self.printer.print("Debug mode enabled")
+                    else:
+                        print("Debug mode enabled")
 
 
         for i in range(16):
@@ -950,7 +955,11 @@ class LEDController(object):
                 quadrant = self.arena_specs[i]["quadrant"]
                 quadrant_count = self.arena_specs[i]["quadrant_count"]
 
-                
+                if debug:
+                    if self.printer is not None:
+                        self.printer.print("Running LED stimulus for arena " + str(i))
+                    else:
+                        print("Running LED stimulus for arena " + str(i))
                 
                 conn.write(
                     b"PULSE "
@@ -969,6 +978,11 @@ class LEDController(object):
                     + quadrant
                     + b"\r"
                 )
+                if debug:
+                    if self.printer is not None:
+                        self.printer.print("Red pulse sent")
+                    else:
+                        print("Red pulse sent")
                 conn.write(
                     b"PULSE "
                     + str(self.pulse_state[conn_id][quadrant_count][1][0]).encode()
@@ -986,6 +1000,8 @@ class LEDController(object):
                     + quadrant
                     + b"\r"
                 )
+                if debug:
+                    print("Green pulse sent")
                 conn.write(
                     b"PULSE "
                     + str(self.pulse_state[conn_id][quadrant_count][2][0]).encode()
@@ -1003,10 +1019,30 @@ class LEDController(object):
                     + quadrant
                     + b"\r"
                 )
+                if debug:
+                    if self.printer is not None:
+                        self.printer.print("Blue pulse sent")
+                    else:
+                        print("Blue pulse sent")
                 
                 conn.write(b"RED " + str(int(self.color_state[conn_id][quadrant_count][0]*self.irgb_scaling_factors[1][i])).encode() + b" 0 " + quadrant + b"\r")
+                if debug:
+                    if self.printer is not None:
+                        self.printer.print("Red intensity sent")
+                    else:
+                        print("Red intensity sent")
                 conn.write(b"GRN " + str(int(self.color_state[conn_id][quadrant_count][1]*self.irgb_scaling_factors[2][i])).encode() + b" 0 " + quadrant + b"\r")
+                if debug:
+                    if self.printer is not None:
+                        self.printer.print("Green intensity sent")
+                    else:
+                        print("Green intensity sent")
                 conn.write(b"BLU " + str(int(self.color_state[conn_id][quadrant_count][2]*self.irgb_scaling_factors[3][i])).encode() + b" 0 " + quadrant + b"\r")
+                if debug:
+                    if self.printer is not None:
+                        self.printer.print("Blue intensity sent")
+                    else:
+                        print("Blue intensity sent")
 
                 if self.color_state[conn_id][quadrant_count][0] > 0 or self.color_state[conn_id][quadrant_count][1] > 0 or self.color_state[conn_id][quadrant_count][2] > 0:
                     self.last_run[i] = time.time() ##
@@ -1015,14 +1051,30 @@ class LEDController(object):
                                         self.get_pulse_runtime(self.pulse_state[conn_id][quadrant_count][2])]) / 1000 ##
                     self.runtime[i] = runtime ##
 
-            except:
+            except Exception as e:
                 if self.printer is not None:
-                    self.printer.print("Could not run LED stimulus for arena " + str(i))
+                    self.printer.print("Could not run LED stimulus for arena " + str(i) + " due to " + str(e))
                 else:
-                    print("Could not run LED stimulus for arena " + str(i))
+                    print("Could not run LED stimulus for arena " + str(i) + " due to " + str(e))
+                return "ERROR"
 
-        for conn in active_conns:
-            conn.write(b"RUN\r")
+        try:
+            for conn in active_conns:
+                conn.write(b"RUN\r")
+                if debug:
+                    if self.printer is not None:
+                        self.printer.print("Run command sent for panel")
+                    else:
+                        print("Run command sent for panel")
+                    
+        except Exception as e:
+            if self.printer is not None:
+                self.printer.print("Could not run LED stimulus due to " + str(e))
+            else:
+                print("Could not run LED stimulus due to " + str(e))
+            return "ERROR"
 
         self.reset_accumulated_led_stimulus()
+        debug = False
+        return None
 

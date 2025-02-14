@@ -312,6 +312,10 @@ class MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, "Warning", "Please select a directory with experiments.")
             return
 
+        # create a randomized order for the active arenas
+        import random
+        random.shuffle(active_arenas)
+
         # loop through the lines
         for i, line in enumerate(lines):
             # make sure there are enough arenas

@@ -20,7 +20,7 @@ class Printer:
         print("Writing to file...")
         # write to file
         for i,line in enumerate(self.log):
-            if i//1000 == i/1000:
+            if i//100000 == i/100000:
                 print(f"Writing {i}/{len(self.log)}")
             self.file.write(line)
         # close file
